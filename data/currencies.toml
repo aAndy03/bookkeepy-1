@@ -1,0 +1,1261 @@
+# Bookkeepy 1 - primary data: supported currencies (ISO 4217).
+#
+# PRIMARY DATA file (docs/04-conventions.md RULE-DATA-001, ADR-0008): engines/APIs/pipelines import
+# this file; no currency list is ever hardcoded in source code.
+# Source: official ISO 4217 list published by SIX Group on behalf of ISO.
+#   url       = "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml"
+#   published = "2026-09-17"
+# Regenerate only from the official source; never edit codes or minor units by hand.
+
+[source]
+standard = "ISO 4217"
+publisher = "SIX Group (on behalf of ISO)"
+url = "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml"
+published = "2026-09-17"
+
+[[currency]]
+code = "AFN"
+name = "Afghani"
+numeric = "971"
+minor_units = 2
+countries = ["AFGHANISTAN"]
+
+[[currency]]
+code = "EUR"
+name = "Euro"
+numeric = "978"
+minor_units = 2
+countries = ["ÅLAND ISLANDS", "ANDORRA", "AUSTRIA", "BELGIUM", "BULGARIA", "CROATIA", "CYPRUS", "ESTONIA", "EUROPEAN UNION", "FINLAND", "FRANCE", "FRENCH GUIANA", "FRENCH SOUTHERN TERRITORIES (THE)", "GERMANY", "GREECE", "GUADELOUPE", "HOLY SEE (THE)", "IRELAND", "ITALY", "LATVIA", "LITHUANIA", "LUXEMBOURG", "MALTA", "MARTINIQUE", "MAYOTTE", "MONACO", "MONTENEGRO", "NETHERLANDS (THE)", "PORTUGAL", "RÉUNION", "SAINT BARTHÉLEMY", "SAINT MARTIN (FRENCH PART)", "SAINT PIERRE AND MIQUELON", "SAN MARINO", "SLOVAKIA", "SLOVENIA", "SPAIN"]
+
+[[currency]]
+code = "ALL"
+name = "Lek"
+numeric = "008"
+minor_units = 2
+countries = ["ALBANIA"]
+
+[[currency]]
+code = "DZD"
+name = "Algerian Dinar"
+numeric = "012"
+minor_units = 2
+countries = ["ALGERIA"]
+
+[[currency]]
+code = "USD"
+name = "US Dollar"
+numeric = "840"
+minor_units = 2
+countries = ["AMERICAN SAMOA", "BONAIRE", "SINT EUSTATIUS AND SABA", "BRITISH INDIAN OCEAN TERRITORY (THE)", "ECUADOR", "EL SALVADOR", "GUAM", "HAITI", "MARSHALL ISLANDS (THE)", "MICRONESIA (FEDERATED STATES OF)", "NORTHERN MARIANA ISLANDS (THE)", "PALAU", "PANAMA", "PUERTO RICO", "TIMOR-LESTE", "TURKS AND CAICOS ISLANDS (THE)", "UNITED STATES MINOR OUTLYING ISLANDS (THE)", "UNITED STATES OF AMERICA (THE)", "VIRGIN ISLANDS (BRITISH)", "VIRGIN ISLANDS (U.S.)"]
+
+[[currency]]
+code = "AOA"
+name = "Kwanza"
+numeric = "973"
+minor_units = 2
+countries = ["ANGOLA"]
+
+[[currency]]
+code = "XCD"
+name = "East Caribbean Dollar"
+numeric = "951"
+minor_units = 2
+countries = ["ANGUILLA", "ANTIGUA AND BARBUDA", "DOMINICA", "GRENADA", "MONTSERRAT", "SAINT KITTS AND NEVIS", "SAINT LUCIA", "SAINT VINCENT AND THE GRENADINES"]
+
+[[currency]]
+code = "XAD"
+name = ""
+numeric = "396"
+minor_units = 2
+countries = ["ARAB MONETARY FUND"]
+
+[[currency]]
+code = "ARS"
+name = "Argentine Peso"
+numeric = "032"
+minor_units = 2
+countries = ["ARGENTINA"]
+
+[[currency]]
+code = "AMD"
+name = "Armenian Dram"
+numeric = "051"
+minor_units = 2
+countries = ["ARMENIA"]
+
+[[currency]]
+code = "AWG"
+name = "Aruban Florin"
+numeric = "533"
+minor_units = 2
+countries = ["ARUBA"]
+
+[[currency]]
+code = "AUD"
+name = "Australian Dollar"
+numeric = "036"
+minor_units = 2
+countries = ["AUSTRALIA", "CHRISTMAS ISLAND", "COCOS (KEELING) ISLANDS (THE)", "HEARD ISLAND AND McDONALD ISLANDS", "KIRIBATI", "NAURU", "NORFOLK ISLAND", "TUVALU"]
+
+[[currency]]
+code = "AZN"
+name = "Azerbaijan Manat"
+numeric = "944"
+minor_units = 2
+countries = ["AZERBAIJAN"]
+
+[[currency]]
+code = "BSD"
+name = "Bahamian Dollar"
+numeric = "044"
+minor_units = 2
+countries = ["BAHAMAS (THE)"]
+
+[[currency]]
+code = "BHD"
+name = "Bahraini Dinar"
+numeric = "048"
+minor_units = 3
+countries = ["BAHRAIN"]
+
+[[currency]]
+code = "BDT"
+name = "Taka"
+numeric = "050"
+minor_units = 2
+countries = ["BANGLADESH"]
+
+[[currency]]
+code = "BBD"
+name = "Barbados Dollar"
+numeric = "052"
+minor_units = 2
+countries = ["BARBADOS"]
+
+[[currency]]
+code = "BYN"
+name = "Belarusian Ruble"
+numeric = "933"
+minor_units = 2
+countries = ["BELARUS"]
+
+[[currency]]
+code = "BZD"
+name = "Belize Dollar"
+numeric = "084"
+minor_units = 2
+countries = ["BELIZE"]
+
+[[currency]]
+code = "XOF"
+name = "CFA Franc BCEAO"
+numeric = "952"
+minor_units = 0
+countries = ["BENIN", "BURKINA FASO", "CÔTE D'IVOIRE", "GUINEA-BISSAU", "MALI", "NIGER (THE)", "SENEGAL", "TOGO"]
+
+[[currency]]
+code = "BMD"
+name = "Bermudian Dollar"
+numeric = "060"
+minor_units = 2
+countries = ["BERMUDA"]
+
+[[currency]]
+code = "INR"
+name = "Indian Rupee"
+numeric = "356"
+minor_units = 2
+countries = ["BHUTAN", "INDIA"]
+
+[[currency]]
+code = "BTN"
+name = "Ngultrum"
+numeric = "064"
+minor_units = 2
+countries = ["BHUTAN"]
+
+[[currency]]
+code = "BOB"
+name = "Boliviano"
+numeric = "068"
+minor_units = 2
+countries = ["BOLIVIA (PLURINATIONAL STATE OF)"]
+
+[[currency]]
+code = "BOV"
+name = ""
+numeric = "984"
+minor_units = 2
+countries = ["BOLIVIA (PLURINATIONAL STATE OF)"]
+
+[[currency]]
+code = "BAM"
+name = "Convertible Mark"
+numeric = "977"
+minor_units = 2
+countries = ["BOSNIA AND HERZEGOVINA"]
+
+[[currency]]
+code = "BWP"
+name = "Pula"
+numeric = "072"
+minor_units = 2
+countries = ["BOTSWANA"]
+
+[[currency]]
+code = "NOK"
+name = "Norwegian Krone"
+numeric = "578"
+minor_units = 2
+countries = ["BOUVET ISLAND", "NORWAY", "SVALBARD AND JAN MAYEN"]
+
+[[currency]]
+code = "BRL"
+name = "Brazilian Real"
+numeric = "986"
+minor_units = 2
+countries = ["BRAZIL"]
+
+[[currency]]
+code = "BND"
+name = "Brunei Dollar"
+numeric = "096"
+minor_units = 2
+countries = ["BRUNEI DARUSSALAM"]
+
+[[currency]]
+code = "BIF"
+name = "Burundi Franc"
+numeric = "108"
+minor_units = 0
+countries = ["BURUNDI"]
+
+[[currency]]
+code = "CVE"
+name = "Cabo Verde Escudo"
+numeric = "132"
+minor_units = 2
+countries = ["CABO VERDE"]
+
+[[currency]]
+code = "KHR"
+name = "Riel"
+numeric = "116"
+minor_units = 2
+countries = ["CAMBODIA"]
+
+[[currency]]
+code = "XAF"
+name = "CFA Franc BEAC"
+numeric = "950"
+minor_units = 0
+countries = ["CAMEROON", "CENTRAL AFRICAN REPUBLIC (THE)", "CHAD", "CONGO (THE)", "EQUATORIAL GUINEA", "GABON"]
+
+[[currency]]
+code = "CAD"
+name = "Canadian Dollar"
+numeric = "124"
+minor_units = 2
+countries = ["CANADA"]
+
+[[currency]]
+code = "KYD"
+name = "Cayman Islands Dollar"
+numeric = "136"
+minor_units = 2
+countries = ["CAYMAN ISLANDS (THE)"]
+
+[[currency]]
+code = "CLP"
+name = "Chilean Peso"
+numeric = "152"
+minor_units = 0
+countries = ["CHILE"]
+
+[[currency]]
+code = "CLF"
+name = ""
+numeric = "990"
+minor_units = 4
+countries = ["CHILE"]
+
+[[currency]]
+code = "CNY"
+name = "Yuan Renminbi"
+numeric = "156"
+minor_units = 2
+countries = ["CHINA"]
+
+[[currency]]
+code = "COP"
+name = "Colombian Peso"
+numeric = "170"
+minor_units = 2
+countries = ["COLOMBIA"]
+
+[[currency]]
+code = "COU"
+name = ""
+numeric = "970"
+minor_units = 2
+countries = ["COLOMBIA"]
+
+[[currency]]
+code = "KMF"
+name = "Comorian Franc "
+numeric = "174"
+minor_units = 0
+countries = ["COMOROS (THE)"]
+
+[[currency]]
+code = "CDF"
+name = "Congolese Franc"
+numeric = "976"
+minor_units = 2
+countries = ["CONGO (THE DEMOCRATIC REPUBLIC OF THE)"]
+
+[[currency]]
+code = "NZD"
+name = "New Zealand Dollar"
+numeric = "554"
+minor_units = 2
+countries = ["COOK ISLANDS (THE)", "NEW ZEALAND", "NIUE", "PITCAIRN", "TOKELAU"]
+
+[[currency]]
+code = "CRC"
+name = "Costa Rican Colon"
+numeric = "188"
+minor_units = 2
+countries = ["COSTA RICA"]
+
+[[currency]]
+code = "CUP"
+name = "Cuban Peso"
+numeric = "192"
+minor_units = 2
+countries = ["CUBA"]
+
+[[currency]]
+code = "XCG"
+name = "Caribbean Guilder"
+numeric = "532"
+minor_units = 2
+countries = ["CURAÇAO", "SINT MAARTEN (DUTCH PART)"]
+
+[[currency]]
+code = "CZK"
+name = "Czech Koruna"
+numeric = "203"
+minor_units = 2
+countries = ["CZECHIA"]
+
+[[currency]]
+code = "DKK"
+name = "Danish Krone"
+numeric = "208"
+minor_units = 2
+countries = ["DENMARK", "FAROE ISLANDS (THE)", "GREENLAND"]
+
+[[currency]]
+code = "DJF"
+name = "Djibouti Franc"
+numeric = "262"
+minor_units = 0
+countries = ["DJIBOUTI"]
+
+[[currency]]
+code = "DOP"
+name = "Dominican Peso"
+numeric = "214"
+minor_units = 2
+countries = ["DOMINICAN REPUBLIC (THE)"]
+
+[[currency]]
+code = "EGP"
+name = "Egyptian Pound"
+numeric = "818"
+minor_units = 2
+countries = ["EGYPT"]
+
+[[currency]]
+code = "SVC"
+name = "El Salvador Colon"
+numeric = "222"
+minor_units = 2
+countries = ["EL SALVADOR"]
+
+[[currency]]
+code = "ERN"
+name = "Nakfa"
+numeric = "232"
+minor_units = 2
+countries = ["ERITREA"]
+
+[[currency]]
+code = "SZL"
+name = "Lilangeni"
+numeric = "748"
+minor_units = 2
+countries = ["ESWATINI"]
+
+[[currency]]
+code = "ETB"
+name = "Ethiopian Birr"
+numeric = "230"
+minor_units = 2
+countries = ["ETHIOPIA"]
+
+[[currency]]
+code = "FKP"
+name = "Falkland Islands Pound"
+numeric = "238"
+minor_units = 2
+countries = ["FALKLAND ISLANDS (THE) [MALVINAS]"]
+
+[[currency]]
+code = "FJD"
+name = "Fiji Dollar"
+numeric = "242"
+minor_units = 2
+countries = ["FIJI"]
+
+[[currency]]
+code = "XPF"
+name = "CFP Franc"
+numeric = "953"
+minor_units = 0
+countries = ["FRENCH POLYNESIA", "NEW CALEDONIA", "WALLIS AND FUTUNA"]
+
+[[currency]]
+code = "GMD"
+name = "Dalasi"
+numeric = "270"
+minor_units = 2
+countries = ["GAMBIA (THE)"]
+
+[[currency]]
+code = "GEL"
+name = "Lari"
+numeric = "981"
+minor_units = 2
+countries = ["GEORGIA"]
+
+[[currency]]
+code = "GHS"
+name = "Ghana Cedi"
+numeric = "936"
+minor_units = 2
+countries = ["GHANA"]
+
+[[currency]]
+code = "GIP"
+name = "Gibraltar Pound"
+numeric = "292"
+minor_units = 2
+countries = ["GIBRALTAR"]
+
+[[currency]]
+code = "GTQ"
+name = "Quetzal"
+numeric = "320"
+minor_units = 2
+countries = ["GUATEMALA"]
+
+[[currency]]
+code = "GBP"
+name = "Pound Sterling"
+numeric = "826"
+minor_units = 2
+countries = ["GUERNSEY", "ISLE OF MAN", "JERSEY", "UNITED KINGDOM OF GREAT BRITAIN AND NORTHERN IRELAND (THE)"]
+
+[[currency]]
+code = "GNF"
+name = "Guinean Franc"
+numeric = "324"
+minor_units = 0
+countries = ["GUINEA"]
+
+[[currency]]
+code = "GYD"
+name = "Guyana Dollar"
+numeric = "328"
+minor_units = 2
+countries = ["GUYANA"]
+
+[[currency]]
+code = "HTG"
+name = "Gourde"
+numeric = "332"
+minor_units = 2
+countries = ["HAITI"]
+
+[[currency]]
+code = "HNL"
+name = "Lempira"
+numeric = "340"
+minor_units = 2
+countries = ["HONDURAS"]
+
+[[currency]]
+code = "HKD"
+name = "Hong Kong Dollar"
+numeric = "344"
+minor_units = 2
+countries = ["HONG KONG"]
+
+[[currency]]
+code = "HUF"
+name = "Forint"
+numeric = "348"
+minor_units = 2
+countries = ["HUNGARY"]
+
+[[currency]]
+code = "ISK"
+name = "Iceland Krona"
+numeric = "352"
+minor_units = 0
+countries = ["ICELAND"]
+
+[[currency]]
+code = "IDR"
+name = "Rupiah"
+numeric = "360"
+minor_units = 2
+countries = ["INDONESIA"]
+
+[[currency]]
+code = "XDR"
+name = "SDR (Special Drawing Right)"
+numeric = "960"
+minor_units = "N.A."
+countries = ["INTERNATIONAL MONETARY FUND (IMF) "]
+
+[[currency]]
+code = "IRR"
+name = "Iranian Rial"
+numeric = "364"
+minor_units = 2
+countries = ["IRAN (ISLAMIC REPUBLIC OF)"]
+
+[[currency]]
+code = "IQD"
+name = "Iraqi Dinar"
+numeric = "368"
+minor_units = 3
+countries = ["IRAQ"]
+
+[[currency]]
+code = "ILS"
+name = "New Israeli Sheqel"
+numeric = "376"
+minor_units = 2
+countries = ["ISRAEL"]
+
+[[currency]]
+code = "JMD"
+name = "Jamaican Dollar"
+numeric = "388"
+minor_units = 2
+countries = ["JAMAICA"]
+
+[[currency]]
+code = "JPY"
+name = "Yen"
+numeric = "392"
+minor_units = 0
+countries = ["JAPAN"]
+
+[[currency]]
+code = "JOD"
+name = "Jordanian Dinar"
+numeric = "400"
+minor_units = 3
+countries = ["JORDAN"]
+
+[[currency]]
+code = "KZT"
+name = "Tenge"
+numeric = "398"
+minor_units = 2
+countries = ["KAZAKHSTAN"]
+
+[[currency]]
+code = "KES"
+name = "Kenyan Shilling"
+numeric = "404"
+minor_units = 2
+countries = ["KENYA"]
+
+[[currency]]
+code = "KPW"
+name = "North Korean Won"
+numeric = "408"
+minor_units = 2
+countries = ["KOREA (THE DEMOCRATIC PEOPLE’S REPUBLIC OF)"]
+
+[[currency]]
+code = "KRW"
+name = "Won"
+numeric = "410"
+minor_units = 0
+countries = ["KOREA (THE REPUBLIC OF)"]
+
+[[currency]]
+code = "KWD"
+name = "Kuwaiti Dinar"
+numeric = "414"
+minor_units = 3
+countries = ["KUWAIT"]
+
+[[currency]]
+code = "KGS"
+name = "Som"
+numeric = "417"
+minor_units = 2
+countries = ["KYRGYZSTAN"]
+
+[[currency]]
+code = "LAK"
+name = "Lao Kip"
+numeric = "418"
+minor_units = 2
+countries = ["LAO PEOPLE’S DEMOCRATIC REPUBLIC (THE)"]
+
+[[currency]]
+code = "LBP"
+name = "Lebanese Pound"
+numeric = "422"
+minor_units = 2
+countries = ["LEBANON"]
+
+[[currency]]
+code = "LSL"
+name = "Loti"
+numeric = "426"
+minor_units = 2
+countries = ["LESOTHO"]
+
+[[currency]]
+code = "ZAR"
+name = "Rand"
+numeric = "710"
+minor_units = 2
+countries = ["LESOTHO", "NAMIBIA", "SOUTH AFRICA"]
+
+[[currency]]
+code = "LRD"
+name = "Liberian Dollar"
+numeric = "430"
+minor_units = 2
+countries = ["LIBERIA"]
+
+[[currency]]
+code = "LYD"
+name = "Libyan Dinar"
+numeric = "434"
+minor_units = 3
+countries = ["LIBYA"]
+
+[[currency]]
+code = "CHF"
+name = "Swiss Franc"
+numeric = "756"
+minor_units = 2
+countries = ["LIECHTENSTEIN", "SWITZERLAND"]
+
+[[currency]]
+code = "MOP"
+name = "Pataca"
+numeric = "446"
+minor_units = 2
+countries = ["MACAO"]
+
+[[currency]]
+code = "MKD"
+name = "Denar"
+numeric = "807"
+minor_units = 2
+countries = ["NORTH MACEDONIA"]
+
+[[currency]]
+code = "MGA"
+name = "Malagasy Ariary"
+numeric = "969"
+minor_units = 2
+countries = ["MADAGASCAR"]
+
+[[currency]]
+code = "MWK"
+name = "Malawi Kwacha"
+numeric = "454"
+minor_units = 2
+countries = ["MALAWI"]
+
+[[currency]]
+code = "MYR"
+name = "Malaysian Ringgit"
+numeric = "458"
+minor_units = 2
+countries = ["MALAYSIA"]
+
+[[currency]]
+code = "MVR"
+name = "Rufiyaa"
+numeric = "462"
+minor_units = 2
+countries = ["MALDIVES"]
+
+[[currency]]
+code = "MRU"
+name = "Ouguiya"
+numeric = "929"
+minor_units = 2
+countries = ["MAURITANIA"]
+
+[[currency]]
+code = "MUR"
+name = "Mauritius Rupee"
+numeric = "480"
+minor_units = 2
+countries = ["MAURITIUS"]
+
+[[currency]]
+code = "XUA"
+name = "ADB Unit of Account"
+numeric = "965"
+minor_units = "N.A."
+countries = ["MEMBER COUNTRIES OF THE AFRICAN DEVELOPMENT BANK GROUP"]
+
+[[currency]]
+code = "MXN"
+name = "Mexican Peso"
+numeric = "484"
+minor_units = 2
+countries = ["MEXICO"]
+
+[[currency]]
+code = "MXV"
+name = ""
+numeric = "979"
+minor_units = 2
+countries = ["MEXICO"]
+
+[[currency]]
+code = "MDL"
+name = "Moldovan Leu"
+numeric = "498"
+minor_units = 2
+countries = ["MOLDOVA (THE REPUBLIC OF)"]
+
+[[currency]]
+code = "MNT"
+name = "Tugrik"
+numeric = "496"
+minor_units = 2
+countries = ["MONGOLIA"]
+
+[[currency]]
+code = "MAD"
+name = "Moroccan Dirham"
+numeric = "504"
+minor_units = 2
+countries = ["MOROCCO", "WESTERN SAHARA"]
+
+[[currency]]
+code = "MZN"
+name = "Mozambique Metical"
+numeric = "943"
+minor_units = 2
+countries = ["MOZAMBIQUE"]
+
+[[currency]]
+code = "MMK"
+name = "Kyat"
+numeric = "104"
+minor_units = 2
+countries = ["MYANMAR"]
+
+[[currency]]
+code = "NAD"
+name = "Namibia Dollar"
+numeric = "516"
+minor_units = 2
+countries = ["NAMIBIA"]
+
+[[currency]]
+code = "NPR"
+name = "Nepalese Rupee"
+numeric = "524"
+minor_units = 2
+countries = ["NEPAL"]
+
+[[currency]]
+code = "NIO"
+name = "Cordoba Oro"
+numeric = "558"
+minor_units = 2
+countries = ["NICARAGUA"]
+
+[[currency]]
+code = "NGN"
+name = "Naira"
+numeric = "566"
+minor_units = 2
+countries = ["NIGERIA"]
+
+[[currency]]
+code = "OMR"
+name = "Rial Omani"
+numeric = "512"
+minor_units = 3
+countries = ["OMAN"]
+
+[[currency]]
+code = "PKR"
+name = "Pakistan Rupee"
+numeric = "586"
+minor_units = 2
+countries = ["PAKISTAN"]
+
+[[currency]]
+code = "PAB"
+name = "Balboa"
+numeric = "590"
+minor_units = 2
+countries = ["PANAMA"]
+
+[[currency]]
+code = "PGK"
+name = "Kina"
+numeric = "598"
+minor_units = 2
+countries = ["PAPUA NEW GUINEA"]
+
+[[currency]]
+code = "PYG"
+name = "Guarani"
+numeric = "600"
+minor_units = 0
+countries = ["PARAGUAY"]
+
+[[currency]]
+code = "PEN"
+name = "Sol"
+numeric = "604"
+minor_units = 2
+countries = ["PERU"]
+
+[[currency]]
+code = "PHP"
+name = "Philippine Peso"
+numeric = "608"
+minor_units = 2
+countries = ["PHILIPPINES (THE)"]
+
+[[currency]]
+code = "PLN"
+name = "Zloty"
+numeric = "985"
+minor_units = 2
+countries = ["POLAND"]
+
+[[currency]]
+code = "QAR"
+name = "Qatari Rial"
+numeric = "634"
+minor_units = 2
+countries = ["QATAR"]
+
+[[currency]]
+code = "RON"
+name = "Romanian Leu"
+numeric = "946"
+minor_units = 2
+countries = ["ROMANIA"]
+
+[[currency]]
+code = "RUB"
+name = "Russian Ruble"
+numeric = "643"
+minor_units = 2
+countries = ["RUSSIAN FEDERATION (THE)"]
+
+[[currency]]
+code = "RWF"
+name = "Rwanda Franc"
+numeric = "646"
+minor_units = 0
+countries = ["RWANDA"]
+
+[[currency]]
+code = "SHP"
+name = "Saint Helena Pound"
+numeric = "654"
+minor_units = 2
+countries = ["SAINT HELENA", "ASCENSION AND TRISTAN DA CUNHA"]
+
+[[currency]]
+code = "WST"
+name = "Tala"
+numeric = "882"
+minor_units = 2
+countries = ["SAMOA"]
+
+[[currency]]
+code = "STN"
+name = "Dobra"
+numeric = "930"
+minor_units = 2
+countries = ["SAO TOME AND PRINCIPE"]
+
+[[currency]]
+code = "SAR"
+name = "Saudi Riyal"
+numeric = "682"
+minor_units = 2
+countries = ["SAUDI ARABIA"]
+
+[[currency]]
+code = "RSD"
+name = "Serbian Dinar"
+numeric = "941"
+minor_units = 2
+countries = ["SERBIA"]
+
+[[currency]]
+code = "SCR"
+name = "Seychelles Rupee"
+numeric = "690"
+minor_units = 2
+countries = ["SEYCHELLES"]
+
+[[currency]]
+code = "SLE"
+name = "Leone"
+numeric = "925"
+minor_units = 2
+countries = ["SIERRA LEONE"]
+
+[[currency]]
+code = "SGD"
+name = "Singapore Dollar"
+numeric = "702"
+minor_units = 2
+countries = ["SINGAPORE"]
+
+[[currency]]
+code = "XSU"
+name = "Sucre"
+numeric = "994"
+minor_units = "N.A."
+countries = ["SISTEMA UNITARIO DE COMPENSACION REGIONAL DE PAGOS "SUCRE""]
+
+[[currency]]
+code = "SBD"
+name = "Solomon Islands Dollar"
+numeric = "090"
+minor_units = 2
+countries = ["SOLOMON ISLANDS"]
+
+[[currency]]
+code = "SOS"
+name = "Somali Shilling"
+numeric = "706"
+minor_units = 2
+countries = ["SOMALIA"]
+
+[[currency]]
+code = "SSP"
+name = "South Sudanese Pound"
+numeric = "728"
+minor_units = 2
+countries = ["SOUTH SUDAN"]
+
+[[currency]]
+code = "LKR"
+name = "Sri Lanka Rupee"
+numeric = "144"
+minor_units = 2
+countries = ["SRI LANKA"]
+
+[[currency]]
+code = "SDG"
+name = "Sudanese Pound"
+numeric = "938"
+minor_units = 2
+countries = ["SUDAN (THE)"]
+
+[[currency]]
+code = "SRD"
+name = "Surinam Dollar"
+numeric = "968"
+minor_units = 2
+countries = ["SURINAME"]
+
+[[currency]]
+code = "SEK"
+name = "Swedish Krona"
+numeric = "752"
+minor_units = 2
+countries = ["SWEDEN"]
+
+[[currency]]
+code = "CHE"
+name = ""
+numeric = "947"
+minor_units = 2
+countries = ["SWITZERLAND"]
+
+[[currency]]
+code = "CHW"
+name = ""
+numeric = "948"
+minor_units = 2
+countries = ["SWITZERLAND"]
+
+[[currency]]
+code = "SYP"
+name = "Syrian Pound"
+numeric = "760"
+minor_units = 2
+countries = ["SYRIAN ARAB REPUBLIC"]
+
+[[currency]]
+code = "TWD"
+name = "New Taiwan Dollar"
+numeric = "901"
+minor_units = 2
+countries = ["TAIWAN (PROVINCE OF CHINA)"]
+
+[[currency]]
+code = "TJS"
+name = "Somoni"
+numeric = "972"
+minor_units = 2
+countries = ["TAJIKISTAN"]
+
+[[currency]]
+code = "TZS"
+name = "Tanzanian Shilling"
+numeric = "834"
+minor_units = 2
+countries = ["TANZANIA", "UNITED REPUBLIC OF"]
+
+[[currency]]
+code = "THB"
+name = "Baht"
+numeric = "764"
+minor_units = 2
+countries = ["THAILAND"]
+
+[[currency]]
+code = "TOP"
+name = "Pa’anga"
+numeric = "776"
+minor_units = 2
+countries = ["TONGA"]
+
+[[currency]]
+code = "TTD"
+name = "Trinidad and Tobago Dollar"
+numeric = "780"
+minor_units = 2
+countries = ["TRINIDAD AND TOBAGO"]
+
+[[currency]]
+code = "TND"
+name = "Tunisian Dinar"
+numeric = "788"
+minor_units = 3
+countries = ["TUNISIA"]
+
+[[currency]]
+code = "TRY"
+name = "Turkish Lira"
+numeric = "949"
+minor_units = 2
+countries = ["TÜRKİYE"]
+
+[[currency]]
+code = "TMT"
+name = "Turkmenistan New Manat"
+numeric = "934"
+minor_units = 2
+countries = ["TURKMENISTAN"]
+
+[[currency]]
+code = "UGX"
+name = "Uganda Shilling"
+numeric = "800"
+minor_units = 0
+countries = ["UGANDA"]
+
+[[currency]]
+code = "UAH"
+name = "Hryvnia"
+numeric = "980"
+minor_units = 2
+countries = ["UKRAINE"]
+
+[[currency]]
+code = "AED"
+name = "UAE Dirham"
+numeric = "784"
+minor_units = 2
+countries = ["UNITED ARAB EMIRATES (THE)"]
+
+[[currency]]
+code = "USN"
+name = ""
+numeric = "997"
+minor_units = 2
+countries = ["UNITED STATES OF AMERICA (THE)"]
+
+[[currency]]
+code = "UYU"
+name = "Peso Uruguayo"
+numeric = "858"
+minor_units = 2
+countries = ["URUGUAY"]
+
+[[currency]]
+code = "UYI"
+name = ""
+numeric = "940"
+minor_units = 0
+countries = ["URUGUAY"]
+
+[[currency]]
+code = "UYW"
+name = ""
+numeric = "927"
+minor_units = 4
+countries = ["URUGUAY"]
+
+[[currency]]
+code = "UZS"
+name = "Uzbekistan Sum"
+numeric = "860"
+minor_units = 2
+countries = ["UZBEKISTAN"]
+
+[[currency]]
+code = "VUV"
+name = "Vatu"
+numeric = "548"
+minor_units = 0
+countries = ["VANUATU"]
+
+[[currency]]
+code = "VES"
+name = "Bolívar Soberano"
+numeric = "928"
+minor_units = 2
+countries = ["VENEZUELA (BOLIVARIAN REPUBLIC OF)"]
+
+[[currency]]
+code = "VED"
+name = "Bolívar Soberano"
+numeric = "926"
+minor_units = 2
+countries = ["VENEZUELA (BOLIVARIAN REPUBLIC OF)"]
+
+[[currency]]
+code = "VND"
+name = "Dong"
+numeric = "704"
+minor_units = 0
+countries = ["VIET NAM"]
+
+[[currency]]
+code = "YER"
+name = "Yemeni Rial"
+numeric = "886"
+minor_units = 2
+countries = ["YEMEN"]
+
+[[currency]]
+code = "ZMW"
+name = "Zambian Kwacha"
+numeric = "967"
+minor_units = 2
+countries = ["ZAMBIA"]
+
+[[currency]]
+code = "ZWG"
+name = "Zimbabwe Gold"
+numeric = "924"
+minor_units = 2
+countries = ["ZIMBABWE"]
+
+[[currency]]
+code = "XBA"
+name = "Bond Markets Unit European Composite Unit (EURCO)"
+numeric = "955"
+minor_units = "N.A."
+countries = ["ZZ01_Bond Markets Unit European_EURCO"]
+
+[[currency]]
+code = "XBB"
+name = "Bond Markets Unit European Monetary Unit (E.M.U.-6)"
+numeric = "956"
+minor_units = "N.A."
+countries = ["ZZ02_Bond Markets Unit European_EMU-6"]
+
+[[currency]]
+code = "XBC"
+name = "Bond Markets Unit European Unit of Account 9 (E.U.A.-9)"
+numeric = "957"
+minor_units = "N.A."
+countries = ["ZZ03_Bond Markets Unit European_EUA-9"]
+
+[[currency]]
+code = "XBD"
+name = "Bond Markets Unit European Unit of Account 17 (E.U.A.-17)"
+numeric = "958"
+minor_units = "N.A."
+countries = ["ZZ04_Bond Markets Unit European_EUA-17"]
+
+[[currency]]
+code = "XTS"
+name = "Codes specifically reserved for testing purposes"
+numeric = "963"
+minor_units = "N.A."
+countries = ["ZZ06_Testing_Code"]
+
+[[currency]]
+code = "XXX"
+name = "The codes assigned for transactions where no currency is involved"
+numeric = "999"
+minor_units = "N.A."
+countries = ["ZZ07_No_Currency"]
+
+[[currency]]
+code = "XAU"
+name = "Gold"
+numeric = "959"
+minor_units = "N.A."
+countries = ["ZZ08_Gold"]
+
+[[currency]]
+code = "XPD"
+name = "Palladium"
+numeric = "964"
+minor_units = "N.A."
+countries = ["ZZ09_Palladium"]
+
+[[currency]]
+code = "XPT"
+name = "Platinum"
+numeric = "962"
+minor_units = "N.A."
+countries = ["ZZ10_Platinum"]
+
+[[currency]]
+code = "XAG"
+name = "Silver"
+numeric = "961"
+minor_units = "N.A."
+countries = ["ZZ11_Silver"]
+

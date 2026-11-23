@@ -1,0 +1,30 @@
+{
+  "skills": [
+    {
+      "name": "gpui-kit",
+      "source_repo": "longbridge/gpui-kit",
+      "source_path": "skills/gpui-kit",
+      "commit": "59d2accb8d55555842071833ddec3c242a609cdd",
+      "vendored_at": "2026-11-24",
+      "files": [
+        "skills/gpui-kit/SKILL.md",
+        "skills/gpui-kit/references/coding-guides.md",
+        "skills/gpui-kit/references/conventions.md",
+        "skills/gpui-kit/references/recipes.md",
+        "skills/gpui-kit/references/usage.md",
+        "skills/gpui-kit/references/gpui/*.md"
+      ]
+    },
+    {
+      "name": "gpui-kit-design-guides",
+      "source_repo": "longbridge/gpui-kit",
+      "source_path": "skills/gpui-kit-design-guides",
+      "commit": "59d2accb8d55555842071833ddec3c242a609cdd",
+      "vendored_at": "2026-11-24",
+      "files": [
+        "skills/gpui-kit-design-guides/SKILL.md",
+        "skills/gpui-kit-design-guides/references/design-guides.md"
+      ]
+    }
+  ]
+}
