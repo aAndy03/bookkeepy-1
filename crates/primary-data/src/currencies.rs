@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/currencies.toml` — ISO 4217 currency list (RULE-DATA-002: the controlled set every
 //! currency code is validated against).
 

@@ -41,3 +41,8 @@ Start at [adr/ADR-0001-monorepo-cargo-workspace.md](adr/ADR-0001-monorepo-cargo-
 - [../references/fintecheng.txt](../references/fintecheng.txt) — *Fintech Engineering
   Handbook* (Voytek Pitula), quoted in doc 06.
 - [../skills/](../skills/) — vendored gpui-kit skill files ([README](../skills/README.md)).
+
+- `registry/code-map.toml` — the code registry (RULE-META-001): SSOT of everything that
+  exists in the codebase, with `active|deprecated|removed` statuses and successors, so
+  deprecations/replacements/refactors are one-place auditable edits. Enforced by
+  `cargo xtask govern meta`; `cargo xtask new-crate` registers new crates automatically.

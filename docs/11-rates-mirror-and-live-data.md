@@ -51,3 +51,12 @@ the mirror only. (ADR-0011 supersedes ADR-0003's network scope; doc 08.)
 With zero packages downloaded the app still works; conversions without any rate produce
 `BK-FX-0002` (user-facing, copyable) prompting the user to download rates or enter a manual
 one. The app never falls back to the network silently.
+
+## Trust & automation (ADR-0023)
+
+The mirror repo runs a scheduled + manual GitHub Actions workflow that fetches the
+sources (BNR first), builds `bookkeepy-rates-package@1` packages, sha256-checksums them
+and **ed25519-signs** each package (secret `RATES_SIGNING_KEY`; public key committed at
+`keys/rates-ed25519.pub.pem`). The app pins that pubkey and refuses any package with a bad
+or missing signature (`BK-RATES-0002`) before checksum/import. Packages stay immutable;
+corrections are `kind = "addendum"` packages.

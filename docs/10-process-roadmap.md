@@ -143,6 +143,45 @@ Findings discovered while coding (recorded per the overlay rule):
 8. Workspace path-deps for not-yet-consumed crates trigger cargo's unused-dependency
    warning → they are declared on first use like any other dep (comment in root Cargo.toml).
 
+## Round-4 decisions (owner approved all, 2026-11-24 — brainstorm A–E + channels + code registry)
+
+Approved and implemented:
+
+1. **OSS surface:** `CHANGELOG.md` (Keep a Changelog), `SECURITY.md` (private reporting
+   via Security Advisories), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Covenant 3.0),
+   `.editorconfig`; repo settings via `gh api` (secret scanning + push protection +
+   vulnerability alerts on, Dependabot off — Renovate only, Wiki off, labels, `main`
+   protection without required checks).
+2. **License hardening:** `SPDX-License-Identifier: GPL-3.0-or-later` on every `.rs`
+   (retrofitted; `xtask new-crate` stamps it; `govern lints` enforces); release assets
+   include `THIRD-PARTY-LICENSES.md` (cargo-about) + `sbom.cdx.json` (cargo-cyclonedx).
+3. **Release engineering:** reproducible release builds (`SOURCE_DATE_EPOCH` =
+   release `published_at`), `codegen-units = 1` in `[profile.release]`; `release.yml`
+   hardened (channel stamp, licenses, SBOM). Downgrade policy: ADR-0022 / RULE-DATA-004
+   / `BK-DATA-0002`.
+4. **Dev/release channels (owner request):** ADR-0021 / RULE-CHANNEL-001 — same code,
+   channel fixed at build time (`BOOKKEEPY_CHANNEL`), dev-only tooling behind the
+   `dev-channel` cargo feature (never compiled into release); About + diagnostic bundles
+   show the channel; updater never crosses channels.
+5. **Code registry (owner request — track everything we code):** ADR-0021-adjacent rule
+   RULE-META-001 — `docs/registry/code-map.toml` is the SSOT of what exists; statuses
+   `active|deprecated|removed` with mandatory `successor`/`removal_note` so deprecate/
+   replace/refactor/remove is a one-place auditable edit; `cargo xtask new-crate`
+   auto-registers; `govern meta` enforces.
+6. **New conventions:** RULE-LOG-001 (structured log fields), RULE-TIME-001 (store UTC,
+   render local), RULE-ERR-005 (severity→UI: toast/dialog/fatal+copy), INV-MONEY-002
+   (rounding half-even at boundaries + explicit rounding account, fintecheng quote in
+   doc 05 §5.1).
+7. **Testing/tooling:** `cargo nextest` in `xtask check` when installed (fallback
+   `cargo test`); cargo-fuzz targets for import parsers at M4; `cargo xtask doctor`,
+   `cargo xtask new-adr`, `cargo xtask licenses`.
+8. **Rates mirror (owner amended: may run on Actions automatically):** `bookkeepy-1-rates`
+   got a scheduled (`0 6 * * *`) + `workflow_dispatch` workflow that fetches BNR, builds
+   spec-conformant packages, sha256-checksums and **ed25519-signs** them (ADR-0023;
+   secret `RATES_SIGNING_KEY`, pubkey pinned at `keys/rates-ed25519.pub.pem`; app refuses
+   bad signatures with `BK-RATES-0002`). TODO for owner: set the `RATES_SIGNING_KEY`
+   secret in the mirror repo settings.
+
 ## Round-3 decisions (owner, 2026-11-24 — CI minutes + failing action fix)
 
 1. **Failing action fixed**: the M0.5 push's `deny (cargo-deny)` job failed — cargo-deny

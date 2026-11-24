@@ -54,6 +54,12 @@ both `manifest.json` and `SHA256SUMS`; verify size; only then install. Any misma
 The rates mirror (`bookkeepy-1-rates`) uses the analogous `bookkeepy-rates-package@1`
 format from doc 11 — the two never mix.
 
+**Channels (RULE-CHANNEL-001, ADR-0021):** the updater never crosses channels — release
+builds update only from published releases; dev builds never auto-update. Release builds
+are stamped `BOOKKEEPY_CHANNEL=release` and are reproducible (`SOURCE_DATE_EPOCH` =
+release `published_at`). Rates packages are ed25519-signed by the mirror's CI and the app
+pins the mirror pubkey (ADR-0023, `BK-RATES-0002`).
+
 ## Rates sync (F14, doc 11)
 
 User clicks **Download rates** (or default-off periodic check) → fetch manifest from the

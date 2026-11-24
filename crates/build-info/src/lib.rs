@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
@@ -19,13 +20,23 @@ pub fn build_unix() -> u64 {
 }
 /// Canonical source repository (ADR-0001).
 pub const SOURCE_URL: &str = "https://github.com/aAndy03/bookkeepy-1";
+/// Build channel, fixed at build time by `BOOKKEEPY_CHANNEL` (ADR-0021): `"dev"` or
+/// `"release"`. The About screen and diagnostic bundles show it; the updater never
+/// crosses channels.
+pub const CHANNEL: &str = env!("BOOKKEEPY_CHANNEL");
+
+/// Whether this is a dev-channel build (dev-only tooling like perf overlays is allowed
+/// to exist here; release builds must never show it — RULE-CHANNEL-001).
+pub fn is_dev() -> bool {
+    CHANNEL == "dev"
+}
 /// Full GPL-3.0-or-later text (item 11): embedded so the app can show it offline
 /// and every release artifact carries it. Licensed GPL-3.0-or-later (root LICENSE).
 pub const LICENSE_TEXT: &str = include_str!("../../../LICENSE");
 
 /// One-line identity used in logs, window titles and diagnostic bundles.
 pub fn full() -> String {
-    format!("Bookkeepy 1 v{VERSION} ({GIT_SHA}) rustc {RUSTC}")
+    format!("Bookkeepy 1 v{VERSION} ({GIT_SHA}, {CHANNEL}) rustc {RUSTC}")
 }
 
 #[cfg(test)]
@@ -43,6 +54,8 @@ mod tests {
         let f = full();
         assert!(f.contains(VERSION));
         assert!(f.contains(GIT_SHA));
+        assert!(f.contains(CHANNEL));
+        assert!(CHANNEL == "dev" || CHANNEL == "release");
         assert_eq!(SOURCE_URL, "https://github.com/aAndy03/bookkeepy-1");
     }
 }

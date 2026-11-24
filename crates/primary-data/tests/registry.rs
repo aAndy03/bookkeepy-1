@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Cross-crate registry tests: everything the code emits is registered in primary data.
 // Tests may unwrap/expect (RULE-ERR-002 applies outside tests only).
 #![allow(clippy::unwrap_used, clippy::expect_used)]

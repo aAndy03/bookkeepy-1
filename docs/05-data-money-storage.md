@@ -33,10 +33,21 @@ rounding account").
 
 ### Seamless, long-lived data (points 14–15, INV-DATA-001)
 
+- **INV-MONEY-002 (rounding, fintecheng "Rounding strategies", adapted offline):** rounding
+  is explicit and happens once, at boundaries (persist/display) — never inside arithmetic;
+  strategy is **half-even** for FX conversion and splits (statistical neutrality), with the
+  residual going to an explicit **rounding account** ("Rounding breaks sums… e.g. an
+  explicit rounding account"); minor units come from `currencies.toml` per currency. The
+  rounding account is a normal account in the ledger so books always balance.
+
 - **Seamless is a principle**: a user on any version can install any later version and the
   data works — 1, 5, 10, 20 years of updates. Enforced by:
   - migrations are **forward-only, additive, never destructive** (no dropped columns/data
     without a superseding ADR + export path);
+  - **RULE-DATA-004 (downgrade, ADR-0022):** the profile DB stores `schema_version`; an app
+    whose max known schema is *lower* than the profile's refuses to open it with a clear
+    dialog + export offer (`BK-DATA-0002`) — never blocks, never writes to the file.
+    Downgrading the app itself is allowed; only too-new profiles are refused;
   - the data-file format is versioned; every release ships an **upgrade-path CI test** that
     opens fixtures produced by every previous tagged release and verifies them (doc 09);
   - backward-compat corpus in `tests/fixtures/` (fintecheng: "today's code must still read

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! In-process publish/subscribe over `EventEnvelope` (item 1, M0.5; ADR-0009).
 //!
 //! Layer note (doc 03 L2): this is the *transient* bus. The *durable* outbox —

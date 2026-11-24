@@ -41,9 +41,11 @@ branch protection + supply-chain config. Brainstorming docs are complete under
 
 ```bash
 cargo xtask check        # the FULL local gate (what CI runs on releases only — see docs/09):
-                         # fmt, clippy -D warnings, tests, governors, bench sanity, cargo deny
+                         # fmt, clippy -D warnings, tests (nextest if installed), governors,
+                         # bench sanity, cargo deny
 cargo xtask hook install # once per clone: fast pre-commit gate (fmt + governors + clippy)
-cargo xtask govern       # the governor tree alone (data/errors/adr/docs/deps/net/…)
+cargo xtask govern       # the governor tree alone (data/errors/adr/docs/deps/net/lints/perf/meta)
+cargo xtask doctor       # env self-check for contributors
 ```
 
 Pushes and PRs run **no** GitHub Actions (minutes budget); releases/prereleases run the

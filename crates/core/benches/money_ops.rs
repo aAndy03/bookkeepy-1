@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Criterion harness (item 15, M0.5): benches live next to the crate they measure
 //! (RULE-MOD-002) and assert against `data/perf-budgets.toml` in CI (`govern perf` +
 //! the `bench` CI job). `-- --test` mode runs each bench once without measuring (CI sanity).

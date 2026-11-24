@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Time types (jiff, with the IANA tz database — primary data as a dependency, doc 04 §4.1).
 //!
 //! fintecheng (doc 06 §6.4) distinguishes **value time** (when it happened) vs **booking

@@ -259,7 +259,36 @@ crates (`govern deps`), rules/ADRs touched, docs canonical places, primary data,
 registries (4.11), tests, locales, CHANGELOG. This section is the mind model for maintaining
 docs and code together.
 
-## 4.15 Change checklist (every PR)
+## 4.15 Build channels (RULE-CHANNEL-001, ADR-0021)
+
+One codebase, two build channels, fixed at **build time** via `BOOKKEEPY_CHANNEL`:
+`cargo xtask dev` builds `dev` (extra tooling: perf monitoring overlays, debug screens,
+verbose logging); release builds (`release.yml`) are `release`. Dev-only code must be
+behind the `dev-channel` cargo feature so it is **not compiled into shipped binaries**.
+The channel is embedded (`bookkeepy-build-info::CHANNEL`), shown in About and in every
+diagnostic bundle; the updater never crosses channels.
+
+## 4.16 Code registry — tracking everything we code (RULE-META-001)
+
+`docs/registry/code-map.toml` is the SSOT for what exists in the codebase: every crate,
+engine, shared engine, widget family and dev-only module is registered at creation
+(`cargo xtask new-crate` appends automatically). Statuses: `active | deprecated | removed`
+— a `deprecated`/`removed` entry must name a `successor` or `removal_note`, so deprecating,
+replacing, refactoring or removing anything is a one-place, auditable edit that old docs,
+ADRs and changelogs still resolve against. `cargo xtask govern meta` fails on unregistered
+crates, dangling paths, invalid statuses or missing successors.
+
+## 4.17 Logging, time, error-surfacing rules (RULE-LOG-001, RULE-TIME-001, RULE-ERR-005)
+
+- **RULE-LOG-001:** every engine log line carries structured fields: `engine`, `job_id`,
+  `profile_id`, `event` kind — logs stay greppable and diagnostic bundles can correlate.
+- **RULE-TIME-001:** store UTC (`jiff::Timestamp`) everywhere; convert to the profile
+  timezone only at render; DST handled by the IANA tzdb (jiff). Never store local time.
+- **RULE-ERR-005 (severity → UI mapping):** `warning` → toast · `error` → dialog (app
+  continues) · `fatal` → dialog with **Copy diagnostic** (`bookkeepy-diagnostic@1`) —
+  surfaced via the shared `notify` helper only, so every screen behaves identically.
+
+## 4.18 Change checklist (every PR)
 
 1. Fits an existing crate/thing folder (4.2)? New concept → new folder; SSOT respected?
    Architecture-affecting → ADR first.
@@ -272,4 +301,5 @@ docs and code together.
    Guards updated (4.11)?
 6. Tests (doc 09) incl. property/golden for money, retry/resume injection for jobs; edge
    cases enumerated in `edge_*.rs` against the doc-10 register; propagation traced (4.14);
-   docs updated in the canonical place; CHANGELOG entry.
+   docs updated in the canonical place; CHANGELOG entry; SPDX header present (`govern
+   lints`); new crates/engines registered in `docs/registry/code-map.toml` (4.16).

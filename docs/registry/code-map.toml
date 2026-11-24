@@ -1,0 +1,105 @@
+# Bookkeepy 1 — code registry (RULE-META-001, ADR-0021/round-4): the SINGLE SOURCE OF
+# TRUTH for "what exists in the codebase". Every crate, engine, pipeline, shared engine,
+# widget family and dev-only module is registered here at creation (`cargo xtask
+# new-crate` appends automatically). `cargo xtask govern meta` fails on: unregistered
+# crate, entry pointing at a missing path, invalid status, or a deprecated/removed entry
+# without a successor or removal note.
+#
+# status: active | deprecated (still compiled, has successor) | removed (gone from code;
+#         entry stays forever so old docs/ADRs/changelogs still resolve).
+# dev_only: true means the module is behind the `dev-channel` cargo feature (RULE-CHANNEL-001)
+#           and must never ship in release builds.
+
+[source]
+kind = "bookkeepy-code-registry"
+note = "Maintained by `cargo xtask new-crate` + hand edits; schema changes require an ADR."
+
+[[item]]
+id = "core"
+path = "crates/core"
+kind = "crate"
+status = "active"
+summary = "Money (i64 minor units + CurrencyCode), ErrorCode, EntityId (uuid v7), time (jiff). No I/O."
+adr = ["ADR-0004"]
+
+[[item]]
+id = "primary-data"
+path = "crates/primary-data"
+kind = "crate"
+status = "active"
+summary = "Loads + validates data/*.toml (include_str! + OnceLock); scopes: currencies, errors, locales, defaults, load-policies, perf-budgets."
+adr = ["ADR-0008"]
+
+[[item]]
+id = "build-info"
+path = "crates/build-info"
+kind = "crate"
+status = "active"
+summary = "Build-time facts (version/git sha/rustc/build time/channel) + embedded GPL text."
+adr = ["ADR-0021"]
+
+[[item]]
+id = "contracts"
+path = "crates/contracts"
+kind = "crate"
+status = "active"
+summary = "EventEnvelope + Actor — the DTO/event contract every engine talks."
+adr = ["ADR-0009"]
+
+[[item]]
+id = "bus"
+path = "crates/bus"
+kind = "crate"
+status = "active"
+summary = "In-process event bus; durable outbox lands with storage (M1)."
+adr = ["ADR-0009"]
+
+[[item]]
+id = "diagnostics"
+path = "crates/diagnostics"
+kind = "crate"
+status = "active"
+summary = "bookkeepy-diagnostic@1 bundles + panic hook (BK-APP-0001)."
+adr = []
+
+[[item]]
+id = "logging"
+path = "crates/logging"
+kind = "crate"
+status = "active"
+summary = "Local-only rotating file logs (RULE-PRIV-001); BK-LOG-0001. Structured fields per RULE-LOG-001."
+adr = []
+
+[[item]]
+id = "profile"
+path = "crates/profile"
+kind = "crate"
+status = "active"
+summary = "Profile registry (profiles.toml, atomic) + data-dir layout (F18)."
+adr = ["ADR-0018"]
+
+[[item]]
+id = "i18n"
+path = "crates/i18n"
+kind = "crate"
+status = "active"
+summary = "Locale lookup over data/locales (EN reference + fallback)."
+adr = []
+
+[[item]]
+id = "xtask"
+path = "xtask"
+kind = "tool"
+status = "active"
+summary = "Governors, new-crate/new-adr scaffolders, hooks, doctor, check, licenses. Dev tool (allow unwrap/expect)."
+adr = []
+
+# Planned engines are registered when their crate is scaffolded (storage M1, ledger M2, …).
+# Deprecated example shape:
+# [[item]]
+# id = "old-thing"
+# path = "crates/old-thing"
+# kind = "crate"
+# status = "deprecated"
+# successor = "new-thing"
+# adr = ["ADR-0024"]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 // xtask is a developer tool, not shipped code: an IO failure should abort the command
@@ -20,6 +21,7 @@
 mod govern;
 mod hook;
 mod scaffold;
+mod tools;
 
 use std::process::ExitCode;
 
@@ -37,6 +39,15 @@ fn main() -> ExitCode {
         },
         Some("hook") => hook::run(args.get(1).map(String::as_str)),
         Some("check") => hook::full_check(),
+        Some("doctor") => tools::doctor(),
+        Some("new-adr") => match args.get(1) {
+            Some(slug) => tools::new_adr(slug),
+            None => {
+                eprintln!("usage: cargo xtask new-adr <kebab-slug>");
+                ExitCode::from(2)
+            }
+        },
+        Some("licenses") => tools::licenses(),
         Some("dev") => {
             println!("xtask dev: lands with M3 (the app binary) — `cargo run -p bookkeepy-app`");
             ExitCode::SUCCESS

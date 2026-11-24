@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/perf-budgets.toml` — performance budgets (RULE-PERF-001, point 7): the SSOT
 //! asserted by criterion benches + `cargo xtask govern perf` so no backend part drifts.
 

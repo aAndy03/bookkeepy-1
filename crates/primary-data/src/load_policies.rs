@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/load-policies.toml` — what loads when; hot/warm/cold tiers; prefetch (point 12,
 //! doc 03). Consumed by the `loadpolicy` crate (from M3+).
 

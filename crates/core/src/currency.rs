@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! ISO 4217 currency codes (ADR-0004, RULE-DATA-002).
 //!
 //! `CurrencyCode` checks the *shape* (3 ASCII letters, uppercased). Checking the code

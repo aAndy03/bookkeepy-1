@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Logging init (item 7, M0.5). Local-only rotating files (daily, kept 14 days) under the
 //! profile's `logs/` dir; `RUST_LOG` overrides the default filter (`info,bookkeepy=debug`).
 //! Nothing is ever sent over the network (RULE-PRIV-001, doc 08): logging is a file sink.

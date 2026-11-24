@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Diagnostic bundle, wire spec `bookkeepy-diagnostic@1` (item 2, M0.5; RULE-ERR-003:
 //! every fatal error surfaces as a copyable bundle the user can paste into a bug report).
 //! A bundle is plain JSON so it can be attached to GitHub issues; `to_copyable_text`

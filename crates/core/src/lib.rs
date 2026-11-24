@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #![forbid(unsafe_code)]
 // INV-MONEY-001 (ADR-0004): no floating-point arithmetic anywhere in this crate.
 #![deny(clippy::float_arithmetic)]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Stable, registry-backed error codes: `BK-<AREA>-<NNNN>` (RULE-ERR-002, doc 04 §4.4).
 //! Every user-facing diagnostic carries one; the text lives in `data/errors.toml` +
 //! locale catalogs, so codes are copyable and localized.

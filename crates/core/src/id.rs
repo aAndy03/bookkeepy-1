@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Entity ids — UUIDv7 (time-ordered), monotonic-ish per process (doc 04 §4.2 naming).
 
 use std::fmt;

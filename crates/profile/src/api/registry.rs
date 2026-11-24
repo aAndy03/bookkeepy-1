@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The profile registry (F18, item 9, M0.5): `profiles.toml` in the app data dir lists
 //! all profiles and which one is active. Profiles are fully isolated (INV-PROF-001);
 //! switching only changes the `active` pointer and touches `last_opened_at`.

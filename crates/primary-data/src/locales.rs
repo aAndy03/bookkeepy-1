@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/locales/*.toml` — locale catalogs (item 8, M0.5; RULE-ERR-002/003, RULE-DATA-003).
 //! One file per locale, `[meta]` + flat `[messages]` (quoted dotted keys). English (`en`)
 //! is the reference locale and the fallback: every key must exist in every shipped locale

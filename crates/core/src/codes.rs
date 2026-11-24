@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Error-code constants for this crate. Every constant must be registered in
 //! `data/errors.toml` (SSOT registry, RULE-ERR-002) — enforced by `cargo xtask govern errors`.
 

@@ -84,3 +84,4 @@ float_arithmetic = "allow"
 [profile.release]
 lto = "thin"
 strip = true
+codegen-units = 1 # smaller/slightly faster release binaries (round-4 item 9)

@@ -23,11 +23,23 @@ jobs:
     name: build + attach release assets
     needs: verify
     runs-on: ubuntu-latest
+    environment: release # protects the signing/upload step
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: release build
-        run: cargo build --workspace --release
+      - name: release build (channel=release, reproducible)
+        env:
+          BOOKKEEPY_CHANNEL: release # ADR-0021: shipped binaries are always the release channel
+          RELEASE_PUBLISHED_AT: ${{ github.event.release.published_at }}
+        run: |
+          export SOURCE_DATE_EPOCH=$(date -u -d "$RELEASE_PUBLISHED_AT" +%s) # reproducible builds (build-info honors it)
+          cargo build --workspace --release
+      - name: third-party licenses + SBOM
+        run: |
+          cargo install cargo-about cargo-cyclonedx --locked --quiet || true
+          cargo xtask licenses || true
+          cargo cyclonedx --format json --output-file sbom.cdx.json || true
+          ls -la THIRD-PARTY-LICENSES.md sbom.cdx.json 2>/dev/null || true
       - name: generate manifest.json + SHA256SUMS (doc 08 wire format v1)
         env:
           TAG: ${{ github.event.release.tag_name }}
@@ -59,6 +71,7 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           gh release upload "$TAG" manifest.json SHA256SUMS bookkeepy-1-*-linux-x86_64.tar.gz --clobber
+          gh release upload "$TAG" THIRD-PARTY-LICENSES.md sbom.cdx.json --clobber 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: release-assets
@@ -66,3 +79,5 @@ jobs:
             manifest.json
             SHA256SUMS
             bookkeepy-1-*-linux-x86_64.tar.gz
+            THIRD-PARTY-LICENSES.md
+            sbom.cdx.json

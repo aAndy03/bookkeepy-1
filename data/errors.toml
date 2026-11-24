@@ -101,3 +101,17 @@ area = "profile"
 severity = "error"
 i18n_key = "err.profile.io"
 summary = "Profile registry or profile directory could not be read/written"
+
+[[error]]
+code = "BK-DATA-0002"
+area = "data"
+severity = "error"
+i18n_key = "err.data.schema_too_new"
+summary = "This profile was written by a newer Bookkeepy — install a newer version, or export the profile from the newer app and import it here"
+
+[[error]]
+code = "BK-RATES-0002"
+area = "rates"
+severity = "error"
+i18n_key = "err.rates.bad_signature"
+summary = "A rates package failed signature verification and was rejected"

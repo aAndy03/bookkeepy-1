@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! On-disk layout (doc 05 §5.2, F18): one app data dir holds `profiles.toml` (the
 //! registry) plus one `profiles/<id>/` tree per profile. Profiles never share data
 //! (INV-PROF-001); the only bridge between them is explicit export/import (F17).

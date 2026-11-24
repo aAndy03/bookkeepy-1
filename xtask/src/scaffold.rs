@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `cargo xtask new-crate <name>` — scaffolds a crate in the doc-04 §4.2 shape so every
 //! crate is mechanically consistent (RULE-MOD-001): api/ surface, forbid-unsafe lib.rs,
 //! README, workspace membership. After scaffolding, add allowed dependency edges in
@@ -43,7 +44,7 @@ pub fn new_crate(name: &str) -> ExitCode {
     std::fs::write(
         src.join("lib.rs"),
         format!(
-            "#![forbid(unsafe_code)]\n#![warn(missing_docs)]\n\
+            "// SPDX-License-Identifier: GPL-3.0-or-later\n#![forbid(unsafe_code)]\n#![warn(missing_docs)]\n\
              #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]\n\n\
              //! `{pkg}` — TODO: what this crate owns (doc 04 §4.2). `api/` is the only public surface.\n\n\
              pub mod api;\n"
@@ -52,7 +53,7 @@ pub fn new_crate(name: &str) -> ExitCode {
     .expect("write lib.rs");
     std::fs::write(
         src.join("api/mod.rs"),
-        "//! Public API of this crate — the only import other crates may use (RULE-SSOT-001).\n",
+        "// SPDX-License-Identifier: GPL-3.0-or-later\n//! Public API of this crate — the only import other crates may use (RULE-SSOT-001).\n",
     )
     .expect("write api/mod.rs");
     std::fs::write(
@@ -81,9 +82,20 @@ pub fn new_crate(name: &str) -> ExitCode {
     new_manifest.push_str(&manifest[insert_at..]);
     std::fs::write(&manifest_path, new_manifest).expect("write root manifest");
 
-    println!("new-crate: created crates/{name} ({pkg}) and registered it in the workspace");
+    // register in the code registry (RULE-META-001) — the SSOT for what exists in the codebase
+    let map_path = root().join("docs/registry/code-map.toml");
+    if let Ok(mut map) = std::fs::read_to_string(&map_path) {
+        map.push_str(&format!(
+            "\n[[item]]\nid = \"{name}\"\npath = \"crates/{name}\"\nkind = \"crate\"\nstatus = \"active\"\nsummary = \"TODO\"\nadr = []\n"
+        ));
+        std::fs::write(&map_path, map).expect("append code-map entry");
+    }
+
     println!(
-        "new-crate: next — add allowed dependency edges for {pkg} in xtask/src/govern.rs, then `cargo xtask govern deps`"
+        "new-crate: created crates/{name} ({pkg}), registered in workspace + docs/registry/code-map.toml"
+    );
+    println!(
+        "new-crate: next — add allowed dependency edges for {pkg} in xtask/src/govern.rs, then `cargo xtask govern`"
     );
     ExitCode::SUCCESS
 }

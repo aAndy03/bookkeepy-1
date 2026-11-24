@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Panic hook (item 2, M0.5; INV-ERR-001): a panic becomes a fatal diagnostic bundle
 //! printed to stderr in copyable form, so a crash is always reportable even before
 //! logging is initialized. Once `bookkeepy-logging` is up, the app can additionally

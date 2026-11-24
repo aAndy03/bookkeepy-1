@@ -9,6 +9,7 @@
 | Generative idempotency | replay whole import batches / API calls twice; assert zero effect the second time |
 | Crash & resume injection | kill pipelines (import, schedule materialization, backup) at each stage; resume; assert exactly-once outcome |
 | Round-trip | serialize→deserialize Money/DTOs/exports; assert equality (no precision loss at boundaries) |
+| Fuzzing (M4+) | `cargo-fuzz` targets for the import parsers (CSV/OFX/QIF) — bank files are hostile input; fuzz before real user data hits them |
 | Golden (`insta`) | reports, statements, export files pinned to reviewed snapshots |
 | Backward compatibility | corpus of old DB files / old-format payloads in `tests/fixtures/`; current code must read them; every migration tested up+down on fixtures |
 | UI | gpui-kit test utilities (see `skills/gpui-kit/references/gpui/test*.md`) for view logic; presenters unit-tested without a window |
@@ -31,13 +32,17 @@ runs — never on ordinary pushes or PRs.** All routine checks run locally on th
 
 - **Local full gate — `cargo xtask check`** (run before pushing / opening a PR):
   `cargo fmt --all --check` · `cargo clippy --workspace --all-targets -- -D warnings` ·
-  `cargo test --workspace` · `cargo xtask govern` (whole governor tree: deps + net
-  allowlist, lints, docs, adr, errors registry ↔ code ↔ **locales**, primary-data
-  validation + ISO referential integrity, perf-bench presence) ·
-  `cargo bench --workspace -- --test` (bench sanity) · `cargo deny check` when
-  cargo-deny is installed locally (SKIP note otherwise; CI always runs it on releases).
+  `cargo nextest run --workspace` (falls back to `cargo test` when nextest isn't
+  installed) · `cargo xtask govern` (whole governor tree: deps + net allowlist, **lints
+  = SPDX headers on all .rs**, docs, adr, errors registry ↔ code ↔ **locales**, meta =
+  code registry `docs/registry/code-map.toml`, primary-data validation + ISO referential
+  integrity, perf-bench presence) · `cargo bench --workspace -- --test` (bench sanity) ·
+  `cargo deny check` when cargo-deny is installed locally (SKIP note otherwise; CI always
+  runs it on releases).
 - **Pre-commit (fast subset)** — `cargo xtask hook install` once per clone, then every
   commit runs fmt + fast governors + clippy via `.githooks/pre-commit`.
+- **`cargo xtask doctor`** — env self-check for contributors (toolchain, hooks, deny,
+  nextest, git identity); see CONTRIBUTING.md.
 
 **On GitHub** (`.github/workflows/`):
 
@@ -48,8 +53,10 @@ runs — never on ordinary pushes or PRs.** All routine checks run locally on th
   banned by omission, duplicates + version wildcards denied, advisories/yanked denied,
   crates.io-only sources — `deny.toml`), `cargo vet` advisory until M2, `bench (sanity)`.
 - `release.yml` — triggers: `release: [published, prereleased]`. Calls `ci.yml`, then
-  builds `--release`, generates `manifest.json` + `SHA256SUMS` (doc 08 wire format v1)
-  and attaches assets to the release. Real installers land with M3/M10
+  builds `--release` with `BOOKKEEPY_CHANNEL=release` + `SOURCE_DATE_EPOCH` (reproducible,
+  ADR-0021), generates `manifest.json` + `SHA256SUMS` (doc 08 wire format v1) plus
+  **`THIRD-PARTY-LICENSES.md`** (`cargo about`) and **`sbom.cdx.json`** (`cargo
+  cyclonedx`), attaches all to the release. Real installers land with M3/M10
   (`packaging/README.md`). Later milestones add to the release gate: offline smoke test
   · **upgrade-path test** over `tests/fixtures/versions/` (INV-DATA-001, points 14–15).
 - Branch protection on `main` (via `gh api`): required PR review (1, CODEOWNERS), no
@@ -58,6 +65,13 @@ runs — never on ordinary pushes or PRs.** All routine checks run locally on th
   check` (PR template checkbox) plus review (fintecheng SDLC, doc 06 §6.7).
 - Dependency updates: Renovate (`.github/renovate.json`, cargo weekly / major monthly) —
   Renovate PRs are reviewed by the owner and verified with the local gate before merge.
+  **Dependabot is disabled** on this repo (Renovate is the single update bot).
+- Repo settings (set via `gh api`, round-4): secret scanning + push protection enabled,
+  vulnerability alerts enabled, Wiki disabled (docs are SSOT in-repo), labels
+  `bug`/`enhancement`/`dependencies`, branch protection on `main` (1 review +
+  CODEOWNERS, no force-push, linear history, no required status checks). Tag protection
+  for `v*` attempted via API (endpoint 404 for this token — set it in Settings → Tags if
+  desired; releases are also gated by the release workflow itself).
 
 M0.5 CI findings (fixed after the first run failed): cargo-deny 0.22 schema —
 `advisories.unmaintained` is a scope (`all`), `yanked` stays a lint level (`deny`),

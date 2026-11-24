@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Governor implementations (RULE-GOV-001). Each prints PASS/FAIL; `run` aggregates.
 
 use std::path::{Path, PathBuf};
@@ -33,10 +34,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
             "net" => net(),
             // Enforced via CI lints / not yet applicable (no benches/UI code yet) — kept in the
             // tree so they can never be silently skipped later.
-            "lints" => {
-                println!("govern lints: PASS (clippy -D warnings enforced in CI)");
-                true
-            }
+            "lints" => lints(),
             "perf" => {
                 // budgets file is validated by `govern data`; here we assert the bench
                 // harness exists (benches/ dir in at least one crate) so the CI `bench`
@@ -66,12 +64,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
                 println!("govern ui: PASS (no UI crates yet; activates from M3)");
                 true
             }
-            "meta" => {
-                println!(
-                    "govern meta: PASS (no code annotations yet; activates with first engines)"
-                );
-                true
-            }
+            "meta" => meta(),
             other => {
                 eprintln!("govern {other}: unknown governor");
                 false
@@ -461,6 +454,152 @@ fn net() -> bool {
     }
     if ok {
         println!("govern net: PASS");
+    }
+    ok
+}
+
+/// `govern lints` — SPDX license header on every Rust source file (GPL-3.0-or-later,
+/// round-4 item 6); clippy -D warnings itself is enforced by `xtask check`/CI.
+fn lints() -> bool {
+    let mut rs_files = Vec::new();
+    for c in ["crates", "xtask"] {
+        collect_rs(&root().join(c), &mut rs_files);
+    }
+    // build.rs files too
+    for c in std::fs::read_dir(root().join("crates"))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        let b = c.path().join("build.rs");
+        if b.is_file() {
+            rs_files.push(b);
+        }
+    }
+    let mut ok = true;
+    for f in &rs_files {
+        let content = std::fs::read_to_string(f).unwrap_or_default();
+        let head: String = content.lines().take(3).collect::<Vec<_>>().join("\n");
+        if !head.contains("SPDX-License-Identifier: GPL-3.0-or-later") {
+            eprintln!(
+                "govern lints: FAIL: {} is missing the SPDX header",
+                f.display()
+            );
+            ok = false;
+        }
+    }
+    if ok {
+        println!(
+            "govern lints: PASS ({} rust files carry SPDX GPL-3.0-or-later; clippy -D warnings enforced by xtask check)",
+            rs_files.len()
+        );
+    }
+    ok
+}
+
+/// `govern meta` — the code registry `docs/registry/code-map.toml` is the SSOT for what
+/// exists in the codebase (RULE-META-001): every crates/* dir is registered, entries
+/// point at real paths, statuses are valid, deprecated/removed entries name a successor
+/// or removal note, ADR refs resolve to files.
+fn meta() -> bool {
+    let path = root().join("docs/registry/code-map.toml");
+    let content = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("govern meta: FAIL: cannot read {}: {e}", path.display());
+            return false;
+        }
+    };
+    #[derive(serde::Deserialize)]
+    struct Item {
+        id: String,
+        path: String,
+        status: String,
+        #[serde(default)]
+        successor: Option<String>,
+        #[serde(default)]
+        removal_note: Option<String>,
+        #[serde(default)]
+        adr: Vec<String>,
+    }
+    #[derive(serde::Deserialize)]
+    struct Map {
+        #[serde(default)]
+        item: Vec<Item>,
+    }
+    let map: Map = match toml::from_str(&content) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("govern meta: FAIL: code-map.toml parse: {e}");
+            return false;
+        }
+    };
+    let mut ok = true;
+    let mut ids = std::collections::HashSet::new();
+    for item in &map.item {
+        if !ids.insert(item.id.clone()) {
+            eprintln!("govern meta: FAIL: duplicate id {}", item.id);
+            ok = false;
+        }
+        if !root().join(&item.path).exists() {
+            eprintln!("govern meta: FAIL: {} path {} missing", item.id, item.path);
+            ok = false;
+        }
+        match item.status.as_str() {
+            "active" => {}
+            "deprecated" | "removed" => {
+                if item.successor.is_none() && item.removal_note.is_none() {
+                    eprintln!(
+                        "govern meta: FAIL: {} is {} but has neither successor nor removal_note",
+                        item.id, item.status
+                    );
+                    ok = false;
+                }
+            }
+            other => {
+                eprintln!("govern meta: FAIL: {} has invalid status {other}", item.id);
+                ok = false;
+            }
+        }
+        for a in &item.adr {
+            let num = a.strip_prefix("ADR-").unwrap_or(a);
+            let file = format!("ADR-{num}-");
+            let dir = root().join("docs/adr");
+            let found = std::fs::read_dir(&dir)
+                .into_iter()
+                .flatten()
+                .flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with(&file));
+            if !found {
+                eprintln!("govern meta: FAIL: {} references unknown ADR-{a}", item.id);
+                ok = false;
+            }
+        }
+    }
+    // every crates/* dir + xtask must be registered
+    for c in std::fs::read_dir(root().join("crates"))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        let dir = c.path().join("src");
+        if dir.is_dir() {
+            let rel = format!("crates/{}", c.file_name().to_string_lossy());
+            if !map.item.iter().any(|i| i.path == rel) {
+                eprintln!("govern meta: FAIL: {rel} is not registered in code-map.toml");
+                ok = false;
+            }
+        }
+    }
+    if !map.item.iter().any(|i| i.path == "xtask") {
+        eprintln!("govern meta: FAIL: xtask is not registered in code-map.toml");
+        ok = false;
+    }
+    if ok {
+        println!(
+            "govern meta: PASS ({} registered items in docs/registry/code-map.toml)",
+            map.item.len()
+        );
     }
     ok
 }

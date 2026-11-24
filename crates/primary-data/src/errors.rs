@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/errors.toml` — the error-code registry (SSOT, RULE-ERR-002, doc 04 §4.4).
 //! `cargo xtask govern errors` checks: format, uniqueness, area↔code match, and that every
 //! code used in code (e.g. `bookkeepy_core::all_error_codes()`) is registered here.

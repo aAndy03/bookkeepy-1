@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The domain event envelope (ADR-0009): every state-changing action in Bookkeepy
 //! produces one `EventEnvelope` on the bus, and the audit engine (F15, M1) persists
 //! envelopes immutably. `kind` is a dotted stable string (`ledger.posted`,

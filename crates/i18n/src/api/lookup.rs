@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Locale lookup (item 8, M0.5). Catalogs are primary data (`data/locales/*.toml`) loaded
 //! by `bookkeepy-primary-data`; this crate only resolves keys. Lookup chain for a key:
 //! requested locale → reference locale (`en`) → the key itself (never panic on a missing

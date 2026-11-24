@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `data/defaults.toml` — default/fallback policies (what happens when user data is missing
 //! or deleted; job retry defaults). Point 2 of the owner: "we have to provide what happens, a
 //! default".

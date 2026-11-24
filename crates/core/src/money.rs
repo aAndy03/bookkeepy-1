@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `Money` — amount in integer minor units + currency (ADR-0004, INV-MONEY-001).
 //!
 //! fintecheng (quoted, doc 06 §6.2): "storing the amount as an integer in its smallest unit

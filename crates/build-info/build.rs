@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Build-time facts embedded into the binary (item 6, M0.5): version, git sha, rustc,
 //! build time. Deterministic when SOURCE_DATE_EPOCH is set (reproducible release builds).
 
@@ -38,6 +39,16 @@ fn build_unix() -> u64 {
 
 fn main() {
     println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
+    println!("cargo:rerun-if-env-changed=BOOKKEEPY_CHANNEL");
+    // ADR-0021 (RULE-CHANNEL-001): the channel is fixed at BUILD time.
+    // `cargo xtask dev` builds with BOOKKEEPY_CHANNEL=dev; release.yml builds with
+    // BOOKKEEPY_CHANNEL=release (default). Dev-only code must additionally be behind the
+    // `dev-channel` cargo feature so it is not even compiled into release binaries.
+    let channel = match std::env::var("BOOKKEEPY_CHANNEL").as_deref() {
+        Ok("dev") => "dev",
+        _ => "release",
+    };
+    println!("cargo:rustc-env=BOOKKEEPY_CHANNEL={channel}");
     println!(
         "cargo:rustc-env=BOOKKEEPY_VERSION={}",
         env!("CARGO_PKG_VERSION")

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Whole-registry validation, run at app startup and by `cargo xtask govern data`.
 
 use crate::{PrimaryDataError, currencies, defaults, errors, load_policies, locales, perf_budgets};
