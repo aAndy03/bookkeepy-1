@@ -17,6 +17,7 @@ bookkeepy-1/                     workspace root
 │   ├── contracts/               DTOs + domain events; UI- and storage-agnostic
 │   ├── bus/                     typed event bus + durable local outbox (crash-safe reactions)
 │   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
+│   ├── reminders/               local reminders/notifications engine (F16) — dismissible, never blocking
 │   ├── storage/                 rusqlite: connection (background thread), migrations, repositories, hash-chained journal
 │   ├── audit/                   append-only audit log + hash-chain verification
 │   ├── ledger/                  double-entry postings, derived balances, reversals
@@ -37,7 +38,7 @@ bookkeepy-1/                     workspace root
 │   ├── updater/                 app updates from main repo Releases (allowed HTTP #1)
 │   ├── app-services/            composition root + brokers; the `api` the UI uses
 │   └── ui/                      gpui-kit views, widgets (Figma-model), presenters, theme
-├── app/                         thin binary: window, DI, run
+├── app/                         thin binary: window, DI, run; **single instance + focus IPC** (RULE-APP-001, ADR-0016)
 ├── xtask/                       governor tree (doc 04 §4.9)
 ├── data/                        primary data (currencies, errors, defaults, load-policies, perf-budgets, theme…)
 ├── tests/                       integration + old-version fixtures (upgrade-path CI)
@@ -94,6 +95,11 @@ demand-driven, governed by one SSOT: `data/load-policies.toml` (consumed by
 - **Cold:** attachment files, downloaded rates packages, old reports — read on demand only.
 - **On app open:** shell + settings + accounts summary + last view only (INV-LOAD-001: the
   user can add a transaction within the budget in `data/perf-budgets.toml` on a cold start).
+  A background self-check job runs `quick_check` + hash-chain verify + invariant guards
+  (ADR-0016); drafts restore with a "Restore draft?" affordance.
+- **Scale:** materialized aggregations (per-account-period balances, category totals) are
+  kept by event-bus subscribers as background jobs and recomputed on demand as fallback;
+  lists are virtualized/paginated; budgets cover 100k+ transaction books.
 - **On navigation/idle:** prefetch per the policy table (next page, rates manifest if
   enabled, index warm-up for the current book).
 - **Minimal local usage tracking:** a local `usage_stats` table (which views, when) used

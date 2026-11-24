@@ -42,8 +42,10 @@
 | `roxmltree` | latest | OFX/QFX XML parsing (no full XML stack) |
 | `directories` | latest | OS data-dir resolution |
 | `tracing` + `tracing-subscriber` + `tracing-appender` | latest | local logs only (never shipped anywhere) |
-| `ureq` (rustls) | latest | the one HTTP client, used **only** by the `updater` crate (RULE-NET-001) |
+| `ureq` (rustls) | latest | the one HTTP client, used **only** by the `updater`/`rates` crates (RULE-NET-001) |
 | `semver` | latest | update version comparison (updater) |
+| `printpdf` (or successor) | latest | PDF rendering for reports — must be actively maintained + GPL-compatible; final choice recorded here at implementation with rationale (RULE-DEP-002 spirit applies: best maintained option) |
+| `opener` | latest | "open data folder" via the OS (actively maintained) |
 | dev: `proptest`, `insta`, `tempfile`, `criterion` | latest | doc 09 testing menu |
 
 Everything else is added later via PR with rationale, per RULE-DEP-001.

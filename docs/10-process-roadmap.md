@@ -1,69 +1,108 @@
-# 10 — Process and roadmap
+# 10 — Process, roadmap, decisions log
 
 ## How we work (long-term collaboration)
 
-1. **You prompt a surface-level wish** ("let me attach receipts to transactions").
-2. **I interpret it as an engineer**: which feature domain (doc 02), which crate owns it
-   (doc 03), which rules apply (doc 04), which fintech principles are touched (doc 06 —
-   quoted), what tests prove it (doc 09).
-3. If the change affects architecture, rules or invariants → an **ADR first**
-   (`docs/adr/`), then an issue describing the change, then a PR implementing it with
-   tests + docs + CHANGELOG.
-4. Nothing merges without CI green and a review. Nothing ships to users except via a
-   tagged GitHub Release.
-
-This loop is what keeps additions, refactors, subtractions and deprecations easy over
-years, not months.
+1. **You prompt a surface-level wish.**
+2. **I interpret it as an engineer**: feature domain (doc 02), owning crate/slice (doc 03),
+   rules (doc 04), quoted fintech principles (doc 06), tests (doc 09).
+3. Architecture/rules/invariants change → **ADR first**, then issue, then PR with tests +
+   docs + CHANGELOG.
+4. Nothing merges without CI green + review. Nothing ships except via tagged GitHub
+   Releases.
 
 ## Roadmap (milestones)
 
 | M | Name | Outcome |
 |---|---|---|
-| M0 | Repo & foundations | This repo: docs, ADRs, primary data, skills, CI skeleton, workspace manifest, `core` (Money/Currency) + `primary-data` crates with tests. **Current phase.** |
-| M1 | Storage skeleton | `storage` crate: connection, migrations, WAL, backup/restore/verify. |
-| M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests "books balance". |
-| M3 | Accounts & transactions UI | first gpui-kit screens (all styled components), app shell, settings, EN/RO. |
-| M4 | Import/export | CSV/OFX/QIF pipeline with mapping, dedup, reconciliation breaks; CSV/JSON export. |
-| M5 | Search | tantivy engine, write-through + rebuild, search UI. |
-| M6 | Budgets & reports | envelopes, cashflow/net-worth reports, golden tests, PDF/CSV export. |
-| M7 | Multi-currency, FX & live rates | per-account currency, base-currency valuation, rounding account; **rates mirror sub-repo automation (BNR first) + app-side `engine_rates`** (download/verify/import packages, manual rates, defaults, rates UI F14) — docs/11. |
-| M8 | Documents & backups UI | attachments, snapshots, verify, open data folder. |
-| M9 | Security | app lock + optional at-rest encryption, privacy statement, integrity check UI. |
-| M10 | Updater & packaging | GitHub Releases updater with checksum verification; installers; first `v0.1.0` release. |
-| M11 | Polish | i18n completeness, theming, performance (gpui-fast), accessibility, docs site. |
+| M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **Current.** |
+| M1 | Storage skeleton | `storage`: connection, migrations, WAL, backup/restore/verify, single-instance lock, crash-recovery self-check. |
+| M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests. |
+| M3 | Accounts & transactions UI | gpui-kit shell, first screens, ui-state, onboarding/empty states, EN/RO. |
+| M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
+| M5 | Search | tantivy engine + query DSL, write-through + rebuild. |
+| M6 | Budgets & reports | envelopes, reports, golden tests, PDF/print. |
+| M7 | Multi-currency, FX & live rates | rates mirror automation (BNR first) + `engine_rates` + rates UI (doc 11). |
+| M8 | Documents, backups UI, reminders | attachments, snapshots, retention reminders, local notifications. |
+| M9 | Scale & polish | materialized aggregations, a11y/keyboard pass, multi-display window mgmt, perf budgets green. |
+| M10 | Updater & packaging | updater, installers/uninstallers (INV-APP-001), first `v0.1.0` release. |
+| M11 | Future security | app lock / at-rest encryption (parked, see below). |
 
-## Parked feature ideas (not now — logic first)
+## Round-2 brainstorming decisions (approved by owner)
 
-Approved-in-principle but **deferred until the owner specifies the user-facing feature in a
-future prompt**: auto-categorization rules on import (2), command palette + global quick-add
-(6), multi-book switcher (8), user-defined report templates (9). Until then, only the
-underlying *logic* patterns (rules as auditable artifacts, palette as a UI widget family,
-books as independent files, templates as user-owned data) are in scope.
+1. **Single instance (RULE-APP-001):** enforced. A second launch does not open a new window —
+   it sends an IPC "focus" message and focuses the existing window. Lock = per-book instance
+   lock with PID + heartbeat, so a crash leaves no stale lock (take-over with a notice).
+2. **Crash recovery & self-check on open:** WAL + single-write transactions guarantee no
+   torn writes. On open the app starts immediately (never blocks, RULE-UX-001) and runs a
+   background self-check job: `quick_check`, hash-chain verify, invariant guards. Drafts
+   from `ui_state` are restored with a "Restore draft?" affordance.
+3. **Uninstall never deletes user data (INV-APP-001):** uninstall removes only the app. The
+   uninstaller shows an **unchecked-by-default** checkbox "also delete my data"; before it,
+   an export screen offers a full export package and explains: *the data stays on this
+   device; reinstalling Bookkeepy finds it unaltered; the export lets you use it in other
+   apps.* Upgrades/reinstalls likewise never alter data (INV-DATA-001).
+4. **Scale:** materialized aggregations (per-account-period balances, category totals…)
+   refreshed by event-bus subscriptions as background jobs, with on-demand recompute
+   fallback; virtualized paginated lists; budgets for 100k+ transaction books in
+   `data/perf-budgets.toml`.
+5. **Local reminders engine:** `reminders` crate — rules (subscription due, budget threshold,
+   backup due, rates stale) → local notifications (in-app + OS notification), dismissible
+   and snoozable, never blocking (RULE-UX-001).
+6. **Window & multi-display management:** window geometry persisted per display id (from
+   `system_context`); restore on the display where it closed; display disconnect → primary
+   display, non-blocking notice; live DPI/scale changes handled via gpui-kit platform events.
+7. **Security threat model** (local attacker, stolen device, tampering): documented in
+   doc 08. **App lock / password and at-rest encryption are parked** — future feature, not in
+   current scope. For now: data file in the user-profile data dir with OS permissions, no
+   secrets stored, hash-chain tamper evidence.
+8. **PDF/print pipeline:** reports render to PDF (maintained GPL-compatible crate, chosen
+   at implementation with rationale — doc 07) + OS print dialog; PDFs are golden-tested.
+9. **Export formats are versioned specs** (doc 05 §5.11) — portability forever.
+   **Search query DSL** (doc 05 §5.7). **Fiscal periods & custom date ranges** in reports
+   (doc 05 §5.12). **Locale-aware number/date input parsing** in the validation engine
+   (doc 04 §4.3).
+10. **First-run onboarding & empty states:** welcome → create/open book → first account →
+    optional import; optional sample book; privacy disclosure dialog at setup (doc 08).
 
-## Open brainstorming topics (what is still to be discussed)
+## Parked feature ideas (owner will specify later; logic patterns only for now)
 
-1. Single-instance & file locking: two app windows on one book; behavior + message.
-2. Crash recovery: WAL + tx guarantees, self-check on open, draft recovery UX.
-3. Uninstall behavior: never touch the data folder; offer full export on uninstall.
-4. First-run onboarding, empty states, optional sample book.
-5. Window & multi-display management (geometry per monitor from `system_context`).
-6. Local reminders/notifications engine (subscriptions, budget thresholds, backup due).
-7. Scale: materialized aggregations for 100k+ transactions, refreshed via events.
-8. PDF/print pipeline for reports.
-9. Accessibility & keyboard-first: focus order, screen-reader labels, shortcuts map.
-10. Fiscal periods & custom reporting date ranges; locale-aware number/date input parsing.
-11. Security threat model (stolen device): app-lock timeout, lockout, encryption scope.
-12. Export schema specs (versioned CSV/JSON formats as docs — SSOT).
-13. Search query language and saved filters.
+Auto-categorization rules on import · command palette + global quick-add · multi-book
+switcher · user-defined report templates · **app lock / at-rest encryption**.
 
-## Docs hygiene (point 16)
+## Edge-case & variant register (classes to enumerate per domain)
 
-Docs follow the same rules as code: modular files, one canonical place per topic
-(RULE-DOC-001), cross-links instead of duplication. ADRs only for real decisions — routine
-changes go to the CHANGELOG, not to new ADRs.
+Concrete edge cases live in `edge_*.rs` adjacent to their engine (ADR-0013); this register
+is the SSOT checklist of *classes* every domain must consider (point 9):
+
+- **Empty states:** no book / no accounts / no transactions / no rates / empty search /
+  empty report period — first-run onboarding covers the user-facing side.
+- **Money:** zero-amount transaction (reject with BK-code) · negative balance (allowed,
+  warned — never clamped) · i64 overflow on huge amounts (reject) · 0-minor-unit (JPY) and
+  3-minor-unit (BHD) currencies · rounding residuals → rounding account · cross-currency
+  two-hop conversion rounding.
+- **Time:** DST transitions, leap days, value date far past/future, backdating across a
+  fiscal period, system clock changes, time-zone change mid-session.
+- **Import:** empty/malformed file, wrong encoding, unknown currency code, duplicate rows,
+  partial failure (resume), file locked by another app.
+- **Rates:** no rate for a date (BK-FX-0002 + defaults chain), source switch (history kept),
+  deleted manual rate (irrecoverable → default), multiplier quotes (HUF per 100).
+- **Jobs:** disk full, network lost mid-download (resume), cancel mid-stage, app killed
+  mid-job, retry storms (backoff), two jobs on the same resource (per-resource mutex).
+- **Storage:** corrupted DB (restore-from-backup UX), read-only data folder, disk full,
+  interrupted migration (tx rollback), file written by a newer app version (refuse with a
+  clear message), older file (migrate — INV-DATA-001).
+- **UI:** window below min size, display disconnected, DPI change, theme switch, very long
+  input, many accounts (virtualization), draft vs posted conflict.
+- **Security/lifecycle:** data folder moved/copied, permissions changed by OS, audit tamper
+  detected (report + continue), stale single-instance lock after crash.
+
+## Docs hygiene (RULE-DOC-001)
+
+Modular files, one canonical place per topic (index: `docs/README.md`), cross-links instead
+of duplication. ADRs only for real decisions; routine changes → CHANGELOG.
 
 ## Definition of done (per milestone)
 
-CI green on all platforms · property/golden tests for money behavior · docs updated
-(features, conventions, ADRs if needed) · CHANGELOG entry · user-facing strings localized
-(EN/RO) · no network code outside `updater` (governor) · README/docs index still accurate.
+CI green on all platforms · property/golden tests for money · job retry/resume tests ·
+docs updated in the canonical place · CHANGELOG entry · EN/RO strings · no HTTP outside
+`updater`/`rates` (governor) · docs index accurate.

@@ -71,7 +71,10 @@ crates/<domain>/
 
 All external input (user input, imported files, rates packages, settings) is validated at
 the boundary before any engine runs; engines re-assert preconditions. Prefer making invalid
-states unrepresentable (smart constructors, newtypes, enums).
+states unrepresentable (smart constructors, newtypes, enums). **Number/date input parsing is
+locale-aware** (decimal comma vs dot, date order per locale, fiscal periods — doc 05 §5.12);
+the validation engine owns the parsing rules (one SSOT module), and invalid input gets a
+BK-coded localized message.
 
 ## 4.4 Errors, warnings, user-facing diagnostics (RULE-ERR-001…004)
 
@@ -208,4 +211,5 @@ issue; branch `<type>/<short-name>`.
 5. Events emitted (4.6)? Async + Job if long-running (4.7/4.8)? UI state via ui-state (4.9)?
    Audit vs history respected (4.10)? Guards updated (4.11)?
 6. Tests (doc 09) incl. property/golden for money and retry/resume injection for jobs;
+   edge cases enumerated in `edge_*.rs` against the register in doc 10 (point 9);
    docs updated in the single canonical place; CHANGELOG entry.

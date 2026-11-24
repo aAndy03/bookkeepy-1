@@ -52,7 +52,19 @@ diagnostics that could contain amounts/payees are opt-in and local-only.
 ## Privacy guarantees (user-facing statement)
 
 - Your financial data never leaves your device. No accounts, no cloud, no sync, no trackers.
-- The data file is plain SQLite (or encrypted with the optional app lock) in a folder you
-  choose — you can read, copy, back up, delete it.
+- The data file is plain SQLite in a folder you choose (inside the user-profile data dir by
+  default, with OS file permissions) — you can read, copy, back up, delete it. (App lock /
+  encryption: parked future feature, doc 10.)
+- Uninstall removes only the app — never your data (INV-APP-001, ADR-0016); the uninstaller's
+  "also delete my data" checkbox is unchecked by default and preceded by a full-export offer.
 - Erasure: delete the data folder/file; inside the app, PII (payees, notes, attachments) is
   separable and deletable without rewriting the immutable ledger (doc 06 GDPR adaptation).
+
+## Threat model (documented; mitigations = current posture + parked features)
+
+- **Local attacker / stolen device:** OS file permissions on the data dir now; app lock +
+  at-rest encryption parked (doc 10, M11).
+- **Tampering with the books:** SHA-256 hash chain over postings + audit; `verify_chain()` on
+  demand and in the self-check job (ADR-0016); tamper → BK-coded fatal surfaced for reporting.
+- **Malware reading open files:** single-instance lock (ADR-0016) + no secrets stored.
+- **Network:** allowlist only (updates + rates mirror); offline smoke test in CI.

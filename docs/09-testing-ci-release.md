@@ -37,7 +37,7 @@ requires a property test before merge.
 - Branch protection on `main`: PRs only, required reviews + required status checks, no
   force-push (fintecheng SDLC, doc 06 §6.7).
 
-## Release
+## Release & packaging
 
 - Semver; `CHANGELOG.md` (Keep a Changelog) updated in the same PR as the change.
 - Tag `vX.Y.Z` → release workflow builds installers (Windows `.exe` per-user installer,
@@ -46,3 +46,10 @@ requires a property test before merge.
 - What version is running, who released it and when is reconstructable from tags +
   changelog (fintecheng: "Deployments are traceable").
 - Installers are unsigned until we add signing; this is documented in the README.
+- **Uninstall (INV-APP-001, ADR-0016):** uninstallers remove only app files, never the data
+  folder; the "also delete my data" option is an unchecked-by-default checkbox, preceded by
+  a full-export offer (export package format: doc 05 §5.11). CI tests the uninstaller against
+  a fixture data folder and asserts the data survives.
+- PDF/print: golden tests for generated PDFs; print via OS dialog.
+- Accessibility: keyboard-only pass + focus-order and screen-reader-label checks per screen
+  (doc 10 item 8/9); CI runs an automated a11y tree check where the platform allows.

@@ -54,6 +54,8 @@ rounding account").
 | `ui_state` | ui | session/interface state (namespace.key → JSON), SSOT schema in the ui-state module (RULE-STATE-001) |
 | `usage_stats` | loadpolicy | local-only prefetch tuning; visible+deletable in Settings→Privacy |
 | `system_context` | diagnostics | local machine context snapshot (doc 08); local-only |
+| `reminder_rules`, `reminder_state` | reminders | local reminders (dismissed/snoozed state) |
+| `agg_*` (materialized) | reporting/storage | aggregations refreshed via events; recompute fallback |
 | `settings`, `schema_migrations` | settings/storage | |
 
 ## 5.3 FX rates — live via the mirror sub-repo + manual (points 2, 2.1–2.4; ADR-0011/0012)
@@ -109,16 +111,39 @@ Explicit idempotency keys scoped to (import batch, source row); re-import posts 
 twice; reconciliation against imported statements by persisted external id; discrepancies
 are first-class "breaks", fixed by correction entries, never by overwriting.
 
-## 5.7 Search index (ADR-0006)
+## 5.7 Search index & query DSL (ADR-0006)
 
 Tantivy, 100% of its API; index dir next to the DB; write-through from events; rebuildable
-from the ledger — a cache, never a source of truth.
+from the ledger — a cache, never a source of truth. The user-facing **query DSL** (small,
+documented, versioned): field filters (`payee:…`, `category:…`, `tag:…`), amount ranges
+(`amount:100..500`), date ranges (`date:2026-01-01..2026-01-31`), boolean `AND/OR/NOT`,
+plain full-text otherwise — parsed by a dedicated parser module into a tantivy query; invalid
+queries produce a BK-coded, localized error, never a panic.
 
-## 5.8 Encryption at rest (optional, phase 2)
+## 5.8 Encryption at rest — PARKED (future feature)
 
-Phase 1: plain user-owned file. Phase 2: optional app lock (Argon2id → AEAD), whole-file or
-field-level with per-record keys for PII → erasure = key deletion ("crypto-shredding");
-attachments/PII live in the mutable store, separate from the immutable journal.
+The owner parked app lock / passphrase and at-rest encryption (doc 10). Current posture:
+plain user-owned SQLite file in the user-profile data dir with OS file permissions; no
+secrets stored; hash-chain tamper evidence (5.5). When un-parked: optional app lock
+(Argon2id → AEAD), whole-file or field-level with per-record keys for PII → erasure = key
+deletion ("crypto-shredding"); attachments/PII live in the mutable store, separate from the
+immutable journal.
+
+## 5.11 Export package format (versioned spec — portability forever)
+
+Full export = one folder/zip `bookkeepy-export-v1/`: `manifest.json` (book id, exported_at,
+app version, file list + SHA-256 each), `book.db` (SQLite copy), `attachments/`,
+`settings.json`, `rates/` (installed packages). CSV/JSON per-report exports carry their own
+versioned schema docs. The spec is the SSOT here; the app imports its own exports back
+(round-trip tested, doc 09). Offered in-app (backup/export UI) and in the uninstaller with the
+"data stays on this device; reinstalling finds it unaltered; this export works in other apps"
+explanation (INV-APP-001).
+
+## 5.12 Periods & fiscal calendar
+
+Settings define fiscal-year start and week start; reports/filters accept calendar or fiscal
+periods and custom date ranges; all period math is timezone-aware (jiff) and DST-safe
+(edge register, doc 10).
 
 ## 5.9 Loading & caching
 

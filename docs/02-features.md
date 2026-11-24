@@ -58,11 +58,14 @@ doc 04 conventions. "User sees" = surface; "Engine does" = hidden machinery.
   erasure.
 
 ## F9 — Security & privacy
-- **User sees:** optional app lock (passphrase); privacy statement; Settings → Privacy →
-  "Data we collect" (every locally collected item listed, viewable, clearable); first-run
-  disclosure dialog; "open data folder"; integrity check.
-- **Engine does:** no transmission of personal data ever (doc 08); optional at-rest
-  encryption / crypto-shredding; audit log records what/when/who/why.
+- **User sees (now):** privacy statement; Settings → Privacy → "Data we collect" (every
+  locally collected item listed, viewable, clearable); first-run disclosure dialog; "open
+  data folder"; integrity check (hash-chain verify); uninstall keeps data (INV-APP-001).
+- **Parked (future feature, owner will specify):** app lock / passphrase, at-rest encryption.
+  Threat model is documented (doc 08); for now the data file sits in the user-profile data
+  dir with OS permissions, no secrets are stored, and the hash chain detects tampering.
+- **Engine does:** no transmission of personal data ever (doc 08); audit log records
+  what/when/who/why and is never app-editable (ADR-0014).
 
 ## F10 — Backups & data management
 - **User sees:** one-click snapshot backup, restore, verify, data-folder location; retention
@@ -94,6 +97,18 @@ doc 04 conventions. "User sees" = surface; "Engine does" = hidden machinery.
 
 ## F15 — Performance & loading behavior (invisible but felt)
 - **User sees:** the app opens fast and lets them add a transaction immediately; lists scroll
-  smoothly; heavy things load when needed.
+  smoothly; heavy things load when needed; stays fast with 100k+ transactions.
 - **Engine does:** `engine_loadpolicy` + `data/load-policies.toml` (hot/warm/cold, prefetch
-  on idle, INV-LOAD-001 cold-start budget); local-only usage stats to tune prefetch.
+  on idle, INV-LOAD-001 cold-start budget); materialized aggregations refreshed by events;
+  local-only usage stats to tune prefetch.
+
+## F16 — Reminders & local notifications
+- **User sees:** gentle, dismissible/snoozable reminders: subscription due, budget threshold
+  reached, backup due, rates stale. Never blocks anything (RULE-UX-001).
+- **Engine does:** `reminders` crate — rule set over ledger/budget/jobs data → in-app + OS
+  notifications; state in `reminder_rules`/`reminder_state`.
+
+## F17 — First-run onboarding & empty states
+- **User sees:** welcome → create or open a book → first account → optional import; optional
+  sample book; privacy disclosure at setup (doc 08); every empty view has a clear next step.
+- **Engine does:** single-instance app lifecycle (ADR-0016), `ui_state` for continuity.
