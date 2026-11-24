@@ -12,6 +12,8 @@
 | Golden (`insta`) | reports, statements, export files pinned to reviewed snapshots |
 | Backward compatibility | corpus of old DB files / old-format payloads in `tests/fixtures/`; current code must read them; every migration tested up+down on fixtures |
 | UI | gpui-kit test utilities (see `skills/gpui-kit/references/gpui/test*.md`) for view logic; presenters unit-tested without a window |
+| Jobs (RULE-JOB-001) | crash/resume injection at every stage; auto-retry up to max attempts then manual-retry surfacing; pause/resume/cancel; startup driver resumes interrupted jobs |
+| Audit (RULE-AUD-001) | tamper-evidence: flipping any audit/journal row breaks `verify_chain()`; attempts to UPDATE/DELETE audit tables fail; app_history retention settings honored |
 
 Levels: unit (per crate) → integration (`tests/`) → golden → property. Money-touching code
 requires a property test before merge.

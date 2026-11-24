@@ -48,7 +48,10 @@ rounding account").
 | `fx_rates` | rates | see 5.3: origin live/manual/adjusted, source, package id, date, rate (string), hash |
 | `rates_packages` | rates | installed packages (id, source, sha256, kind, file path) — immutable once installed |
 | `import_batches`, `import_ids` | import | idempotency keys |
-| `audit_log` | audit | what/when/who/why |
+| `audit_log` | audit | what/when/who/why — **append-only, hash-chained, never editable/deletable via the app** (RULE-AUD-001, ADR-0014) |
+| `app_history` | ui | UI-level action tracking; retention user-configured (keep / N days / on exit / off); clearable; never money truth |
+| `jobs` | jobs | durable job state machines (RULE-JOB-001): state, progress, attempts, payload, result, BK error code |
+| `ui_state` | ui | session/interface state (namespace.key → JSON), SSOT schema in the ui-state module (RULE-STATE-001) |
 | `usage_stats` | loadpolicy | local-only prefetch tuning; visible+deletable in Settings→Privacy |
 | `system_context` | diagnostics | local machine context snapshot (doc 08); local-only |
 | `settings`, `schema_migrations` | settings/storage | |
@@ -90,7 +93,10 @@ Architecture and package format: [11-rates-mirror-and-live-data.md](11-rates-mir
 - Overdrafts representable, never clamped ("clamping… mints money"); warn at entry, detect
   post-factum.
 - Audit trail: what / when / who-or-what (user, import batch, scheduler, updater, rates
-  sync) / why (reference).
+  sync) / why (reference). The audit is distinct from `app_history` (UI tracking with
+  user-set retention) — RULE-AUD-001 / ADR-0014: audit events are immutable; undo/redo never
+  touches anything posted (RULE-UNDO-001); editing a posted transaction posts a linked
+  correction event.
 
 ## 5.5 Integrity & tamper evidence
 

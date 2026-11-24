@@ -27,3 +27,13 @@ behavior = "apply fx_rates.fallback_chain"
 dpi_scale = 1.0
 assume_single_display = true
 perf_tier = "medium"
+
+# Job orchestration defaults (RULE-JOB-001, ADR-0015, doc 04 §4.8). Per-job-type overrides
+# live next to the job pipeline (adjacent file), this table is the global default (SSOT).
+[jobs]
+max_attempts = 3
+backoff_base_ms = 500
+backoff_multiplier = 2.0
+jitter = true
+# after max_attempts: state=failed, manual retry surfaced to the user (toast + Jobs panel)
+surface_manual_retry = true

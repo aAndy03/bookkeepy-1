@@ -16,6 +16,7 @@ bookkeepy-1/                     workspace root
 │   ├── primary-data/            loads data/*.toml via include_str!; typed accessors (ADR-0008)
 │   ├── contracts/               DTOs + domain events; UI- and storage-agnostic
 │   ├── bus/                     typed event bus + durable local outbox (crash-safe reactions)
+│   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
 │   ├── storage/                 rusqlite: connection (background thread), migrations, repositories, hash-chained journal
 │   ├── audit/                   append-only audit log + hash-chain verification
 │   ├── ledger/                  double-entry postings, derived balances, reversals
@@ -105,6 +106,19 @@ Every engine/pipeline/layer registers its budgets in `data/perf-budgets.toml` (S
 criterion benches; `xtask govern perf` + CI compare measurements against budgets, so no part
 of the backend drifts unoptimized. Budgets are contextualized by `diagnostics` (this machine's
 CPU/RAM/GPU/display) where relevant.
+
+## Jobs orchestration (RULE-JOB-001, ADR-0015)
+
+All async long-running work (import, rates sync, backup, exports, index rebuild, migrations)
+is a **Job** in the `jobs` crate — durable, auto-retried (backoff, max attempts), resumable
+after restart, with progress + pause/resume/cancel surfaced in one non-modal Jobs drawer.
+Built once, used everywhere — never inline `cx.spawn` per call site. Details: doc 04 §4.8.
+
+## UI session state (RULE-STATE-001)
+
+Interface state (window geometry per display, last view, filters, drafts…) persists in the
+`ui_state` table via one `ui-state` module, with intuitive per-view and global clearing.
+Never blocks, never touches posted/audited data. Details: doc 04 §4.9.
 
 ## UI stack (ADR-0007)
 

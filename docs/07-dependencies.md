@@ -15,6 +15,11 @@
 - Licenses must be compatible with GPL-3.0-or-later (checked by `cargo deny` in CI);
   `cargo audit` for vulnerabilities, `cargo vet` (or supply-chain review) for trust.
 - No floating-point types in money paths (INV-MONEY-001); no `unsafe` (workspace lint).
+- **System-context collection uses official, actively maintained dependencies only
+  (RULE-DEP-002):** `sysinfo`, `os_info`, `iana-time-zone`, `jiff` (IANA tzdb), and
+  display/GPU info via gpui-kit's own platform APIs (the UI stack's official source).
+  A dependency for this job is chosen only if it is official for the platform concern or
+  demonstrably maintained; the choice + rationale is recorded here and in the PR.
 
 ## Initial dependency set (to be declared in the workspace manifest)
 
@@ -29,7 +34,8 @@
 | `uuid` | latest, v7 + serde | entity ids |
 | `jiff` | latest, serde | civil dates/times (gpui-kit 0.11 itself moved off chrono to jiff); IANA time-zone database ships as a dependency = primary data as a library (point 11) |
 | `iana-time-zone` | latest | OS time-zone detection (local system context, doc 08) |
-| `sysinfo` | latest | CPU/RAM/OS/process info for local diagnostics + perf budgets — local-only, never transmitted (doc 08) |
+| `sysinfo` | latest | CPU/RAM/process info for local diagnostics + perf budgets — local-only, never transmitted (doc 08) |
+| `os_info` | latest | OS name/version for diagnostics + fatal-error reports (doc 08) |
 | `sha2` / `hex` | latest | hash chain tamper evidence (doc 05 §5.5) |
 | `argon2` + `chacha20poly1305` (or `aes-gcm`) + `zeroize` | latest | optional app lock / at-rest encryption (doc 05 §5.8) |
 | `csv` + `encoding_rs` | latest | bank CSV imports incl. Windows-1250 encodings |

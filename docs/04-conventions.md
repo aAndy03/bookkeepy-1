@@ -3,178 +3,209 @@
 Goal: additions, refactors, subtractions and deprecations are easy and safe. Everything is
 standardized, patterned, pipelined, grouped, owned, contextualized, API'd, validated and
 engine'd. Rules have IDs (`RULE-<AREA>-<NNN>`); invariants have IDs (`INV-<AREA>-<NNN>`).
-Repo governors (later: `cargo xtask govern …`, CI) enforce the mechanical ones; guard
-engines + tests enforce the invariants.
+Repo governors (`cargo xtask govern …`, CI) enforce the mechanical ones; guard engines +
+tests enforce the invariants.
 
-## 4.1 Primary data (RULE-DATA-001/002, ADR-0008)
+## 4.1 Primary data (RULE-DATA-001/002/003, ADR-0008)
 
 - Sets of primary data (constants, rules, variables the app is built on) live as data files
-  in `data/*.toml` — e.g. `data/currencies.toml` (ISO 4217). **No such value is ever
-  hardcoded in source code**; code imports it from the `primary-data` crate.
-- Primary data also includes **libraries/dependencies that are data**: the IANA time-zone
-  database (via `jiff`), ISO 4217 (our `currencies.toml`), and later ISO 3166 countries /
-  ISO 639 languages — referenced as dependencies or vendored files, never re-typed in code.
+  under `data/` — e.g. `data/currencies.toml` (ISO 4217). **No such value is ever hardcoded
+  in source code**; code imports it from the `primary-data` crate.
+- Primary data also includes **data-as-dependencies**: the IANA time-zone database (via
+  `jiff`), ISO 4217, later ISO 3166/639 — referenced as dependencies or vendored files,
+  never re-typed in code.
 - Files carry a `[source]` header. The `primary-data` crate loads them via `include_str!`,
   parses once at startup, validates, and exposes typed accessors. Invalid primary data fails
   at startup, loudly.
 - **Referential integrity (RULE-DATA-002):** primary data cross-references by ISO code.
-  Live-rates packages must use codes present in `currencies.toml`; categories reference
-  currency codes; etc. Producers and the app both validate.
-- Shipped/planned: `currencies.toml` (done), `errors.toml` (error-code registry), `defaults.toml`
-  (fallback policies), `load-policies.toml` (what loads when), `perf-budgets.toml` (CI
-  budgets), `theme/*.toml` (UI variables), plus planned `countries.toml`, `languages.toml`,
+  Rates packages must use codes present in `currencies.toml`; etc. Producers and the app
+  both validate.
+- **Primary data is modularized too (RULE-DATA-003):** a scope that will grow becomes a
+  directory, not one crammed file: `data/<scope>/index.toml` is the single entry point
+  listing the scope's files; each file owns one small concern; variants/overrides sit in
+  adjacent files (e.g. `data/currencies/overrides.toml`). The loader merges + validates the
+  whole scope. Same modularization/SSOT/variants principles as code (point 1). Example as
+  scopes grow: `errors.toml` → `data/errors/{index,storage,rates,import,fx}.toml`.
+- Shipped: `currencies.toml`, `errors.toml`, `defaults.toml`, `load-policies.toml`,
+  `perf-budgets.toml`. Planned: `theme/*.toml`, `countries.toml`, `languages.toml`,
   `category-presets.toml`, `default-accounts.toml`.
 - Changing primary data = changelog entry; schema change = ADR.
-- User-level customization (their categories, rates, …) is *not* primary data; it lives in
-  the user's database.
+- User-level data (their categories, rates, …) is *not* primary data; it lives in the DB.
 
 ## 4.2 Modularization and single source of truth (RULE-MOD-001, RULE-SSOT-001, ADR-0013)
 
 Modularization and orchestration are **principles**, not afterthoughts.
 
-- **Folders group; folders nest freely.** File per responsibility. There is no artificial
-  line limit, but files stay small and reusable: as a file grows, split it proactively into
-  a folder of smaller files (3.1).
-- **Variants and edge cases live adjacent to the thing they vary** (3.2): e.g.
+- **Folders group; folders nest freely.** File per responsibility. No artificial line limit,
+  but files stay small and reusable: as a file grows, split it proactively into a folder of
+  smaller files.
+- **Variants and edge cases live adjacent to the thing they vary**: e.g.
   `src/ledger/posting/mod.rs`, `posting/engine.rs`, `posting/variant_transfer.rs`,
   `posting/variant_split.rs`, `posting/edge_case_zero_amount.rs`, `posting/tests.rs`.
-  Small files *extend* the base thing; they never duplicate it.
-- **Single source of truth (RULE-SSOT-001, 3.4):** every concept is defined in exactly one
-  file; everything else `use` / `pub use`es it and links to it. No copied constants, no
-  parallel definitions. UI components follow the same rule: one source component, with
-  variants/properties/edge cases linked to it (see 4.8).
-- Crate skeleton (the *shape*, not a file-cramming rule):
+- **Single source of truth (RULE-SSOT-001):** every concept is defined in exactly one file;
+  everything else `use` / `pub use`es it and links to it. No copied constants, no parallel
+  definitions. Applies to code, primary data (4.1), and UI (4.9).
+- Crate skeleton (shape, not file-cramming):
 
 ```
 crates/<domain>/
 ├── README.md                 ownership, invariants, ADR links
 └── src/
     ├── lib.rs                only `pub mod` re-exports
-    ├── api/mod.rs            the public API (pub fns/traits, DTO re-exports) — the only import other crates use
-    ├── api/<operation>.rs    one file per operation when the API grows
+    ├── api/mod.rs            public API — the only import other crates use
+    ├── api/<operation>.rs    one file per operation as the API grows
     ├── <thing>/              one folder per domain concept
-    │   ├── mod.rs            re-exports
-    │   ├── model.rs          types + smart constructors (invalid states unrepresentable)
-    │   ├── engine.rs         the engine (or engine/<sub>.rs as it grows)
-    │   ├── pipeline/         a pipeline = folder of stage files: stage_01_parse.rs, stage_02_map.rs, …
-    │   ├── guard.rs          guard engine: invariant checks before/after (4.10)
-    │   ├── validate.rs       boundary validation (RULE-VAL-001)
-    │   ├── error.rs          thiserror enum with BK-codes (4.4)
-    │   ├── events.rs         domain events (4.6)
-    │   ├── variant_*.rs      variants, adjacent (3.2)
-    │   ├── edge_*.rs         edge cases, adjacent (3.2)
-    │   └── tests/            unit tests per file group
-    └── … more <thing>/ folders
+    │   ├── mod.rs · model.rs · engine.rs · pipeline/ (stage_01_*.rs …) · guard.rs
+    │   ├── validate.rs · error.rs · events.rs · variant_*.rs · edge_*.rs · tests/
+    └── …
 ```
 
-- **Engine roles (3.3):** engines are specialized — domain engines (`engine_*`), helper
-  engines (`helper_*` — e.g. the validation engine), guard engines (`guard_*` — enforce
-  invariants), broker/facade engines (`broker_*` — the only allowed path for engine↔engine
-  talk, 6/03-architecture), pipelines (`pipeline_*` — staged, resumable flows).
-- `api/` is the crate's contract. Internal refactors never change it without an ADR.
-- Engines take validated input + handles, return `Result<_, DomainError>`; pipelines persist
-  progress per stage so they resume after a crash (fintecheng "full resumability").
+- **Engine roles:** domain engines (`engine_*`), helper engines (`helper_*` — e.g.
+  validation), guard engines (`guard_*` — invariants), broker engines (`broker_*` — the
+  only engine↔engine path), pipelines (`pipeline_*` — staged, resumable).
+- `api/` is the contract; internal refactors never change it without an ADR. Engines take
+  validated input + handles and return `Result<_, DomainError>`; pipelines persist progress
+  per stage (resume after crash).
 
 ## 4.3 Validation (RULE-VAL-001)
 
-- All external input (user input, imported files, packages, settings) is validated at the
-  boundary before any engine runs; engines assert preconditions again. Prefer making
-  invalid states unrepresentable (smart constructors, newtypes, enums).
+All external input (user input, imported files, rates packages, settings) is validated at
+the boundary before any engine runs; engines re-assert preconditions. Prefer making invalid
+states unrepresentable (smart constructors, newtypes, enums).
 
 ## 4.4 Errors, warnings, user-facing diagnostics (RULE-ERR-001…004)
 
-- Each crate defines a `thiserror` enum; every variant carries a **stable code**
-  `BK-<AREA>-<NNNN>`; `?` propagates; the binary converts to `anyhow` at the edge.
-- **Error registry (SSOT):** `data/errors.toml` lists every code with severity and i18n key.
-  A governor (`xtask govern errors`) fails CI if a code in code is missing from the
-  registry, or lacks a message in every shipped locale. Messages render in the chosen
-  language (EN/RO first).
-- **Severity model:** `warning` (toast, app continues) → `error` (dialog, app continues) →
-  `fatal` (dialog with one-click **“Copy diagnostic”**: code + localized message + context +
-  app version + OS; the user can paste it into a GitHub issue). Internally, engines/pipelines
-  keep working until a **fatal** error; all fatal errors are surfaced to the user for
-  reporting (point 8).
+- Each crate has a `thiserror` enum; every variant carries a stable code `BK-<AREA>-<NNNN>`;
+  `?` propagates; `anyhow` at the binary edge.
+- **Registry (SSOT):** `data/errors.toml` lists every code with severity + i18n key.
+  `xtask govern errors` fails CI if a code in code is missing from the registry or lacks a
+  message in every shipped locale. Messages render in the chosen language (EN/RO first).
+- **Severity:** `warning` (toast, app continues) → `error` (dialog, app continues) →
+  `fatal` (dialog + one-click **“Copy diagnostic”**: code + localized message + context +
+  version/OS — paste into a GitHub issue). Internally, engines keep working until a *fatal*
+  error; all fatals are surfaced for reporting.
 - No `unwrap()`/`expect()`/`panic!` outside tests; `dbg!`/`todo!` denied; `unsafe_code =
-  forbid`. Errors are actionable: what failed, which input, what to fix.
+  forbid`. Errors say what failed, which input, what to fix.
 
 ## 4.5 Money (INV-MONEY-001, ADR-0004)
 
-- Never `f64`/`f32`. `Money { amount_minor: i64, currency: CurrencyCode }`; minor units from
-  `data/currencies.toml` (ISO 4217 — not always 2 decimals). Currency codes validated
-  against the primary data at every boundary.
-- Serialization: string or integer minor units, never a bare JSON number.
-- `clippy::float_arithmetic` denied in `core` and all money crates.
+`Money { amount_minor: i64, currency: CurrencyCode }`; minor units from ISO 4217 primary
+data (not always 2 decimals); no floats in money code (`float_arithmetic` denied); serialize
+as string or minor-unit integer, never a bare JSON number.
 
 ## 4.6 Events & ownership (RULE-EVT-001)
 
-- Every state change emits a typed domain event (what / when / who-what / why — the audit
-  fields, doc 06). A `bus` crate dispatches to subscribers: `audit` (append-only),
-  `search` (tantivy write-through), `rates` (index new packages), `ui` (cx.notify).
-  Subscribers are idempotent and durable where needed (local outbox: reactions survive a
-  crash and replay — fintecheng outbox pattern, adapted to one machine).
-- One crate owns each table/entity set; others go through its `api`.
+Every state change emits a typed domain event (what / when / who-what / why). The `bus`
+crate dispatches to subscribers (`audit`, `search`, `rates`, `jobs`, `ui`); subscribers are
+idempotent; reactions that must survive a crash go through a durable local outbox and
+replay. One crate owns each table; others use its `api`.
 
 ## 4.7 Async-first (RULE-ASYNC-001)
 
-- The app works **primarily async**; gpui-kit favors async orchestration and we follow.
-- All engine/pipeline/broker APIs are async (`async fn` / `impl Future`); the UI drives
-  them with `cx.spawn(...)`; storage work runs on the background executor / a dedicated DB
-  thread behind a bounded channel — the UI thread never blocks on I/O or DB.
-- Long-running flows (import, rates download, backup, rebuild) emit progress events and are
-  cancellable; they are resumable (4.2 pipelines).
+The app works **primarily async**. All engine/pipeline/broker APIs are async; the UI drives
+them with `cx.spawn`; storage runs on the background executor / a dedicated DB thread behind
+a bounded channel; the UI thread never blocks on I/O. Long flows emit progress events and are
+cancellable — see 4.8.
 
-## 4.8 UI conventions — the Figma model (RULE-UI-001…004, ADR-0007)
+## 4.8 Jobs orchestration (RULE-JOB-001, ADR-0015)
 
-- UI uses **all** gpui-kit styled components (catalog-first, ADR-0007); usage follows the
-  vendored skills in `skills/gpui-kit/` and `skills/gpui-kit-design-guides/`.
-- We manage our interface the way a large Figma file is managed (point 9): **components,
-  variables, properties, variants linked to a single source of truth.**
-  - *Variables* = theme tokens as primary data (`data/theme/*.toml`) — one file per token
-    group, imported everywhere; never re-typed.
-  - *Components* = our wrappers in `ui/src/widgets/<component>/` — `mod.rs` (source),
-    `variant_*.rs`, `props.rs`, `edge_*.rs` — built on the gpui-kit styled component.
-  - *Properties/variants* map to gpui-kit component props; edge cases sit in adjacent files.
-- `ui` depends only on `app-services::api` + `contracts` (RULE-UI-004); presenters
-  (`ui/src/presenters/<feature>/`) are the SSOT for view models — one per feature, with
-  variants adjacent.
-- One view module per screen: `ui/src/views/<feature>/<screen>/`.
+Async means jobs — and jobs are orchestrated **once, centrally**, never inline per call site
+(gpui-kit provides the async primitives; we wrap them in our own engine so behavior is
+uniform everywhere):
 
-## 4.9 Governors (point 4)
+- Every potentially long/failing async operation is a **Job** handled by the `jobs` crate
+  (`engine_jobs` + `broker_jobs`): import, rates sync, backup/restore, report export,
+  index rebuild, migrations, etc.
+- A Job is a **durable state machine** persisted in the `jobs` table: `id, type, state
+  (queued|running|paused|done|failed|cancelled), progress (fraction + message), attempts,
+  max_attempts, payload, result, error_code, timestamps`. On startup a driver resumes
+  interrupted jobs (fintecheng full resumability).
+- **Auto-retry:** on failure, retry automatically with exponential backoff + jitter up to
+  `max_attempts` (policy per job type in `data/defaults.toml` `[jobs]`). After max attempts:
+  `failed` — **manual retry is surfaced to the user** (toast + Jobs panel entry with a Retry
+  button). The error carries its BK-code.
+- **Progress & control:** every job reports progress events on the bus; the UI shows one
+  shared progress indicator with **pause / resume / cancel** (job control API; cancel is
+  cooperative at stage boundaries). Job types are pipelines (stages persisted), so resume
+  is exact.
+- **UI:** a single Jobs drawer widget (Figma-model component, per-type variant files) —
+  never modal, never blocking (RULE-UX-001, 4.10).
 
-- **Repo governors:** `cargo xtask govern` runs a tree of governors — each governor may have
-  sub-governors: `govern deps` (dependency direction RULE-ARCH-001, RULE-NET-001 — only
-  `updater`/`rates` crates may depend on HTTP), `govern lints`, `govern docs` (docs index
-  accurate, links valid, one canonical doc per topic), `govern adr` (numbering, status),
-  `govern perf` (budgets in `data/perf-budgets.toml` vs criterion benches), `govern errors`
-  (registry ↔ code ↔ locales), `govern data` (primary data validates; ISO referential
-  integrity). CI runs the whole tree.
-- **Logic governors (in the app):** every engine folder has `guard.rs` — a guard engine
-  that checks the crate's invariants before/after operations (fintecheng: runtime checks +
-  post-factum). Guards emit error codes on violation; the audit log records them. The
-  `governor` orchestrates guards per operation.
+## 4.9 UI conventions — the Figma model + session state (RULE-UI-001…004, RULE-STATE-001)
 
-## 4.10 Documentation conventions (point 16)
+- gpui-kit styled components, catalog-first (ADR-0007), per the vendored `skills/`.
+- Figma-style management: **variables** = theme tokens as primary data (`data/theme/*.toml`);
+  **components** = our wrappers in `ui/src/widgets/<component>/` (`mod.rs` source +
+  `props.rs` + `variant_*.rs` + `edge_*.rs`); **presenters** are the SSOT for view models.
+- `ui` depends only on `app-services::api` + `contracts` (RULE-UI-004).
+- **Session/UI state persistence (RULE-STATE-001):** interface state the user changes in a
+  session persists across restarts: window geometry per display (uses `system_context`),
+  last route/view, list filters/sort/page, expanded tree nodes, **form drafts** (debounced
+  autosave), open dialog. Stored in the `ui_state` table (namespace.key → JSON) through the
+  single `ui-state` module (SSOT schema). Not persisted: anything posted/audited, secrets,
+  transient toasts.
+- **Clearing is intuitive and non-destructive:** per-view "Reset view", "Clear unsaved
+  drafts", Settings → "Reset interface state". Clearing never blocks and never touches
+  posted data.
 
-- Docs are modular too: `docs/README.md` is the index; **one canonical file per topic** —
-  cross-link, never duplicate content (RULE-DOC-001). When a topic outgrows its file, split
-  by subtopic and link from the index.
-- ADRs are for **decisions only**, numbered, immutable once accepted (supersede, never edit
-  except status). Don't create ADRs for routine changes — those go in the CHANGELOG.
-- Every public item has doc comments; every crate has a README; `CHANGELOG.md` (Keep a
-  Changelog) gets an entry per user-visible change.
+## 4.10 Audit vs app history vs undo (RULE-AUD-001, RULE-UNDO-001) + never-block (RULE-UX-001, ADR-0014)
 
-## 4.11 Git & CI hygiene (RULE-PROC-001)
+- **`audit_log` — sacred.** Append-only, hash-chained, tamper-evident. Records what / when /
+  who-or-what / why for every **posted** change (ledger postings, corrections/reversals,
+  imports, rates imports, settings/security changes). Once posted, an audit event **cannot be
+  edited or deleted through the app** — not even by the user (the user's erasure right is
+  exercised outside the app, by deleting the whole data file; PII is kept in separate mutable
+  stores, doc 05 §5.8). Verified via `verify_chain()` + `quick_check`. *If the audit can be
+  tampered with, it has no value.*
+- **`app_history` — ordinary tracking.** UI-level actions (views opened, searches run,
+  dialogs) for continuity and prefetch tuning. **Not** money truth. User chooses its
+  behavior in Settings: keep indefinitely / auto-delete every N days / delete on exit / off;
+  clearable anytime.
+- **Undo/redo (RULE-UNDO-001) only affects non-audited state** — drafts, input boxes, filters,
+  UI state (4.9), unposted forms. What undo/redo may touch is defined incrementally as the
+  app grows, but the rule is absolute: **nothing already posted to the audit is ever
+  undoable**. Editing a posted transaction is a *correction*: it posts a linked reversal/
+  adjustment — which itself posts a new audit event (ADR-0010). Example: user records a
+  transaction → audit event A posted; user edits it → correction entry posts audit event B;
+  both remain.
+- **Never block the user (RULE-UX-001):** the app never obstructs or blocks user actions
+  because something hasn't completed (users are lazy; reminders, not force). Backups,
+  rates sync, migrations, self-checks run as background jobs (4.8); overdue items produce
+  dismissible reminders; no modal lockouts; failures → warning + Jobs entry.
 
-- `main` protected: PRs only, required CI + review, conventional commits (`feat:`, `fix:`,
-  `refactor:`, `docs:`, `adr:` …) referencing the issue. Branch: `<type>/<short-name>`.
+## 4.11 Governors
 
-## 4.12 Change checklist (every PR)
+- **Repo governors:** `cargo xtask govern` runs a tree of governors (each may nest):
+  `deps` (dependency direction RULE-ARCH-001; RULE-NET-001 — only `updater`/`rates` may use
+  HTTP), `net` (host allowlist scan), `lints`, `docs` (index accurate, links valid, one
+  canonical doc per topic), `adr`, `perf` (`data/perf-budgets.toml` vs criterion benches),
+  `errors` (registry ↔ code ↔ locales), `data` (primary data validates; ISO referential
+  integrity RULE-DATA-002/003). CI runs the whole tree.
+- **Logic governors (in-app):** every engine folder has `guard.rs` — a guard engine checking
+  the crate's invariants before/after operations (by construction + runtime + post-factum).
+  Guards emit BK-codes on violation; the audit log records them.
 
-1. Fits an existing crate/thing folder (4.2)? New concept → new folder, SSOT respected? If
-   architecture-affecting → ADR first.
-2. New/changed rule or invariant? → register the ID here; governor if mechanical.
-3. Primary data touched? → 4.1 process + RULE-DATA-002 checks.
-4. Boundary validation (4.3)? BK-coded errors + registry + locales (4.4)? Money rules (4.5)?
-5. Events emitted (4.6)? Async (4.7)? Guards updated (4.9)?
-6. Tests (doc 09) incl. property/golden where money is touched; docs updated, single
-   canonical place; CHANGELOG entry.
+## 4.12 Documentation conventions (RULE-DOC-001)
+
+Docs are modular too: `docs/README.md` is the index; **one canonical file per topic** —
+cross-link, never duplicate; split by subtopic when a file outgrows its topic. ADRs are for
+**decisions only**, numbered, immutable once accepted (supersede via new ADR; status edits
+allowed). Routine changes → CHANGELOG, not new ADRs. Every pub item documented; every crate
+has a README.
+
+## 4.13 Git & CI hygiene (RULE-PROC-001)
+
+`main` protected: PRs only, required CI + review, conventional commits referencing the
+issue; branch `<type>/<short-name>`.
+
+## 4.14 Change checklist (every PR)
+
+1. Fits an existing crate/thing folder (4.2)? New concept → new folder; SSOT respected?
+   Architecture-affecting → ADR first.
+2. New/changed rule or invariant? Register the ID; governor if mechanical.
+3. Primary data touched? → 4.1 process (RULE-DATA-002/003).
+4. Boundary validation (4.3)? BK-coded errors + registry + locales (4.4)? Money (4.5)?
+5. Events emitted (4.6)? Async + Job if long-running (4.7/4.8)? UI state via ui-state (4.9)?
+   Audit vs history respected (4.10)? Guards updated (4.11)?
+6. Tests (doc 09) incl. property/golden for money and retry/resume injection for jobs;
+   docs updated in the single canonical place; CHANGELOG entry.

@@ -32,6 +32,30 @@ years, not months.
 | M10 | Updater & packaging | GitHub Releases updater with checksum verification; installers; first `v0.1.0` release. |
 | M11 | Polish | i18n completeness, theming, performance (gpui-fast), accessibility, docs site. |
 
+## Parked feature ideas (not now — logic first)
+
+Approved-in-principle but **deferred until the owner specifies the user-facing feature in a
+future prompt**: auto-categorization rules on import (2), command palette + global quick-add
+(6), multi-book switcher (8), user-defined report templates (9). Until then, only the
+underlying *logic* patterns (rules as auditable artifacts, palette as a UI widget family,
+books as independent files, templates as user-owned data) are in scope.
+
+## Open brainstorming topics (what is still to be discussed)
+
+1. Single-instance & file locking: two app windows on one book; behavior + message.
+2. Crash recovery: WAL + tx guarantees, self-check on open, draft recovery UX.
+3. Uninstall behavior: never touch the data folder; offer full export on uninstall.
+4. First-run onboarding, empty states, optional sample book.
+5. Window & multi-display management (geometry per monitor from `system_context`).
+6. Local reminders/notifications engine (subscriptions, budget thresholds, backup due).
+7. Scale: materialized aggregations for 100k+ transactions, refreshed via events.
+8. PDF/print pipeline for reports.
+9. Accessibility & keyboard-first: focus order, screen-reader labels, shortcuts map.
+10. Fiscal periods & custom reporting date ranges; locale-aware number/date input parsing.
+11. Security threat model (stolen device): app-lock timeout, lockout, encryption scope.
+12. Export schema specs (versioned CSV/JSON formats as docs — SSOT).
+13. Search query language and saved filters.
+
 ## Docs hygiene (point 16)
 
 Docs follow the same rules as code: modular files, one canonical place per topic
