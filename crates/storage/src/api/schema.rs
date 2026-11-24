@@ -14,7 +14,7 @@ use crate::api::conn::Db;
 use crate::api::error::StorageError;
 
 /// Highest schema version this build knows.
-pub const MAX_KNOWN: i64 = 1;
+pub const MAX_KNOWN: i64 = 2;
 
 /// One migration. Append-only — never edit existing entries; "reverts" are compensating
 /// forward migrations (INV-DATA-001), proven by tests/migrations_flow.rs.
@@ -28,8 +28,8 @@ pub struct Migration {
     pub sql: &'static str,
 }
 
-/// Ordered migrations. Append-only — never edit existing entries.
-pub const MIGRATIONS: &[Migration] = &[Migration {
+/// v1 — core tables (meta, migrations, settings, ui_state, audit_log, outbox, jobs).
+pub const MIGRATION_V1: Migration = Migration {
     version: 1,
     name: "v1_core_tables",
     sql: r#"
@@ -80,7 +80,99 @@ pub const MIGRATIONS: &[Migration] = &[Migration {
         updated_at TEXT NOT NULL
     );
     "#,
-}];
+};
+
+/// M2 — the ledger engine's tables (ADR-0009/0010, doc 05 §5.4). Append-only, hash-chained
+/// `journal_entries`/`postings` (UPDATE/DELETE rejected by triggers, like `audit_log`);
+/// `transactions` allows ONLY status updates (money-affecting edits post linked reversals
+/// instead — ADR-0010). Catalog tables (accounts/categories/tags/parties) are mutable but
+/// every change goes through the shared action engines → audited (RULE-SHARED-001).
+pub const MIGRATION_V2_LEDGER: Migration = Migration {
+    version: 2,
+    name: "v2_ledger_tables",
+    sql: r#"
+    CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('asset','liability','equity','income','expense')),
+        currency TEXT NOT NULL,
+        color TEXT,
+        icon TEXT,
+        archived INTEGER NOT NULL DEFAULT 0,
+        is_system INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS journal_entries (
+        id TEXT PRIMARY KEY,
+        tx_id TEXT,
+        kind TEXT NOT NULL CHECK(kind IN ('entry','reversal')),
+        value_ts TEXT NOT NULL,
+        booked_ts TEXT NOT NULL,
+        note TEXT,
+        reversal_of TEXT,
+        prev_hash TEXT NOT NULL,
+        hash TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS journal_entries_tx ON journal_entries(tx_id);
+    CREATE INDEX IF NOT EXISTS journal_entries_reversal ON journal_entries(reversal_of);
+    CREATE TABLE IF NOT EXISTS postings (
+        id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES journal_entries(id),
+        account_id TEXT NOT NULL REFERENCES accounts(id),
+        side TEXT NOT NULL CHECK(side IN ('debit','credit')),
+        amount_minor INTEGER NOT NULL CHECK(amount_minor > 0),
+        currency TEXT NOT NULL,
+        prev_hash TEXT NOT NULL,
+        hash TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS postings_entry ON postings(entry_id);
+    CREATE INDEX IF NOT EXISTS postings_account ON postings(account_id);
+    CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL CHECK(kind IN ('income','expense','transfer')),
+        status TEXT NOT NULL DEFAULT 'cleared'
+            CHECK(status IN ('pending','cleared','reconciled','voided')),
+        value_ts TEXT NOT NULL,
+        entry_ts TEXT NOT NULL,
+        payee_id TEXT,
+        category_id TEXT,
+        note TEXT,
+        entry_id TEXT REFERENCES journal_entries(id),
+        replaces TEXT,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        parent_id TEXT REFERENCES categories(id),
+        account_id TEXT NOT NULL REFERENCES accounts(id),
+        archived INTEGER NOT NULL DEFAULT 0,
+        color TEXT,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tags (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS parties (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tx_tags (
+        tx_id TEXT NOT NULL REFERENCES transactions(id),
+        tag_id TEXT NOT NULL REFERENCES tags(id),
+        PRIMARY KEY (tx_id, tag_id)
+    );
+    "#,
+};
+
+/// Ordered migrations. Append-only — never edit existing entries.
+pub const MIGRATIONS: &[Migration] = &[MIGRATION_V1, MIGRATION_V2_LEDGER];
 
 /// Read the current schema version (0 if the meta table doesn't exist yet).
 pub fn current_version(conn: &Connection) -> Result<i64, StorageError> {
@@ -141,7 +233,37 @@ pub fn migrate_with(
     }
     // audit immutability guards ship with the schema (RULE-AUD-001)
     crate::api::audit::install_guard_triggers(&tx)?;
+    install_ledger_guard_triggers(&tx)?;
     tx.commit()?;
+    Ok(())
+}
+
+/// Ledger immutability guards (ADR-0010, INV-CHAIN-001): `journal_entries` and `postings`
+/// reject UPDATE/DELETE outright; `transactions` rejects everything except `status`
+/// (money-affecting edits post linked reversals instead; status is metadata, audited via
+/// the shared action engines). Idempotent.
+pub fn install_ledger_guard_triggers(conn: &Connection) -> Result<(), StorageError> {
+    conn.execute_batch(
+        r#"
+        CREATE TRIGGER IF NOT EXISTS entries_no_update BEFORE UPDATE ON journal_entries
+        BEGIN SELECT RAISE(ABORT, 'journal_entries is immutable (ADR-0010)'); END;
+        CREATE TRIGGER IF NOT EXISTS entries_no_delete BEFORE DELETE ON journal_entries
+        BEGIN SELECT RAISE(ABORT, 'journal_entries is immutable (ADR-0010)'); END;
+        CREATE TRIGGER IF NOT EXISTS postings_no_update BEFORE UPDATE ON postings
+        BEGIN SELECT RAISE(ABORT, 'postings is immutable (ADR-0010)'); END;
+        CREATE TRIGGER IF NOT EXISTS postings_no_delete BEFORE DELETE ON postings
+        BEGIN SELECT RAISE(ABORT, 'postings is immutable (ADR-0010)'); END;
+        CREATE TRIGGER IF NOT EXISTS tx_only_status BEFORE UPDATE ON transactions
+        WHEN NEW.kind IS NOT OLD.kind OR NEW.value_ts IS NOT OLD.value_ts
+            OR NEW.entry_ts IS NOT OLD.entry_ts OR NEW.payee_id IS NOT OLD.payee_id
+            OR NEW.category_id IS NOT OLD.category_id OR NEW.note IS NOT OLD.note
+            OR NEW.entry_id IS NOT OLD.entry_id OR NEW.replaces IS NOT OLD.replaces
+            OR NEW.created_at IS NOT OLD.created_at
+        BEGIN SELECT RAISE(ABORT, 'transactions: only status may change; edit via reversal (ADR-0010)'); END;
+        CREATE TRIGGER IF NOT EXISTS tx_no_delete BEFORE DELETE ON transactions
+        BEGIN SELECT RAISE(ABORT, 'transactions cannot be deleted; void via reversal (ADR-0010)'); END;
+        "#,
+    )?;
     Ok(())
 }
 
@@ -173,13 +295,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fresh_db_migrates_to_v1() {
+    fn fresh_db_migrates_to_max_known() {
         let tmp = tempfile::tempdir().unwrap();
         let db = Db::open(&tmp.path().join("app.db")).unwrap();
-        assert_eq!(db.schema_version().unwrap(), 1);
+        assert_eq!(db.schema_version().unwrap(), MAX_KNOWN);
         // reopening is idempotent
         let db2 = Db::open(&tmp.path().join("app.db")).unwrap();
-        assert_eq!(db2.schema_version().unwrap(), 1);
+        assert_eq!(db2.schema_version().unwrap(), MAX_KNOWN);
+    }
+
+    #[test]
+    fn ledger_tables_are_immutable_at_db_level() {
+        let tmp = tempfile::tempdir().unwrap();
+        let db = Db::open(&tmp.path().join("app.db")).unwrap();
+        db.with_conn(|c| {
+            c.execute(
+                "INSERT INTO accounts (id, name, type, currency, archived, is_system, created_at) VALUES ('a1','Cash','asset','RON',0,0,'2026-11-24T10:00:00Z')",
+                [],
+            )?;
+            c.execute(
+                "INSERT INTO journal_entries (id, tx_id, kind, value_ts, booked_ts, note, reversal_of, prev_hash, hash, created_at) VALUES ('e1', NULL, 'entry', '2026-11-24T10:00:00Z','2026-11-24T10:00:00Z', NULL, NULL, 'GENESIS', 'h1', '2026-11-24T10:00:00Z')",
+                [],
+            )?;
+            c.execute(
+                "INSERT INTO postings (id, entry_id, account_id, side, amount_minor, currency, prev_hash, hash) VALUES ('p1','e1','a1','debit',100,'RON','GENESIS','h1')",
+                [],
+            )?;
+            // entries/postings reject UPDATE and DELETE
+            assert!(c.execute("UPDATE journal_entries SET note='x' WHERE id='e1'", []).is_err());
+            assert!(c.execute("DELETE FROM postings WHERE id='p1'", []).is_err());
+            // transactions allow status-only updates
+            c.execute(
+                "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at) VALUES ('t1','expense','cleared','2026-11-24T10:00:00Z','2026-11-24T10:00:00Z',NULL,NULL,NULL,'e1',NULL,'2026-11-24T10:00:00Z')",
+                [],
+            )?;
+            c.execute("UPDATE transactions SET status='reconciled' WHERE id='t1'", [])?;
+            assert!(c.execute("UPDATE transactions SET note='x' WHERE id='t1'", []).is_err());
+            assert!(c.execute("DELETE FROM transactions WHERE id='t1'", []).is_err());
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[test]

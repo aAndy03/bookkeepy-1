@@ -19,13 +19,13 @@ bookkeepy-1/                     workspace root
 │   ├── bus/                     typed in-process event bus over the envelope ✅ M0.5; durable local outbox lands with storage (M1)
 │   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
 │   ├── reminders/               local reminders/notifications engine (F16) — dismissible, never blocking
-│   ├── shared/                  SHARED ENGINES (RULE-SHARED-001, registry in doc 04 §4.2): actions/ (rename, archive, duplicate, delete-as-reversal, move, merge, tag, attach, note, status, pin, color/icon, order, export-selection, bulk-apply…) · helpers/ (validate, parse/format, query, paginate, time, diff, selection, undo, i18n, theme, notify, export) · guards/ (ledger_balance, hash_chain, audit_immutable, money, iso_ref, schema) — implemented once, generic over entity, localized via adapters
+│   ├── shared/                  ✅ M2: SHARED ACTION ENGINES (RULE-SHARED-001, registry in doc 04 §4.2): actions/ rename/archive/restore/change_status — one audited implementation, generic over `Actionable`, with `_in_tx` variants for composing engines; helpers/ guards/ land with their consumers
 │   ├── timeline/                engine_timeline: the single source of truth for the global time scope + filters + compare mode (RULE-TL-001, ADR-0019)
-│   ├── storage/                 ✅ M1: rusqlite WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, local live backup/verify/restore/prune, single-instance lock, self-check, ui_state/settings KV, jobs state machine, atomic tx::post, session composition root
-│   ├── audit/                   append-only audit log + hash-chain verification
-│   ├── ledger/                  double-entry postings, derived balances, reversals
-│   ├── transactions/            user transactions → postings; splits; schedules (durable state machines)
-│   ├── catalog/                 categories, tags, parties
+│   ├── storage/                 ✅ M1: rusqlite WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, local live backup/verify/restore/prune, single-instance lock, self-check, ui_state/settings KV, jobs state machine, atomic tx::post(_with), session composition root
+│   ├── audit/                   append-only audit log + hash-chain verification (in storage, M1)
+│   ├── ledger/                  ✅ M2: accounts, catalog (categories/tags/parties), double-entry entries+postings (hash-chained, trigger-guarded), linked reversals, transactions→balanced postings, derived balances, lifecycle (ADR-0024); property tests
+│   ├── transactions/            (folded into ledger in M2) user transactions → postings; splits; schedules (durable state machines) land M2b
+│   ├── catalog/                 (folded into ledger in M2) categories, tags, parties
 │   ├── rates/                   engine_rates: package download/verify/import, source registry, manual rates, fallback defaults
 │   ├── fx/                      valuation/conversion at stored rates, rounding account
 │   ├── import/                  pipeline_import: parse → map → validate → dedup → post → index
@@ -53,7 +53,7 @@ bookkeepy-1/                     workspace root
 
 ## Dependency direction (RULE-ARCH-001)
 
-`core ← primary-data ← contracts ← bus ← storage ← domain engines ← app-services ← ui ← app`;
+`core ← primary-data ← contracts ← bus ← storage ← shared ← ledger ← domain engines ← app-services ← ui ← app`;
 `rates` and `updater` are leaves with the only HTTP deps (RULE-NET-001); `diagnostics` is a
 leaf read-only over the OS. No cycles; UI never touches storage (`updater`/`rates` never
 touch domain engines directly — they go through `app-services`). Enforced by

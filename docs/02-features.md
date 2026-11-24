@@ -14,14 +14,14 @@ machinery (naming the shared engine it uses).
   hard-delete an account with history).
 - **Engine does:** account types drive debit/credit normal balance; balances derived from
   postings, never stored; rename/archive go through the **shared action engines**
-  (`shared::actions::rename` / `archive`), localized here (RULE-SHARED-001).
+  (`shared::actions::rename` / `archive`), localized here (RULE-SHARED-001) — implemented in M2 (bookkeepy-shared).
 
 ## F2 — Transactions
 - **User sees:** add/edit income, expense, transfer; splits; categories, tags, payee, note,
   attachments; value date vs entry date; status (pending/cleared/reconciled); recurring &
   scheduled transactions.
 - **Engine does:** user transactions compile into balanced double-entry postings (splits/fees
-  = extra movements); posted entries immutable — edits post linked reversals; **recurring**
+  = extra movements); posted entries immutable — edits post linked reversals (implemented M2: `reversal_of` + `replaces` chains); **recurring**
   applies to income/expense/transfer and most other actionable things — schedules are bounded,
   lazy projections with reconciled-by-default past occurrences (ADR-0020, RULE-RECUR-001…003,
   doc 05 §5.13).

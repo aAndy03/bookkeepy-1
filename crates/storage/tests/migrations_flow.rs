@@ -14,22 +14,22 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
     let tmp = tempfile::tempdir().unwrap();
     let path = tmp.path().join("app.db");
 
-    // v1 via the normal path, then user data
+    // current schema via the normal path, then user data
     {
         let db = Db::open(&path).unwrap();
-        assert_eq!(db.schema_version().unwrap(), 1);
+        assert_eq!(db.schema_version().unwrap(), schema::MAX_KNOWN);
         ui_set(&db, "window", "0,0,1440,900").unwrap();
     }
 
-    // dev experiment: v2 adds a column, v3 (the "revert") drops it again
+    // dev experiment beyond MAX_KNOWN: v3 adds a column, v4 (the "revert") drops it again
     let experiment = [
         Migration {
-            version: 2,
+            version: 3,
             name: "test_add_ui_note",
             sql: "ALTER TABLE ui_state ADD COLUMN note TEXT",
         },
         Migration {
-            version: 3,
+            version: 4,
             name: "test_revert_ui_note",
             sql: "ALTER TABLE ui_state DROP COLUMN note",
         },
@@ -37,10 +37,10 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
     {
         // a newer dev build applies the experiment through the public machinery
         let mut conn = rusqlite::Connection::open(&path).unwrap();
-        schema::migrate_with(&mut conn, &experiment, 3).unwrap();
+        schema::migrate_with(&mut conn, &experiment, 4).unwrap();
         // re-running is idempotent
-        schema::migrate_with(&mut conn, &experiment, 3).unwrap();
-        assert_eq!(schema::current_version(&conn).unwrap(), 3);
+        schema::migrate_with(&mut conn, &experiment, 4).unwrap();
+        assert_eq!(schema::current_version(&conn).unwrap(), 4);
         // user data survived the add+drop round trip
         let v: String = conn
             .query_row("SELECT value FROM ui_state WHERE key='window'", [], |r| {
@@ -50,7 +50,7 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
         assert_eq!(v, "0,0,1440,900");
     }
 
-    // this build (MAX_KNOWN=1) refuses the v3 profile read-only
+    // this build (MAX_KNOWN=2) refuses the v4 profile read-only
     let err = Db::open(&path).unwrap_err();
     assert_eq!(err.code(), "BK-DATA-0002");
 }

@@ -150,3 +150,66 @@ area = "store"
 severity = "fatal"
 i18n_key = "err.store.audit_broken"
 summary = "The audit log failed verification (tamper detected) — restore from a backup"
+
+[[error]]
+code = "BK-LEDGER-0001"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.unbalanced"
+summary = "The entry does not balance: debits and credits differ per currency"
+
+[[error]]
+code = "BK-LEDGER-0002"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.unknown_account"
+summary = "Unknown account referenced by a posting"
+
+[[error]]
+code = "BK-LEDGER-0003"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.account_archived"
+summary = "The account is archived — restore it first to post new movements to it"
+
+[[error]]
+code = "BK-LEDGER-0004"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.currency_mismatch"
+summary = "Currency mismatch: posting currency must equal the account's currency (multi-currency transfers need an FX rate — not yet supported)"
+
+[[error]]
+code = "BK-LEDGER-0005"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.invalid_reversal"
+summary = "Invalid reversal: entry not found or already reversed"
+
+[[error]]
+code = "BK-LEDGER-0006"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.unknown_catalog"
+summary = "Unknown category, tag or payee referenced"
+
+[[error]]
+code = "BK-LEDGER-0007"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.invalid_transaction"
+summary = "Invalid transaction (missing account/category, or invalid status transition)"
+
+[[error]]
+code = "BK-LEDGER-0008"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.amount_not_positive"
+summary = "Amount must be positive (zero/negative movements are not postings)"
+
+[[error]]
+code = "BK-ACTION-0001"
+area = "action"
+severity = "error"
+i18n_key = "err.action.unknown_entity"
+summary = "Shared action failed: unknown entity or entity kind"

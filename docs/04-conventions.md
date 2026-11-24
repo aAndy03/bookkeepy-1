@@ -205,6 +205,11 @@ drawer (RULE-UX-001).
   audit events (record → event A; edit → correction posts event B).
 - **Never block the user (RULE-UX-001):** reminders are dismissible; background jobs never
   obstruct user actions; no modal lockouts.
+- **Soft delete only (RULE-LIFE-001, ADR-0024):** no hard delete of audited/catalog data.
+  Catalog entities use `archived` (excluded from pickers/forward projections, kept in
+  history); transactions use `voided`, which posts a linked reversal — computed money metrics
+  never filter posted rows by a flag, exclusion happens inside the journal itself
+  (INV-LEDGER-001). SSOT: `bookkeepy-ledger::api::lifecycle`.
 
 ## 4.11 Governors — repo tree + metadata registries (RULE-GOV-001)
 

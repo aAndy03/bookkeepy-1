@@ -111,3 +111,19 @@ kind = "crate"
 status = "active"
 summary = "rusqlite storage engine: WAL conn (autocheckpoint, 0600 unix), forward-only migrations + downgrade refusal + compensating-migration support, durable outbox->bus, hash-chained audit (full + incremental checkpointed verify), crash-safe local live backup/verify/restore/prune, single-instance lock, extended self-check (migrations/orphans/wal/boot_ms), ui_state/settings KV + SSOT validation + snapshot, jobs state machine, atomic tx::post, session::open_session composition root synced to load-policies boot ids (M1, ADR-0005)"
 adr = ["ADR-0005"]
+
+[[item]]
+id = "shared"
+path = "crates/shared"
+kind = "crate"
+status = "active"
+summary = "shared action engines (RULE-SHARED-001): rename/archive/restore/change_status, generic over Actionable, audited, with _in_tx variants for composing engines (M2)"
+adr = []
+
+[[item]]
+id = "ledger"
+path = "crates/ledger"
+kind = "crate"
+status = "active"
+summary = "ledger engine (M2, ADR-0009/0010/0024): accounts, catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings, derived balances, lifecycle SSOT; proptest invariants"
+adr = []

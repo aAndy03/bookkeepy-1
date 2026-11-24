@@ -14,8 +14,24 @@ use crate::api::outbox;
 /// Post an event atomically: outbox + audit in one transaction, then publish to the bus.
 /// Returns the audit seq.
 pub fn post(db: &Db, bus: &Bus, ev: &EventEnvelope) -> Result<i64, StorageError> {
-    let seq = db.with_conn(|c| {
+    let (seq, ()) = post_with(db, bus, ev, |_| Ok(()))?;
+    Ok(seq)
+}
+
+/// Post an event together with a side effect, all in ONE transaction: `f` runs first
+/// (e.g. the ledger inserting entry+postings), then the outbox row and audit row are
+/// appended, then commit, then the envelope is published to the bus. A crash before
+/// commit rolls everything back; a crash after commit is healed by `publish_pending`.
+/// Returns the audit seq and `f`'s value.
+pub fn post_with<R>(
+    db: &Db,
+    bus: &Bus,
+    ev: &EventEnvelope,
+    f: impl FnOnce(&rusqlite::Transaction) -> Result<R, StorageError>,
+) -> Result<(i64, R), StorageError> {
+    let (seq, r) = db.with_conn(|c| {
         let tx = c.transaction()?;
+        let r = f(&tx)?;
         outbox::enqueue(&tx, ev)?;
         let seq = audit::append(
             &tx,
@@ -27,10 +43,10 @@ pub fn post(db: &Db, bus: &Bus, ev: &EventEnvelope) -> Result<i64, StorageError>
             &ev.payload.to_string(),
         )?;
         tx.commit()?;
-        Ok(seq)
+        Ok((seq, r))
     })?;
     outbox::publish_pending(db, bus)?;
-    Ok(seq)
+    Ok((seq, r))
 }
 
 #[cfg(test)]

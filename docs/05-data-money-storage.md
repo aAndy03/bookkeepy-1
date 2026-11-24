@@ -158,20 +158,31 @@ Architecture and package format: [11-rates-mirror-and-live-data.md](11-rates-mir
   internally where possible; conversion keeps full precision, rounds once at the boundary,
   residual → rounding account.
 
-## 5.4 The ledger (ADR-0009/0010)
+## 5.4 The ledger (ADR-0009/0010) — implemented in M2 (`bookkeepy-ledger` + storage v2)
 
 - Double-entry: "money is only moved, never created or destroyed"; external world gets
-  dedicated accounts; balances derived, never stored; one transaction → many postings.
-- Posted entries **immutable**: append-only tables, no mutating API, SHA-256 hash chain
-  (verify via `engine_audit::verify_chain()`); corrections = linked reversals/corrections,
-  fix-forward; value date + booking date both stored; reports use value date.
+  dedicated accounts (each category is backed by a hidden system income/expense account, so
+  user transactions compile into balanced postings); balances derived, never stored; one
+  transaction → many postings. INV-LEDGER-001 enforced at post time per currency AND
+  property-tested for any journal prefix (`crates/ledger/tests/properties.rs`).
+- Posted entries **immutable**: `journal_entries`/`postings` append-only with DB triggers
+  (UPDATE/DELETE aborted) + SHA-256 hash chains per table (`entries::verify_chains`);
+  corrections = linked reversals (`reversal_of`), fix-forward; value date + booking date
+  both stored (reversals keep the original's value date, so the trial balance holds for any
+  value-date prefix); reports use value date. `transactions` allows ONLY `status` updates
+  at DB level — money-affecting edits post reversal + replacement (`replaces` chain).
 - Overdrafts representable, never clamped ("clamping… mints money"); warn at entry, detect
   post-factum.
 - Audit trail: what / when / who-or-what (user, import batch, scheduler, updater, rates
-  sync) / why (reference). The audit is distinct from `app_history` (UI tracking with
-  user-set retention) — RULE-AUD-001 / ADR-0014: audit events are immutable; undo/redo never
-  touches anything posted (RULE-UNDO-001); editing a posted transaction posts a linked
-  correction event.
+  sync) / why (reference) — every ledger/shared action runs in ONE transaction with its
+  outbox + audit rows (`storage::tx::post_with`). RULE-AUD-001 / ADR-0014: audit events are
+  immutable; undo/redo never touches anything posted (RULE-UNDO-001); editing a posted
+  transaction posts a linked correction event.
+- **Soft delete (RULE-LIFE-001, ADR-0024):** archived catalog entities = excluded from
+  pickers/new entries and forward projections, kept in history; `voided` transactions are
+  excluded from computed money metrics via their linked reversal entry (never by filtering
+  posted rows); pending/planned (non-posted) items are excluded from projections by status
+  directly. SSOT: `bookkeepy-ledger::api::lifecycle`.
 
 ## 5.5 Integrity & tamper evidence
 

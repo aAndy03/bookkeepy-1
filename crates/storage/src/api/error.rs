@@ -70,6 +70,12 @@ pub enum StorageError {
         /// The offending key.
         key: String,
     },
+    /// A foreign engine error carried through a `with_conn`/`post_with` closure
+    /// (generic code BK-STORE-0001; the real code travels inside — downcast to recover it,
+    /// see `bookkeepy-ledger`'s `from_storage`). Used so semantic errors keep their
+    /// BK-code across the transaction boundary.
+    #[error(transparent)]
+    Foreign(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl StorageError {
@@ -86,6 +92,7 @@ impl StorageError {
             StorageError::Profile(_) => "BK-PROFILE-0001",
             StorageError::Log(_) => "BK-LOG-0001",
             StorageError::UnknownSetting { .. } => "BK-DATA-0003",
+            StorageError::Foreign(_) => "BK-STORE-0001",
         }
     }
 }

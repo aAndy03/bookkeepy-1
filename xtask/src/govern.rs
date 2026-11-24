@@ -315,6 +315,26 @@ fn deps() -> bool {
     );
     allowed.insert("bookkeepy-primary-data", vec!["bookkeepy-core"]);
     allowed.insert(
+        "bookkeepy-shared",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-contracts",
+            "bookkeepy-bus",
+            "bookkeepy-storage",
+        ],
+    );
+    allowed.insert(
+        "bookkeepy-ledger",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-contracts",
+            "bookkeepy-bus",
+            "bookkeepy-storage",
+            "bookkeepy-primary-data",
+            "bookkeepy-shared",
+        ],
+    );
+    allowed.insert(
         "bookkeepy-storage",
         vec![
             "bookkeepy-core",

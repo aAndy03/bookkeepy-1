@@ -3,6 +3,8 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/ledger",
+    "crates/shared",
     "crates/storage",
     "crates/build-info",
     "crates/i18n",
@@ -43,6 +45,9 @@ bookkeepy-bus = { path = "crates/bus" }
 bookkeepy-profile = { path = "crates/profile" }
 bookkeepy-logging = { path = "crates/logging" }
 bookkeepy-diagnostics = { path = "crates/diagnostics" }
+bookkeepy-shared = { path = "crates/shared" }
+bookkeepy-ledger = { path = "crates/ledger" }
+bookkeepy-storage = { path = "crates/storage" }
 # bookkeepy-i18n gets its path entry here on first use by another crate (cargo 1.100 warns
 # on unused workspace deps).
 # Foundation (in use now)

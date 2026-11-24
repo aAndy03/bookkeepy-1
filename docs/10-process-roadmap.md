@@ -17,7 +17,7 @@
 | M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **DONE 2026-11-24 — see "M0 completed" below.** |
 | M0.5 | Repo-grade foundation | contracts+bus, diagnostics+panic hook, deny/vet/Renovate, branch protection+templates, `xtask new-crate`, build-info, logging, i18n pipeline, profile registry, GPL embed, updater wire spec, fixtures structure, gitattributes+pre-commit, criterion harness. **DONE 2026-11-24 — see "M0.5 completed" below.** |
 | M1 | Storage skeleton | ✅ DONE 2026-11-24 — `storage` crate: WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, backup/verify/restore, single-instance lock, self-check, KV. See "M1 completed" below. |
-| M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests. |
+| M2 | Ledger engine | ✅ DONE 2026-11-24 — `ledger` + `shared` crates + storage v2: double-entry postings (hash-chained, trigger-guarded), derived balances, linked reversals, transactions→balanced postings, shared audited actions, lifecycle/soft-delete (ADR-0024), proptest invariants. See "M2 completed" below. |
 | M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
 | M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
 | M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
@@ -424,3 +424,40 @@ diagnostics bundle attachment on fatal errors (M2, app shell).
 Tests: 15 storage unit + 2 integration (`session_flow`, `migrations_flow`), bus panic
 isolation, boot-subsequence invariant, primary-data keys↔defaults sync. Full
 `cargo xtask check` green (fmt, clippy -D warnings, tests, govern ×10, deny).
+
+## M2 completed (2026-11-24) — ledger engine + shared action engines
+
+`crates/shared` (`bookkeepy-shared`, RULE-SHARED-001) and `crates/ledger`
+(`bookkeepy-ledger`, ADR-0009/0010), plus storage migration **v2** (`MAX_KNOWN=2`):
+
+- storage v2 tables: `accounts`, `journal_entries`, `postings`, `transactions`,
+  `categories`, `tags`, `parties`, `tx_tags` + DB triggers: entries/postings reject
+  UPDATE/DELETE; `transactions` allows ONLY `status` updates. `tx::post_with` runs a side
+  effect + outbox + audit in ONE transaction, then publishes. `StorageError::Foreign`
+  carries engine errors across closure boundaries without losing their BK-code.
+- `shared::actions`: `rename` / `archive` / `restore` / `change_status`, generic over
+  `Actionable` with a table allowlist; each has an `_in_tx` variant for composing engines.
+  Every action = column change + audit + outbox atomically, then bus event.
+- `ledger::accounts`: typed accounts (asset/liability/equity/income/expense, normal-balance
+  semantics), currency validated against `currencies.toml`; rename/archive via shared.
+- `ledger::catalog`: categories (each backed by a hidden system account so transactions
+  balance), tags, parties; archive = soft delete.
+- `ledger::entries`: `post` (validates positive amounts, known/non-archived accounts,
+  currency match, per-currency balance — INV-LEDGER-001), `reverse` (linked reversal,
+  keeps original value_ts), per-table SHA-256 chains + `verify_chains`.
+- `ledger::transactions`: income/expense/transfer compile to balanced postings; statuses
+  pending/cleared/reconciled/voided with validated transitions; `voided` posts the linked
+  reversal in the same transaction; `replace` = reversal + replacement (`replaces` chain).
+- `ledger::balances`: derived balances (signed per normal balance, `as_of` on value_ts),
+  trial balance per currency, `assert_trial_balance`.
+- `ledger::lifecycle` (ADR-0024, RULE-LIFE-001 — the soft-delete SSOT): archived catalog
+  entities are excluded from pickers/forward projections but kept in history; `voided`
+  transactions are excluded from computed money metrics VIA THE JOURNAL (linked reversal),
+  never by filtering posted rows; non-posted items are excluded by status directly.
+- New BK codes BK-LEDGER-0001..0008 + BK-ACTION-0001 (+ en/ro locales). New edges:
+  storage ← shared ← ledger (govern deps PASS).
+- Tests: unit (accounts/catalog/entries/transactions/balances/shared actions) +
+  `tests/properties.rs` proptest: trial balance holds after EVERY op (any prefix),
+  reversal restores exact prior balances, both chains verify after every op.
+- Docs: ADR-0024, doc 04 §4.10 (RULE-LIFE-001), doc 05 §5.4 rewritten to the implemented
+  reality, doc 03 crate tree/direction, code-map. Full `cargo xtask check` green.

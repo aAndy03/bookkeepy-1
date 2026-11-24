@@ -127,6 +127,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bookkeepy-ledger"
+version = "0.1.0"
+dependencies = [
+ "bookkeepy-bus",
+ "bookkeepy-contracts",
+ "bookkeepy-core",
+ "bookkeepy-primary-data",
+ "bookkeepy-shared",
+ "bookkeepy-storage",
+ "hex",
+ "proptest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "bookkeepy-logging"
 version = "0.1.0"
 dependencies = [
@@ -158,6 +178,20 @@ dependencies = [
  "tempfile",
  "thiserror",
  "toml",
+]
+
+[[package]]
+name = "bookkeepy-shared"
+version = "0.1.0"
+dependencies = [
+ "bookkeepy-bus",
+ "bookkeepy-contracts",
+ "bookkeepy-core",
+ "bookkeepy-storage",
+ "rusqlite",
+ "serde_json",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
