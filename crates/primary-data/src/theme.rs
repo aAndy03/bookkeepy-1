@@ -78,6 +78,12 @@ pub struct SemanticColors {
     pub bg_hover: String,
     /// Selected row/list item.
     pub bg_selected: String,
+    /// Flat control fill — neutral/default buttons (ATOMS · 01).
+    pub bg_control: String,
+    /// Hovered/pressed neutral control; focused menu row.
+    pub bg_control_hover: String,
+    /// Dropdown/menu/calendar panels (MOLECULES · 01/03).
+    pub bg_popover: String,
     /// Modal scrim (black @ 60%).
     pub overlay: String,
     /// Default body text.
@@ -165,6 +171,9 @@ impl SemanticColors {
             ("bg_chrome", &self.bg_chrome),
             ("bg_hover", &self.bg_hover),
             ("bg_selected", &self.bg_selected),
+            ("bg_control", &self.bg_control),
+            ("bg_control_hover", &self.bg_control_hover),
+            ("bg_popover", &self.bg_popover),
             ("overlay", &self.overlay),
             ("fg", &self.fg),
             ("fg_primary", &self.fg_primary),
@@ -269,8 +278,10 @@ pub struct Radii {
     pub mini: u32,
     /// List rows, dropdown/menu items.
     pub item: u32,
-    /// Buttons, inputs, selects, cards-in-lists, window frame.
+    /// Buttons, inputs, selects at the 32px scale (ATOMS · 01: rx 6).
     pub control: u32,
+    /// Large controls (40px buttons/inputs): ATOMS · 01 size scale draws rx 8.
+    pub control_lg: u32,
     /// Cards, menus, popovers, date pickers.
     pub card: u32,
     /// Dialogs, sheets, alert dialogs.
@@ -539,7 +550,8 @@ mod tests {
         assert_eq!(light.bg, "#ededed");
         assert_eq!(dark.accent, super::colors(super::Mode::Light).accent);
         assert_eq!(super::spacing().grid, 4);
-        assert_eq!(super::radii().control, 8);
+        assert_eq!(super::radii().control, 6);
+        assert_eq!(super::radii().control_lg, 8);
         let body = super::style("body").unwrap();
         assert_eq!(body.size_px, 13);
         assert!(super::style("nonexistent").is_none());

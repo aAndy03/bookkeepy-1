@@ -6,8 +6,12 @@
 use gpui_kit::component::button::{Button, ButtonGroup, ButtonVariants as _, Toggle};
 use gpui_kit::component::clipboard::Clipboard;
 use gpui_kit::component::link::Link;
-use gpui_kit::component::{Disableable as _, IconName, Selectable as _, Sizable as _};
+use gpui_kit::component::{Disableable as _, IconName, Selectable as _};
 use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, ParentElement as _, Window};
+
+use bookkeepy_ui::api::language::{
+    ControlSize, button_size, solid_accent, solid_danger, solid_success,
+};
 
 use crate::app::{Gallery, tr};
 use crate::sections::Layer;
@@ -35,6 +39,7 @@ impl gpui_kit::Render for Section {
         cx: &mut gpui_kit::Context<'_, Self>,
     ) -> impl IntoElement {
         let _ = Layer::Atoms;
+        let mode = cx.global::<crate::app::Prefs>().mode;
         let empty: Vec<gpui_kit::AnyElement> = Vec::new();
         section_page(
             cx,
@@ -82,12 +87,44 @@ impl gpui_kit::Render for Section {
                 .into_any_element(),
                 demo_card(
                     cx,
-                    "gallery.atoms.button.sizes",
+                    "gallery.atoms.button.solid",
+                    // The design's solid functional commits — seats gpui's variant API
+                    // doesn't carry (its Danger/Success variants are soft), built by the
+                    // ui crate's language builders from the theme tokens of the active
+                    // mode (RULE-UI-005: no color originates here).
                     demo_row([
-                        Button::new("b-xs").xsmall().label("XS").into_any_element(),
-                        Button::new("b-sm").small().label("S").into_any_element(),
-                        Button::new("b-md").label("M").into_any_element(),
-                        Button::new("b-lg").large().label("L").into_any_element(),
+                        solid_accent(Button::new("b-solid-accent"), mode)
+                            .label(tr(cx, "gallery.common.save"))
+                            .into_any_element(),
+                        solid_danger(Button::new("b-solid-danger"), mode)
+                            .label(tr(cx, "gallery.common.delete"))
+                            .into_any_element(),
+                        solid_success(Button::new("b-solid-success"), mode)
+                            .label(tr(cx, "gallery.atoms.button.success"))
+                            .into_any_element(),
+                    ])
+                    .into_any_element(),
+                )
+                .into_any_element(),
+                demo_card(
+                    cx,
+                    "gallery.atoms.button.sizes",
+                    // The design's control-size scale (ATOMS · 01: 20/24/32/40,
+                    // rx 4/6/6/8) applied through the components' own size + rounded
+                    // APIs — gpui's built-in sizes stop at 32.
+                    demo_row([
+                        button_size(Button::new("b-xs"), ControlSize::XSmall)
+                            .label("XS")
+                            .into_any_element(),
+                        button_size(Button::new("b-sm"), ControlSize::Small)
+                            .label("S")
+                            .into_any_element(),
+                        button_size(Button::new("b-md"), ControlSize::Medium)
+                            .label("M")
+                            .into_any_element(),
+                        button_size(Button::new("b-lg"), ControlSize::Large)
+                            .label("L")
+                            .into_any_element(),
                     ])
                     .into_any_element(),
                 )

@@ -90,6 +90,7 @@ name = "Română"
 
 "gallery.atoms.button.variants" = "Variante"
 "gallery.atoms.button.sizes" = "Dimensiuni"
+"gallery.atoms.button.solid" = "Acțiuni pline"
 "gallery.atoms.button.states" = "Stări"
 "gallery.atoms.button.group" = "Grup de butoane"
 "gallery.atoms.button.link" = "Buton-link"

@@ -15,6 +15,8 @@ use gpui_kit::component::select::{Select, SelectState};
 use gpui_kit::component::time_field::{TimeField, TimeFieldState};
 use gpui_kit::{AnyView, AppContext as _, Context, Entity, IntoElement, SharedString, Window};
 
+use bookkeepy_ui::api::language::{ControlSize, color_picker_size};
+
 use crate::app::{Gallery, tr};
 use crate::sections::layout::{demo_card, demo_row, section_page};
 
@@ -31,6 +33,8 @@ pub struct Section {
     month: Entity<CalendarState>,
     time: Entity<TimeFieldState>,
     category: Entity<ColorPickerState>,
+    /// Second swatch state for the dense (Small) scale demo of the one size-aware picker.
+    category_sm: Entity<ColorPickerState>,
 }
 
 pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
@@ -57,6 +61,9 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
         let time = cx.new(|cx| TimeFieldState::new(window, cx));
         let category =
             cx.new(|cx| ColorPickerState::new(window, cx).default_value(cx.theme().primary));
+        // The dense-scale demo rides the same control ladder (ATOMS · 01: 24px).
+        let category_sm =
+            cx.new(|cx| ColorPickerState::new(window, cx).default_value(cx.theme().accent));
         Section {
             kind,
             tags,
@@ -64,6 +71,7 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
             month,
             time,
             category,
+            category_sm,
         }
     })
     .into()
@@ -110,9 +118,20 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.molecules.pickers.color_picker.caption",
-                        ColorPicker::new(&self.category)
-                            .label(tr(cx, "gallery.molecules.pickers.color_picker.label"))
+                        // Left: the standard 32px swatch. Right: the design's dense
+                        // 24px scale step, applied through the picker's own `Sizable`
+                        // API via the ui crate's language scale.
+                        demo_row([
+                            ColorPicker::new(&self.category)
+                                .label(tr(cx, "gallery.molecules.pickers.color_picker.label"))
+                                .into_any_element(),
+                            color_picker_size(
+                                ColorPicker::new(&self.category_sm),
+                                ControlSize::Small,
+                            )
                             .into_any_element(),
+                        ])
+                        .into_any_element(),
                     )
                     .into_any_element(),
                 ])

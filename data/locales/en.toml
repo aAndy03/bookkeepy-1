@@ -92,6 +92,7 @@ name = "English"
 
 "gallery.atoms.button.variants" = "Variants"
 "gallery.atoms.button.sizes" = "Sizes"
+"gallery.atoms.button.solid" = "Solid actions"
 "gallery.atoms.button.states" = "States"
 "gallery.atoms.button.group" = "Button group"
 "gallery.atoms.button.link" = "Link button"
