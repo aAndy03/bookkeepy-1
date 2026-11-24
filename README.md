@@ -1,5 +1,11 @@
 # Bookkeepy 1
 
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Rust 1.100](https://img.shields.io/badge/Rust-1.100-orange.svg)](rust-toolchain.toml)
+
+> CI note: GitHub Actions run **only on releases/prereleases** (minutes budget, docs/09) —
+> run `cargo xtask check` locally before pushing.
+
 **Bookkeepy 1** is an open-source, offline-first desktop application for managing your
 personal finances. One app for cash, bank accounts, cards, wallets, loans, budgets,
 subscriptions, documents and multiple currencies — with a double-entry ledger underneath

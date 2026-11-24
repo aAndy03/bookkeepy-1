@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Whole-registry validation, run at app startup and by `cargo xtask govern data`.
 
-use crate::{PrimaryDataError, currencies, defaults, errors, load_policies, locales, perf_budgets};
+use crate::{
+    PrimaryDataError, currencies, defaults, errors, load_policies, locales, perf_budgets, settings,
+};
 
 /// Validate every primary-data scope (structure + referential integrity, RULE-DATA-002).
 pub fn validate_all() -> Result<(), PrimaryDataError> {
@@ -13,6 +15,7 @@ pub fn validate_all() -> Result<(), PrimaryDataError> {
     defaults::validate_structure()?;
     load_policies::validate_structure()?;
     perf_budgets::validate_structure()?;
+    settings::validate_structure()?;
     Ok(())
 }
 

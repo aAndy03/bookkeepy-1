@@ -289,3 +289,28 @@ docs updated in the canonical place · CHANGELOG entry · EN/RO strings · no HT
 - The **scheduled** action (`update-rates.yml`, banking days ~after the 13:00 update)
   fetches ONLY `https://curs.bnr.ro/nbrfxrates.xml`; yearly archives are (re)built by the
   manual `backfill.yml`. Both ed25519-sign packages once `RATES_SIGNING_KEY` is set.
+
+## Round-5 decisions (owner approved all, 2026-11-24 — M0 quality-of-life)
+
+**Dev QoL:** `cargo xtask pr "<title>"` (branch+push+PR via gh — main is protected, PRs are
+the path), `cargo xtask changelog "<line>"` (appends under Unreleased), `.vscode/settings.json`,
+README badges (license + toolchain + CI-minutes note).
+
+**App foundation QoL (specs + primary data now; UI at M3 via the frontend agent):**
+- `data/settings-defaults.toml` — settings schema + defaults as SSOT primary data (theme,
+  language, date/number format, first day of week, timezone, default currency, rates source
+  priority, show_currency_code); `primary-data::settings` validates cross-refs
+  (language↔locales, default_currency↔currencies, IANA tz via jiff).
+- `data/load-policies.toml [boot_sequence]` — the canonical cold-start order
+  (single-instance → panic hook/logging → registry → profile open+migrations → settings →
+  theme → locale → window restore → accounts summary → last view → rates cache → job resume);
+  boot never blocks on optional steps (RULE-UX-001), INV-LOAD-001 budget applies.
+- doc 02 **F22 app chrome**: About screen (build-info + channel + GPL + third-party
+  licenses + Open data folder + Copy diagnostic), shortcuts legend generated from
+  `data/shortcuts.toml`, Settings bound to settings-defaults keys + Privacy section
+  (doc 08), onboarding (F17 expanded: create profile → optional import → optional rates
+  download; crash-recovery drafts offered after a crash).
+- doc 05 **§5.14 window & session state**: `ui_state` table (window rect/display/last
+  view/timeline scope/selection/drafts), single-instance IPC per ADR-0016 (named mutex on
+  Windows, lockfile+socket elsewhere; second process forwards argv and exits).
+- Locale seeds for the above screens added to en+ro (parity enforced by `govern errors`).

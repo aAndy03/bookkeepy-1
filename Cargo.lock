@@ -130,6 +130,7 @@ name = "bookkeepy-primary-data"
 version = "0.1.0"
 dependencies = [
  "bookkeepy-core",
+ "jiff",
  "serde",
  "serde_json",
  "thiserror",

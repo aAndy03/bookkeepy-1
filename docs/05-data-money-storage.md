@@ -205,3 +205,12 @@ with a 2010 start must not make the user mark 16 years of occurrences):
 Demand-driven loading per `data/load-policies.toml` + `engine_loadpolicy`; hot (memory) /
 warm (SQLite+tantivy) / cold (files, packages); prefetch on idle; INV-LOAD-001 cold-start
 budget in `data/perf-budgets.toml`. Details: doc 03 §"Loading, caching, prefetch".
+
+## 5.14 Window & session state (round-5 item 10; ADR-0016, RULE-STATE-001)
+
+- The profile DB `ui_state` table stores: window rect (x/y/w/h), display id, last open view,
+  timeline scope, selection, and unsaved input drafts (undo/redo scope, RULE-UNDO-001).
+  Restored on boot per `load-policies.toml [boot_sequence]` step "window restore".
+- **Single instance (ADR-0016):** second launch focuses the existing window — Windows:
+  named mutex; Linux/macOS: lockfile + Unix domain socket in the data dir. The second
+  process sends its argv (e.g. a file to import) and exits 0.

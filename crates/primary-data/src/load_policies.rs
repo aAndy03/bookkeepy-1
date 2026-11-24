@@ -16,6 +16,8 @@ const RAW: &str = include_str!(concat!(
 /// The parsed load policies.
 #[derive(Debug, Clone, Deserialize)]
 pub struct LoadPolicies {
+    /// Canonical cold-start boot sequence (round-5 item 6).
+    pub boot_sequence: BootSequence,
     /// What loads on app open.
     pub on_app_open: Section,
     /// What loads on navigation.
@@ -24,6 +26,13 @@ pub struct LoadPolicies {
     pub on_idle: Section,
     /// Usage-tracking scope declaration.
     pub usage_tracking: UsageTracking,
+}
+
+/// The boot sequence declaration.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BootSequence {
+    /// Ordered boot steps.
+    pub steps: Vec<String>,
 }
 
 /// A named policy section.
@@ -69,6 +78,11 @@ pub fn get() -> &'static LoadPolicies {
 
 pub(crate) fn validate_structure() -> Result<(), PrimaryDataError> {
     let p = get();
+    if p.boot_sequence.steps.len() < 5 {
+        return Err(PrimaryDataError::Invalid(
+            "boot_sequence must list the canonical cold-start steps".into(),
+        ));
+    }
     if p.on_app_open.never.is_none() {
         return Err(PrimaryDataError::Invalid(
             "load-policies on_app_open.never must list what is NOT auto-loaded".into(),

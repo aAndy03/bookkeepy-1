@@ -169,3 +169,26 @@ machinery (naming the shared engine it uses).
   including `merge` (merge duplicate payees/categories) and `bulk_apply`. The context menu is
   a shared widget (`widgets/atoms/context_menu`) whose entries come from the shared action
   registry, localized per entity kind.
+
+## F22 — App chrome: About, shortcuts legend, data folder, diagnostics (M3 shell QoL, round-5)
+
+Backend pieces already exist; this spec tells the UI what to render (frontend agent, RULE-PROC-002):
+
+- **About screen** (`about.title`): version + channel + git sha + rustc from
+  `bookkeepy-build-info` (dev channel is visibly labeled, RULE-CHANNEL-001), embedded GPL
+  text (`LICENSE_TEXT`), THIRD-PARTY-LICENSES (release asset / embedded at build), source
+  URL, **Open data folder** button (opens the profile root via `opener`, doc 05 §5.2),
+  **Copy diagnostic** button (copies a `bookkeepy-diagnostic@1` bundle from
+  `bookkeepy-diagnostics`, RULE-ERR-005).
+- **Shortcuts legend** (`shortcuts.title`, default `?`): lists `data/shortcuts.toml`
+  grouped by `scope`, remappable in Settings — the legend is generated FROM the SSOT, so
+  it can never drift from real bindings (RULE-INPUT-001).
+- **Settings screen** (`settings.title`): binds to `data/settings-defaults.toml` keys
+  (theme/language/date+number format/first day of week/timezone/default currency/rates
+  source priority); user overrides in the profile `settings` table; Privacy section shows
+  exactly what local system context is collected (doc 08, point 10) and lets the user clear
+  usage stats (`load-policies.toml [usage_tracking]`).
+- **Onboarding (F17 expanded):** welcome → create first profile (name+color, F18) →
+  optional import → optional rates download from the mirror → done. Never blocks
+  (RULE-UX-001); every empty view offers a next step. Crash-recovery drafts (round-2 item 2)
+  are offered here after a crash.

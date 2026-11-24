@@ -114,6 +114,98 @@ pub fn new_adr(slug: &str) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// `cargo xtask changelog "<line>"` — append a bullet under `## [Unreleased]` → `### Added`
+/// in CHANGELOG.md (round-5 item 3: makes the PR checklist's CHANGELOG rule effortless).
+pub fn changelog(line: &str) -> ExitCode {
+    let path = root().join("CHANGELOG.md");
+    let mut text = std::fs::read_to_string(&path).expect("read CHANGELOG");
+    let anchor = "## [Unreleased]\n";
+    let Some(pos) = text.find(anchor) else {
+        eprintln!("changelog: no [Unreleased] section");
+        return ExitCode::FAILURE;
+    };
+    let insert_at = pos + anchor.len();
+    let bullet = format!("- {line}\n");
+    if text[insert_at..].contains("### Added\n") {
+        // insert right after the "### Added" line
+        let added = text[insert_at..]
+            .find("### Added\n")
+            .map(|i| insert_at + i + "### Added\n".len());
+        if let Some(at) = added {
+            text.insert_str(at, &bullet);
+        }
+    } else {
+        text.insert_str(insert_at, &format!("\n### Added\n{bullet}"));
+    }
+    std::fs::write(&path, text).expect("write CHANGELOG");
+    println!("changelog: added under [Unreleased] → Added");
+    ExitCode::SUCCESS
+}
+
+/// `cargo xtask pr "<title>"` — branch off main, push, open a PR (round-5 item 1).
+/// Requires a clean tree (commit first). Uses gh; branch protection on main forces PRs.
+pub fn pr(title: &str) -> ExitCode {
+    if title.trim().is_empty() {
+        eprintln!("usage: cargo xtask pr \"<title>\"");
+        return ExitCode::from(2);
+    }
+    let slug: String = title
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    let slug = slug.trim_matches('-').to_string();
+    let branch = format!(
+        "auto/{slug}-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    );
+    let status = Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(root())
+        .output()
+        .expect("git status");
+    if !status.stdout.is_empty() {
+        eprintln!("pr: working tree not clean — commit first (`git add -A && git commit …`)");
+        return ExitCode::FAILURE;
+    }
+    for args in [
+        vec!["checkout", "-b", &branch],
+        vec!["push", "-u", "origin", &branch],
+    ] {
+        let out = Command::new("git")
+            .args(&args)
+            .current_dir(root())
+            .output()
+            .expect("git");
+        if !out.status.success() {
+            eprintln!(
+                "pr: git {} failed: {}",
+                args.join(" "),
+                String::from_utf8_lossy(&out.stderr)
+            );
+            return ExitCode::FAILURE;
+        }
+    }
+    let out = Command::new("gh")
+        .args(["pr", "create", "--title", title, "--body", "<!-- fill per .github/pull_request_template.md: cargo xtask check ran locally and green -->", "--base", "main", "--head", &branch])
+        .current_dir(root())
+        .output()
+        .expect("gh pr create");
+    if out.status.success() {
+        println!("pr: {}", String::from_utf8_lossy(&out.stdout).trim());
+        ExitCode::SUCCESS
+    } else {
+        eprintln!(
+            "pr: gh pr create failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        ExitCode::FAILURE
+    }
+}
+
 /// `cargo xtask licenses` — regenerate THIRD-PARTY-LICENSES.md via cargo-about when
 /// installed (release.yml runs this too and attaches the file to the release).
 pub fn licenses() -> ExitCode {

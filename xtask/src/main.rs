@@ -48,6 +48,20 @@ fn main() -> ExitCode {
             }
         },
         Some("licenses") => tools::licenses(),
+        Some("changelog") => match args.get(1) {
+            Some(line) => tools::changelog(line),
+            None => {
+                eprintln!("usage: cargo xtask changelog \"<entry>\"");
+                ExitCode::from(2)
+            }
+        },
+        Some("pr") => match args.get(1) {
+            Some(title) => tools::pr(title),
+            None => {
+                eprintln!("usage: cargo xtask pr \"<title>\"");
+                ExitCode::from(2)
+            }
+        },
         Some("dev") => {
             println!("xtask dev: lands with M3 (the app binary) — `cargo run -p bookkeepy-app`");
             ExitCode::SUCCESS

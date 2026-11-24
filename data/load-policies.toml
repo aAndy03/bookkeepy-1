@@ -8,6 +8,25 @@
 kind = "bookkeepy-primary-data"
 note = "Maintained by the project; schema changes require an ADR."
 
+[boot_sequence]
+# Canonical cold-start order (round-5 item 6; doc 03 "Loading, caching, prefetch").
+# Each step is cheap; INV-LOAD-001: the user can add a transaction within budget.
+# Steps may fail non-fatally (e.g. no network for rates manifest) — boot never blocks on them.
+steps = [
+  "single-instance check + focus existing window (ADR-0016)",
+  "diagnostics panic hook + local logging init (crates)",
+  "profile registry load; if no profile -> onboarding (F17), never blocked (RULE-UX-001)",
+  "profile open: schema_version check (RULE-DATA-004), migrations forward-only",
+  "settings load (defaults from data/settings-defaults.toml + user overrides)",
+  "theme tokens (data/theme/*) applied per settings.theme",
+  "locale applied per settings.language (i18n crate)",
+  "window restore from ui_state (size/position/display), else centered on primary display",
+  "accounts summary (warm tier, balances derived+ cached)",
+  "last open view + timeline scope restore",
+  "rates manifest cache (local only, no network)",
+  "resume interrupted jobs (RULE-JOB-001) + crash-recovery draft offer",
+]
+
 [on_app_open]
 tier = "hot+warm"
 loads = ["ui shell + theme tokens", "settings", "accounts summary (balances derived, cached)", "last open view", "rates manifest cache (no network)"]

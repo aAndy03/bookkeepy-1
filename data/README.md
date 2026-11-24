@@ -33,3 +33,4 @@ Rules: regenerate external data only from official sources; never hand-edit code
 units; cross-references between primary data use ISO codes (RULE-DATA-002 — e.g. rates
 packages must use codes present in `currencies.toml`); schema changes require an ADR;
 content changes require a CHANGELOG entry.
+| `settings-defaults.toml` | Settings schema + defaults (theme, language, formats, tz, default currency, rates source priority); user overrides live in the profile DB, never in code. Governor validates cross-refs (language↔locales, default_currency↔currencies) | Project-maintained |

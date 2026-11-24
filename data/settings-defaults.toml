@@ -1,0 +1,31 @@
+# Bookkeepy 1 — primary data: settings schema + defaults (round-5 item 5).
+# SINGLE SOURCE OF TRUTH for every user setting's key, default and allowed values.
+# The Settings UI (M3) binds to these keys; user overrides live in the profile DB
+# (settings table), never in code. `cargo xtask govern data` validates: language must be
+# a shipped locale (data/locales), default_currency must exist in currencies.toml,
+# enums must be in their allowed sets, rates_source_priority must be non-empty source ids.
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR. Add a key here FIRST, then bind UI + locales."
+
+[settings]
+# UI appearance: light | dark | system (follows OS; tokens in data/theme/*.toml)
+theme = "system"
+# UI language: must match a [meta].locale in data/locales/*.toml (en, ro)
+language = "en"
+# Date display format: ISO yyyy-MM-dd default; alternatives: dd.MM.yyyy, MM/dd/yyyy
+date_format = "yyyy-MM-dd"
+# Number display: grouped (1.234,56) | plain (1234.56); decimal separator follows language
+number_format = "grouped"
+# First day of week for calendars/timeline: monday | sunday
+first_day_of_week = "monday"
+# Profile timezone for rendering (RULE-TIME-001: data stored UTC, rendered in this tz).
+# Empty = system timezone (IANA name via jiff tzdb).
+timezone = ""
+# Default currency for new accounts/transactions: must exist in data/currencies.toml
+default_currency = "RON"
+# Which rates source wins when several have a rate for a date (doc 11): ordered ids
+rates_source_priority = ["bnr"]
+# Money always displays its ISO code (RULE-FMT-001); symbol optional in addition
+show_currency_code = true
