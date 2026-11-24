@@ -599,3 +599,33 @@ Backend half of M3, done here (UI prompts for the other agent are listed at the 
 - **UI half of M3 (for the other AI agent, short prompts):** gpui-kit shell + component
   gallery first (all styled components, versioned variants, gallery-first workflow),
   then first screens on top of `app-services` api only.
+
+## M3 UI (2026-11-24) — gallery + `ui` crate scaffold (the UI half of M3, ADR-0017)
+
+- **`crates/ui` (`bookkeepy-ui`)** — the ONE component set: the theme bridge
+  (`data/theme/` tokens → gpui-kit `ThemeConfig`, dark native + light mirror), the
+  capability-trait registry (`src/capabilities.rs`, incl. the new `signed` trait),
+  and the widget layers (`src/widgets/{atoms,molecules,organisms}/`). Seed widget:
+  the `amount` atom (Money display via the `amount` typography token + ADR-0004
+  minor-units formatting; `signed` variant = capability-trait toggle; muted zero
+  edge case; `meta.toml` v1) — the SSOT + versioned-variant pattern every future
+  widget follows. `primary-data` gained the `fonts()` typography accessor the
+  widget typography needs.
+- **`gallery/` (`bookkeepy-gallery`)** — the gallery binary: title bar (locale EN/RO +
+  theme dark/light switches), atomic-layer sidebar, 16 retained sections demoing
+  **all** published gpui-kit styled components (atoms ×5, molecules ×5, organisms ×4,
+  viz, ours) + the `ours` section rendering the `amount` variants, edge cases and the
+  version history parsed from `meta.toml`.
+- **Inventory:** `docs/registry/gpui-kit-components.toml` — every component page on
+  gpui-kit.com/component/ is `covered` (with its gallery section) or a documented
+  `exception` (root: exercised by the bootstrap; speech: feature-gated, voice parked
+  per RULE-INPUT-001/doc 10; theme: exercised by the theme bridge).
+- **i18n:** ~400 `gallery.*` keys with EN + RO values at exact parity
+  (`govern ui` + the locale governors enforce it); every input demo carries a
+  localized placeholder (RULE-UI-005); quit is bound from `data/shortcuts.toml`
+  (RULE-INPUT-001).
+- **`govern ui` is live** (was a scaffolded PASS): inventory↔gallery-sections
+  cross-check, placeholder check on owned text-input constructions, inline i18n key
+  existence + en/ro parity, and the `meta.toml` schema/trait/file/changelog checks
+  (RULE-UI-005/006/007/008). Allowed dep edges registered: `ui` → core/contracts/
+  primary-data/i18n/app-services; `gallery` → core/ui/primary-data/i18n.

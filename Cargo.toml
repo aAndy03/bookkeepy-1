@@ -16,6 +16,8 @@ members = [
     "crates/contracts",
     "crates/core",
     "crates/primary-data",
+    "crates/ui",
+    "gallery",
     "xtask",
 ]
 
@@ -49,8 +51,9 @@ bookkeepy-diagnostics = { path = "crates/diagnostics" }
 bookkeepy-shared = { path = "crates/shared" }
 bookkeepy-storage = { path = "crates/storage" }
 bookkeepy-ledger = { path = "crates/ledger" } # first used by app-services (M3)
-# bookkeepy-i18n gets its path entry here on first use by another crate (cargo 1.100 warns
-# on unused workspace deps).
+bookkeepy-i18n = { path = "crates/i18n" }
+# First used by ui + gallery (M3, ADR-0007):
+bookkeepy-ui = { path = "crates/ui" }
 # Foundation (in use now)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -69,12 +72,13 @@ rusqlite = { version = "0.43", features = ["bundled", "blob", "backup"] }
 sha2 = "0.11"   # audit hash chain (doc 05 §5.5)
 hex = "0.4"     # hex-encode chain hashes
 fs2 = "0.4"     # single-instance lockfile (ADR-0016)
+# UI stack, first used in M3 (ADR-0007): the ONE UI dependency.
+gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }
 # Testing / benches (doc 09)
 proptest = "1"
 criterion = "0.8"
 
 # Declared on first use (full policy set with rationale: docs/07-dependencies.md):
-#   gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }   (M3, ADR-0007)
 #   tantivy = "0.27"                                                (M5, ADR-0006)
 #   anyhow, csv, encoding_rs,
 #   roxmltree, semver, iana-time-zone, sysinfo, os_info, opener, printpdf, insta

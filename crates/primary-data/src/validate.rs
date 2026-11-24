@@ -3,7 +3,7 @@
 
 use crate::{
     PrimaryDataError, currencies, defaults, errors, events, load_policies, locales, perf_budgets,
-    settings,
+    settings, shortcuts, theme,
 };
 
 /// Validate every primary-data scope (structure + referential integrity, RULE-DATA-002).
@@ -18,6 +18,8 @@ pub fn validate_all() -> Result<(), PrimaryDataError> {
     load_policies::validate_structure()?;
     perf_budgets::validate_structure()?;
     settings::validate_structure()?;
+    shortcuts::validate_structure()?;
+    theme::validate_structure()?;
     Ok(())
 }
 

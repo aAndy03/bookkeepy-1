@@ -160,6 +160,24 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
   of components only** — the gallery is a harness/viewer over the same `ui` widgets crate,
   never a second copy. The gallery showcases **all** gpui-kit styled components by default,
   arranged by atomic layers, with our variants/edge cases alongside.
+- **Shipped at M3 — the gallery + `ui` crate scaffold:** `crates/ui` (`bookkeepy-ui`:
+  the theme bridge from `data/theme` into gpui-kit, the capability registry
+  `src/capabilities.rs`, the widget layers `src/widgets/{atoms,molecules,organisms}/`)
+  and the `gallery/` workspace binary; the gallery's own section registry lives in
+  `gallery/src/sections/mod.rs` (`govern ui` reads it), and the gpui-kit component
+  inventory lives at `docs/registry/gpui-kit-components.toml` — every published
+  gpui-kit component is either demoed in a named section or a documented exception.
+  `cargo xtask govern ui` enforces: inventory↔sections, placeholders on every owned
+  text-input construction, inline i18n key existence + en/ro parity for gallery/ui
+  code, and widget `meta.toml` schema (id/version/traits registered/variants and
+  edge files present/changelog covering the current version).
+- **Widget `meta.toml` schema (RULE-UI-008):** `[widget]` (id = folder name, version,
+  layer = its folder, source.rs, traits ⊆ the capability registry), `[[variant]]`
+  (id, trait, `variant_*.rs` extending the source — never a copy), `[[edge_case]]`
+  (id, `edge_case_*.rs`), `[[changelog]]` (version + `summary_en`/`summary_ro`),
+  covering exactly up to `[widget].version`. Seed widget: the `amount` atom
+  (`crates/ui/src/widgets/atoms/amount/` — Money display per the `amount`
+  typography token, `signed` variant pairing debits/credits, muted zero edge case).
 - **Gallery versioning (RULE-UI-008):** every widget folder carries a `meta.toml`
   (component id, **version**, capability traits, variants, edge cases, changelog). The
   gallery renders the version history; any change to a component/variant/trait bumps its
