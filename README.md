@@ -40,10 +40,14 @@ branch protection + supply-chain config. Brainstorming docs are complete under
 [docs/10-process-roadmap.md](docs/10-process-roadmap.md) (next: M1 storage, M2 ledger).
 
 ```bash
-cargo test --workspace   # unit + property + registry tests
-cargo xtask govern       # the governor tree (data/errors/adr/docs/deps/net/…)
-cargo clippy --workspace --all-targets -- -D warnings
+cargo xtask check        # the FULL local gate (what CI runs on releases only — see docs/09):
+                         # fmt, clippy -D warnings, tests, governors, bench sanity, cargo deny
+cargo xtask hook install # once per clone: fast pre-commit gate (fmt + governors + clippy)
+cargo xtask govern       # the governor tree alone (data/errors/adr/docs/deps/net/…)
 ```
+
+Pushes and PRs run **no** GitHub Actions (minutes budget); releases/prereleases run the
+full CI + build release assets. Branch protection on `main`: 1 review, no force-push.
 
 ## Repository layout
 

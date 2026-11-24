@@ -1,0 +1,22 @@
+# Bookkeepy 1 — primary data: spacing design tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# SSOT for every pad/gap/margin in the interface, on the design language's 4px base grid:
+# each token is a grid multiple and is referenced by name by gpui-kit styled components and
+# gallery variants — never a raw px value in code.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+[spacing]
+grid = 4 # base unit; every other token here is a multiple of it
+x1 = 4 # atom gap: icon ↔ label inside a control
+x2 = 8 # control inner padding (vertical), related-item gaps
+x3 = 12 # compact group padding, dense-list row padding
+x4 = 16 # standard card/dialog padding, form-field gaps
+x5 = 20 # generous card padding, panel padding
+x6 = 24 # section padding, dialog margins
+x8 = 32 # between groups/sections
+x10 = 40 # major section spacing, wide page gutter
+x12 = 48 # empty-state padding
+x16 = 64 # page margins / hero spacing

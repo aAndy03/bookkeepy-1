@@ -143,6 +143,21 @@ Findings discovered while coding (recorded per the overlay rule):
 8. Workspace path-deps for not-yet-consumed crates trigger cargo's unused-dependency
    warning → they are declared on first use like any other dep (comment in root Cargo.toml).
 
+## Round-3 decisions (owner, 2026-11-24 — CI minutes + failing action fix)
+
+1. **Failing action fixed**: the M0.5 push's `deny (cargo-deny)` job failed — cargo-deny
+   0.22 changed schema (`unmaintained` is now a scope `all|workspace|transitive|none`,
+   `severity-threshold` and `licenses.deny` removed, `wildcards` needs
+   `allow-wildcard-paths` + `publish = false` for `workspace = true`). Fixed in
+   `deny.toml`, verified locally with cargo-deny 0.22.1 (all checks green) — details in
+   doc 09.
+2. **Actions minutes budget**: pushes and PRs no longer trigger any workflow (zero
+   minutes). `ci.yml` runs only on `workflow_dispatch` (manual) and via `workflow_call`
+   from `release.yml` (published/prereleased releases — the important stuff). The same
+   gate runs locally: `cargo xtask check` (full) + pre-commit hook (fast subset).
+   Branch protection updated accordingly: no required status-check contexts; PRs are
+   gated by the PR-template checkbox "ran `cargo xtask check` locally" + 1 review.
+
 ## Round-2 brainstorming decisions (approved by owner)
 
 1. **Single instance (RULE-APP-001):** enforced. A second launch does not open a new window —

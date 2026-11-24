@@ -22,8 +22,10 @@ tests enforce the invariants.
   small concern; overrides sit adjacent (e.g. `data/currencies/overrides.toml`). The loader
   merges + validates the whole scope.
 - Shipped: `currencies.toml`, `errors.toml`, `defaults.toml`, `load-policies.toml`,
-  `perf-budgets.toml`. Planned: `shortcuts.toml` (keyboard map — SSOT, remappable),
-  `theme/*.toml`, `countries.toml`, `languages.toml`, `category-presets.toml`,
+  `perf-budgets.toml`, `shortcuts.toml` (keyboard map — SSOT, remappable, RULE-INPUT-001),
+  `theme/` (directory scope, RULE-DATA-003: `index.toml` + colors/spacing/radii/typography/
+  elevation tokens — the design-language variables). Planned:
+  `countries.toml`, `languages.toml`, `category-presets.toml`,
   `default-accounts.toml`.
 - Changing primary data = changelog entry; schema change = ADR. User-level data is *not*
   primary data; it lives in the DB.
@@ -157,7 +159,10 @@ drawer (RULE-UX-001).
   controls (`widgets/molecules/`); organisms = feature blocks (`widgets/organisms/`);
   templates = layouts; pages = views (`ui/src/views/<feature>/<screen>/`). Shared, reusable
   parts build ever more complex interfaces.
-- **Figma model:** variables = theme tokens as primary data (`data/theme/*.toml`); components
+- **Figma model:** variables = theme tokens as primary data (`data/theme/` — directory scope
+  per RULE-DATA-003, shipped: `index.toml` + colors/spacing/radii/typography/elevation; the
+  Bookkeepy v1 design language, dark theme native + light mirror; semantic tokens `bg`/`fg`/
+  `accent`/`danger`/`success`/`warning`/`border`/…, never raw values in code); components
   = source + props + variants **linked to the SSOT source** — a variant (e.g. a mini calendar)
   is `variant_mini.rs` extending the source, never a copy.
 - **Capability traits (RULE-UI-007):** capabilities are registered once in
@@ -172,7 +177,9 @@ drawer (RULE-UX-001).
   without a placeholder i18n key.
 - **Input modalities (RULE-INPUT-001):** (a) mouse, (b) trackpad/touchpad gestures,
   (c) keyboard shortcuts — all usable **in combination at the same time**. Shortcuts are
-  primary data (`data/shortcuts.toml`: SSOT, remappable, localized), bound via gpui
+  primary data (shipped: `data/shortcuts.toml` — flat entries: `id`, `keys`, `action` (dotted
+  engine action id), `label_i18n_key`, `scope` (global/screen), `when` guard; SSOT,
+  remappable, localized; no hardcoded keys anywhere else), bound via gpui
   actions/keybindings. (d) **Voice control via AI is parked** (doc 10); when un-parked it
   must run **on-device** (a cloud model would need an ADR amending ADR-0011).
 - **Presentation defaults (RULE-UI-008):** data is shown **as tables (rows/columns) by

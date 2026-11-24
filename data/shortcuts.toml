@@ -1,0 +1,39 @@
+# Bookkeepy 1 — primary data: default keyboard-shortcut map (RULE-INPUT-001, doc 04 §4.9).
+#
+# SSOT for every keybinding — mouse, trackpad and keyboard combine freely. `keys` strings
+# use the lowercase gpui binding grammar ("ctrl+n"); "primary" modifiers resolve per
+# platform (ctrl on Windows/Linux). NO key or action is hardcoded anywhere else: the UI
+# binds the `action` (dotted engine action id) and looks up `keys` here; every entry is
+# remappable later by overriding it in user ui_state — never by editing code.
+# `scope` = "global" (any screen) | "screen" (a specific screen must be active).
+# `when` = context guard expression evaluated against the UI context ("" = always active).
+# Every entry's `label_i18n_key` MUST exist in data/locales/en.toml (reference) and every
+# shipped locale — gate proof for the shortcuts screen/legend.
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR. M0 seed set; grows with each screen."
+
+[[shortcut]]
+id = "app.new_draft"
+keys = "ctrl+n"
+action = "draft.create"
+label_i18n_key = "shortcut.new_draft"
+scope = "global"
+when = ""
+
+[[shortcut]]
+id = "draft.save"
+keys = "ctrl+s"
+action = "draft.save"
+label_i18n_key = "shortcut.save_draft"
+scope = "screen"
+when = "screen == 'draft-editor' && draft.dirty"
+
+[[shortcut]]
+id = "app.quit"
+keys = "ctrl+q"
+action = "app.quit"
+label_i18n_key = "shortcut.quit"
+scope = "global"
+when = ""

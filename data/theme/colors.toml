@@ -1,0 +1,172 @@
+# Bookkeepy 1 — primary data: color design tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# SSOT for every color in the interface. gpui-kit styled components and gallery variants
+# reference these tokens — never raw hex values in code. Raw values live only in
+# `[palette]`; everything components use is semantic (`bg`, `surface`, `fg`, `border`,
+# `accent`, `danger`, `success`, `warning`, `info`, …), so a theme is swapped by replacing
+# one `[theme.<name>]` block and no code changes.
+#
+# The dark theme is the design language's native theme (Bookkeepy v1, Penpot 'draft' page);
+# the light theme mirrors the same neutral ramp (255 − channel) with identical functional
+# hues, per the theme panels of the design system sheets.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+# Raw neutral ramp exactly as drawn in the design language (18 steps, dark side).
+[palette.neutral]
+black = "#0a0a0a"
+well = "#0d0d0d"
+root = "#111111"
+raised = "#171717"
+sheet = "#1c1c1c"
+edge = "#222222"
+chrome = "#262626"
+row = "#2a2a2a"
+steel = "#333333"
+heavy = "#3d3d3d"
+dim = "#4a4a4a"
+faint = "#555555"
+ghost = "#6b6b6b"
+hover_fg = "#898989"
+muted = "#a8a8a8"
+body = "#d1d1d1"
+bright = "#ededed"
+white = "#ffffff"
+
+# Raw functional hues + their tints (hover/selected states) and dark "wells"
+# (tinted container backgrounds) exactly as drawn.
+[palette.accent]
+base = "#f5823a"
+tint = "#f5a76a"
+dim = "#c9a77a"
+
+[palette.success]
+base = "#68d740"
+tint = "#9be57f"
+well = "#173a0b"
+
+[palette.warning]
+base = "#e8b339"
+tint = "#f1cf80"
+well = "#3a1d0b"
+
+[palette.danger]
+base = "#d74040"
+tint = "#e98080"
+well = "#3d1010"
+
+[palette.info]
+base = "#58cbf5"
+tint = "#92dcf8"
+well = "#121a20"
+
+# Group/tag palette (charts, tags, category markers) with their dark wells.
+[palette.group]
+orange = "#f5a76a"
+sand = "#c9a77a"
+blue = "#8fb3c9"
+purple = "#6944f0"
+pink = "#ff93c7"
+lime = "#d1f558"
+orange_well = "#3a1d0b"
+sand_well = "#3b2c08"
+blue_well = "#064860"
+purple_well = "#1a075f"
+pink_well = "#660031"
+lime_well = "#4b6006"
+
+# Semantic tokens — dark (the native designed theme).
+[theme.dark]
+bg = "#111111" # base background everywhere
+bg_canvas = "#0d0d0d" # inset wells: input fields, code, sunken areas
+bg_raised = "#171717" # hover tint on lists/rows; subtle raised surfaces
+bg_sheet = "#1c1c1c" # cards, dialogs, panels
+bg_chrome = "#262626" # title bar, buttons, selected rows, controls
+bg_hover = "#1c1c1c" # pointer-hover on a base surface
+bg_selected = "#262626" # selected row/list item
+overlay = "#00000099" # modal scrim (black, 60% — matches the design's shadows)
+fg = "#d1d1d1" # default body text
+fg_primary = "#ffffff" # emphasized text
+fg_muted = "#a8a8a8" # secondary text
+fg_subtle = "#898989" # tertiary text
+fg_placeholder = "#6b6b6b" # input placeholders (every input has one, RULE-UI-005)
+fg_disabled = "#555555" # disabled labels
+accent = "#f5823a" # brand orange — primary actions, focus, links
+accent_hover = "#f5a76a" # hovered accent surface
+accent_subtle = "#c9a77a" # quiet accent — selected indicators
+on_accent = "#0d0d0d" # text/icons on an accent surface
+selection = "#f5a76a" # text-selection highlight
+success = "#68d740"
+success_tint = "#9be57f"
+success_well = "#173a0b"
+warning = "#e8b339"
+warning_tint = "#f1cf80"
+warning_well = "#3a1d0b"
+danger = "#d74040"
+danger_tint = "#e98080"
+danger_well = "#3d1010"
+info = "#58cbf5"
+info_tint = "#92dcf8"
+info_well = "#121a20"
+border = "#262626" # default border
+border_subtle = "#222222" # separators inside a surface
+border_strong = "#333333" # emphasized control border
+border_heavy = "#3d3d3d" # highest-contrast border (hovered/active edges)
+focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
+chart_positive = "#68d740"
+chart_negative = "#d74040"
+chart_neutral = "#8fb3c9"
+chart_series_1 = "#f5823a"
+chart_series_2 = "#6944f0"
+chart_series_3 = "#58cbf5"
+chart_series_4 = "#d1f558"
+chart_series_5 = "#ff93c7"
+
+# Semantic tokens — light (same ramp inverted: 255 − channel; identical functional hues).
+[theme.light]
+bg = "#ededed" # base background everywhere
+bg_canvas = "#e3e3e3" # inset wells: input fields, code, sunken areas
+bg_raised = "#f5f5f5" # subtle raised surfaces; striped rows
+bg_sheet = "#ffffff" # cards, dialogs, panels
+bg_chrome = "#d9d9d9" # title bar, buttons, selected rows, controls
+bg_hover = "#e3e3e3" # pointer-hover on a base surface
+bg_selected = "#d9d9d9" # selected row/list item
+overlay = "#00000099" # modal scrim (black, 60%)
+fg = "#2e2e2e" # default body text
+fg_primary = "#0a0a0a" # emphasized text
+fg_muted = "#575757" # secondary text
+fg_subtle = "#767676" # tertiary text
+fg_placeholder = "#949494" # input placeholders (every input has one, RULE-UI-005)
+fg_disabled = "#aaaaaa" # disabled labels
+accent = "#f5823a" # brand orange — primary actions, focus, links
+accent_hover = "#f5a76a" # hovered accent surface
+accent_subtle = "#c9a77a" # quiet accent — selected indicators
+on_accent = "#0d0d0d" # text/icons on an accent surface
+selection = "#f5a76a" # text-selection highlight
+success = "#68d740"
+success_tint = "#9be57f"
+success_well = "#173a0b"
+warning = "#e8b339"
+warning_tint = "#f1cf80"
+warning_well = "#3a1d0b"
+danger = "#d74040"
+danger_tint = "#e98080"
+danger_well = "#3d1010"
+info = "#58cbf5"
+info_tint = "#92dcf8"
+info_well = "#121a20"
+border = "#dddddd" # default border
+border_subtle = "#e8e8e8" # separators inside a surface
+border_strong = "#cccccc" # emphasized control border
+border_heavy = "#b5b5b5" # highest-contrast border (hovered/active edges)
+focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
+chart_positive = "#68d740"
+chart_negative = "#d74040"
+chart_neutral = "#767676"
+chart_series_1 = "#f5823a"
+chart_series_2 = "#6944f0"
+chart_series_3 = "#58cbf5"
+chart_series_4 = "#d1f558"
+chart_series_5 = "#ff93c7"

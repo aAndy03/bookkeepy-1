@@ -1,7 +1,12 @@
 # Pull request — Bookkeepy 1
 
-Checklist (doc 04 §4.15, doc 09 — CI must be green: fmt, clippy -D warnings, tests, governors, deny):
+> PRs run **zero** GitHub Actions (minutes-budget policy, doc 09): the gate is local.
+> Run `cargo xtask check` (fmt/clippy/tests/governors/bench/deny) before opening — CI
+> runs the identical suite only on releases and manual dispatch.
 
+Checklist (doc 04 §4.15, doc 09):
+
+- [ ] `cargo xtask check` run locally and green (fmt, clippy -D warnings, tests, governors, bench sanity, deny)
 - [ ] Change traces to a rule/invariant/ADR (or links the doc section it updates) — RULE-SYS-001
 - [ ] Docs updated where the change propagates (docs/, data/README.md, crate README) — RULE-DOC-001
 - [ ] New/changed error codes are registered in `data/errors.toml` **and** every locale (`data/locales/*.toml`) — RULE-ERR-002 (`govern errors` checks)

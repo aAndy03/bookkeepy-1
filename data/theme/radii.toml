@@ -1,0 +1,22 @@
+# Bookkeepy 1 — primary data: corner-radius design tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# SSOT for every corner radius in the interface, exactly the radii drawn in the design
+# language sheets (radius = half side for fully-round surfaces). Referenced by name by
+# gpui-kit styled components and gallery variants — never a raw px value in code.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+[radii]
+micro = 1 # fine detail edges (divider nubs, progress notches)
+chip = 2 # tags, small badges
+mini = 4 # checkboxes, kbd keys, small badges/markers
+item = 6 # list rows, dropdown/menu items
+control = 8 # buttons, inputs, selects, cards-in-lists, window frame
+card = 12 # cards, menus, popovers, date pickers
+overlay = 16 # dialogs, sheets, alert dialogs
+banner = 20 # large side panels
+board = 24 # floating boards/windows
+circle = 40 # circular surfaces (avatars, rating stars' container): radius = half of an 80px side
+full = 9999 # pill shapes computed as height/2 (switches, sliders' rails): renderers clamp to half of the shorter side

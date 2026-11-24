@@ -35,6 +35,63 @@ fn install() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// The full local gate — identical to what `ci.yml` runs on releases/manual dispatch.
+/// `cargo deny check` runs only when cargo-deny is on PATH (install once:
+/// `cargo install cargo-deny --locked` or a taiki-e release binary); otherwise it is
+/// reported as SKIP so the gate never blocks on a missing optional tool.
+pub fn full_check() -> ExitCode {
+    let root = root();
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+    let run = |args: &[&str]| {
+        let status = Command::new(&cargo).args(args).current_dir(&root).status();
+        matches!(status, Ok(s) if s.success())
+    };
+    let mut ok = true;
+    for step in [
+        vec!["fmt", "--all", "--check"],
+        vec![
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings",
+        ],
+        vec!["test", "--workspace"],
+        vec!["xtask", "govern"],
+        vec!["bench", "--workspace", "--", "--test"],
+    ] {
+        let name = step.join(" ");
+        if run(&step) {
+            println!("check: PASS {name}");
+        } else {
+            eprintln!("check: FAIL {name}");
+            ok = false;
+        }
+    }
+    // optional supply-chain gate when cargo-deny is installed locally
+    let deny = Command::new("cargo")
+        .args(["deny", "check"])
+        .current_dir(&root)
+        .status();
+    match deny {
+        Ok(s) if s.success() => println!("check: PASS cargo deny check"),
+        Ok(_) => {
+            eprintln!("check: FAIL cargo deny check");
+            ok = false;
+        }
+        Err(_) => println!(
+            "check: SKIP cargo deny check (cargo-deny not installed; CI runs it on releases)"
+        ),
+    }
+    if ok {
+        println!("check: PASS");
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
+}
+
 fn pre_commit() -> ExitCode {
     let root = root();
     let run = |args: &[&str]| {

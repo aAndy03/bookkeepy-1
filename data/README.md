@@ -12,10 +12,20 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 | `defaults.toml` | Fallback/default policies (rates fallback chain, deleted-manual-rates behavior, system-context defaults) | Project-maintained |
 | `load-policies.toml` | What loads when; hot/warm/cold tiers; prefetch rules; usage-tracking scope | Project-maintained |
 | `perf-budgets.toml` | Performance budgets asserted in CI by criterion benches + `xtask govern perf` | Project-maintained |
+| `shortcuts.toml` | Default keyboard-shortcut map: flat entries — `id`, `keys`, `action` (dotted engine action id), `label_i18n_key`, `scope`, `when` guard (RULE-INPUT-001; SSOT, remappable — no hardcoded keys anywhere else) | Project-maintained; every `label_i18n_key` exists in every locale |
+| `theme/index.toml` | Theme scope SSOT entry listing the scope's files (RULE-DATA-003) | Bookkeepy v1 design language (Penpot 'draft' page; exported under `references/designlanguage/`) |
+| `theme/colors.toml` | Color tokens: raw `[palette]` ramp + semantic tokens (`bg`, `fg`, `accent`, `danger`, `success`, `warning`, `border`, …) for the light and dark themes (dark is the designed native theme) | Bookkeepy v1 design language (Penpot 'draft' page; exported under `references/designlanguage/`) |
+| `theme/spacing.toml` | Spacing tokens — multiples of the 4px base grid | Bookkeepy v1 design language (same source) |
+| `theme/radii.toml` | Corner-radius tokens (micro → circle/pill) | Bookkeepy v1 design language (same source) |
+| `theme/typography.toml` | Font families + named text styles (size/weight/line-height/letter-spacing; amounts tabular) | Bookkeepy v1 design language (same source) |
+| `theme/elevation.toml` | Elevation: shadow tokens (black @ 60%, blur/offset scale) + z-index stacking layers | Bookkeepy v1 design language (same source) |
 | `locales/en.toml`, `locales/ro.toml` | Locale catalogs (flat quoted dotted keys; `[meta].locale` must match the file stem). EN is the reference/fallback locale | Project-maintained; `xtask govern errors` enforces key parity + that every `errors.toml` i18n_key exists in every locale |
 
-Planned (add when the feature lands, each with a `[source]` header): `shortcuts.toml`
-(keyboard map — SSOT, remappable, RULE-INPUT-001), `theme/*.toml` (UI variables/tokens),
+Theme tokens are the single source of truth gpui-kit styled components and gallery
+variants reference (the "variables" of the Figma model, RULE-UI-005/007, doc 04 §4.9) —
+semantic tokens in code, never raw values.
+
+Planned (add when the feature lands, each with a `[source]` header):
 `countries.toml` (ISO 3166), `languages.toml` (ISO 639), `category-presets.toml`,
 `default-accounts.toml`.
 

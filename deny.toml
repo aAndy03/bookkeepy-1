@@ -1,6 +1,10 @@
 # cargo-deny config (item 3, M0.5; doc 07/09). Bookkeepy 1 is GPL-3.0-or-later, so only
-# GPL-compatible licenses are allowed; AGPL and friends are banned outright.
-# `cargo deny check` runs in CI (job `deny`). New deps must pass this before merge.
+# GPL-compatible licenses are allowed; anything not in `allow` (incl. AGPL/SSPL) is denied.
+# Run locally with `cargo xtask check` (or `cargo deny check` directly — install once via
+# `cargo install cargo-deny --locked` or a taiki-e release binary); CI runs it on releases.
+# Schema notes for cargo-deny 0.22: `advisories.unmaintained` is a scope, `yanked` a lint
+# level; `severity-threshold`/`licenses.deny` were removed; `bans.wildcards` needs
+# `allow-wildcard-paths` + `publish = false` (workspace.package) for `workspace = true`.
 
 [graph]
 all-features = true
@@ -32,16 +36,12 @@ allow = [
     "LGPL-3.0-or-later",
     "LGPL-2.1-or-later",
 ]
-# AGPL would force source disclosure of network services — Bookkeepy is offline-first
-# and GPL-3.0-or-later; AGPL deps are banned, not just unlisted.
-deny = [
-    "AGPL-3.0-only",
-    "AGPL-3.0-or-later",
-    "AGPL-1.0-only",
-    "AGPL-1.0-or-later",
-    "SSPL-1.0",
-]
+# Anything not in `allow` is denied — that covers the AGPL/SSPL ban: AGPL would force
+# source disclosure of network services, and Bookkeepy is offline-first GPL-3.0-or-later.
 confidence-threshold = 0.93
+# The allow-list is intentionally broad for future deps (gpui-kit etc.); don't warn on
+# entries not yet encountered in the current lockfile.
+unused-allowed-license = "allow"
 
 [licenses.private]
 ignore = true # private workspace crates are all GPL-3.0-or-later via workspace.package
@@ -49,13 +49,24 @@ ignore = true # private workspace crates are all GPL-3.0-or-later via workspace.
 [bans]
 # Deny duplicate versions of the same crate (bloat + audit surface). Exceptions need an ADR.
 multiple-versions = "deny"
-wildcards = "deny" # every dep pinned by version in workspace.dependencies (RULE-DEP-001)
+# Deny version wildcards (`"*"`) — every external dep is pinned in workspace.dependencies
+# (RULE-DEP-001); `workspace = true` / path inheritance is our own convention and is
+# explicitly allowed via allow-wildcard-paths.
+wildcards = "deny"
+allow-wildcard-paths = true
 highlight = "all"
+# Known unavoidable duplicate: syn 3.x (new transitive) alongside syn 2.x (thiserror 2).
+# Re-evaluate at every dependency bump (Renovate) — remove this skip when the tree converges.
+[[bans.skip]]
+name = "syn"
+version = ">=3"
 
 [advisories]
-# RUSTSEC advisories must be acted on: CI fails on any unmaintained/vulnerable dep.
+# RUSTSEC advisories must be acted on: any vulnerability fails the check by default.
+# cargo-deny 0.22 schema: `yanked` is a lint level (deny = fail); `unmaintained` is a
+# scope (all = workspace + transitive reported as errors unless `ignore`d with a reason).
 db-urls = ["https://github.com/rustsec/advisory-db"]
-unmaintained = "deny"
+unmaintained = "all"
 yanked = "deny"
 
 [sources]

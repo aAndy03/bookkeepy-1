@@ -10,7 +10,11 @@
 //! - `cargo xtask govern [sub]` — the governor tree (data|errors|adr|docs|deps|net|lints|perf|ui|meta)
 //! - `cargo xtask check-deps` — alias for `govern deps`
 //! - `cargo xtask new-crate <name>` — scaffold a crate in the doc-04 shape (RULE-MOD-001)
-//! - `cargo xtask hook install` / `cargo xtask hook pre-commit` — git hooks
+//! - `cargo xtask check` — the FULL local gate (what CI runs on releases): fmt --check,
+//!   clippy -D warnings, tests, governors, bench sanity, cargo deny when installed.
+//!   Run this before pushing/PR-ing — pushes and PRs spend zero GitHub Actions minutes
+//!   (doc 09 minutes-budget policy).
+//! - `cargo xtask hook install` / `cargo xtask hook pre-commit` — git hooks (fast subset)
 //! - `cargo xtask dev|gallery|bench` — stubs; land with M3 (UI) / benches (M0.5)
 
 mod govern;
@@ -32,6 +36,7 @@ fn main() -> ExitCode {
             }
         },
         Some("hook") => hook::run(args.get(1).map(String::as_str)),
+        Some("check") => hook::full_check(),
         Some("dev") => {
             println!("xtask dev: lands with M3 (the app binary) — `cargo run -p bookkeepy-app`");
             ExitCode::SUCCESS

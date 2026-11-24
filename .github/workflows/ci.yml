@@ -1,14 +1,16 @@
-# Bookkeepy 1 CI (doc 09): fmt, clippy, tests, governors, supply-chain audit, deny, bench
-# sanity — on every push/PR to main. Job `name:`s are stable: they are the required
-# status-check contexts in branch protection (set via gh api, doc 09).
+# Bookkeepy 1 CI — MINUTES-BUDGET POLICY (doc 09, round-3 decision):
+# GitHub Actions minutes are spent ONLY on releases/prereleases (via release.yml calling
+# this workflow) and on manual `workflow_dispatch` runs of "important" checks.
+# Pushes and PRs run ZERO actions — contributors run the identical gate locally instead:
+#   cargo xtask check        (fmt --check + clippy -D warnings + tests + governors + bench
+#                             sanity + cargo deny check when cargo-deny is installed)
+#   cargo xtask hook install (pre-commit: fmt + fast governors + clippy, once per clone)
 # Rust version comes from rust-toolchain.toml (1.100.0).
 name: ci
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch: # manual "important" run
+  workflow_call: # called by release.yml on published / prereleased releases
 
 jobs:
   check:
@@ -50,8 +52,8 @@ jobs:
           tool: cargo-deny
       - name: cargo deny check (licenses, bans, advisories, sources)
         run: cargo deny check
-      # cargo-vet gate: hardens from M2 once the dependency tree is reviewed crate by
-      # crate (`cargo vet certify …` per crate; until then vet runs advisory-only).
+      # cargo-vet gate hardens from M2 (first crate-by-crate `cargo vet certify` pass);
+      # until then it is advisory.
       - name: cargo vet (advisory until M2)
         run: cargo vet --locked --output-format human 2>/dev/null || true
         continue-on-error: true
@@ -64,5 +66,3 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: benches compile + run once (no measurement)
         run: cargo bench --workspace -- --test
-      # Full measured runs + comparison against data/perf-budgets.toml land with the
-      # perf governor (item 15); budgets file itself is validated by `govern data`.

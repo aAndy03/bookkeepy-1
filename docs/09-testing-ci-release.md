@@ -24,30 +24,47 @@ requires a property test before merge.
 - clippy: `unwrap_used/expect_used = "deny"` (outside tests), `dbg_macro`, `todo!` denied;
   `float_arithmetic` denied in `core` and money crates (INV-MONEY-001).
 
-## CI (GitHub Actions, `.github/workflows/` — added in M0, extended in M0.5)
+## CI / minutes-budget policy (round-3 decision, 2026-11-24)
 
-- Matrix: Windows / macOS / Linux × stable Rust 1.100 (pinned by `rust-toolchain.toml`).
-- Jobs (stable `name:`s — these are the required status-check contexts on `main`):
-  `check (ubuntu-latest)` / `check (windows-latest)` / `check (macos-latest)` =
-  `cargo fmt --check` · `cargo clippy --workspace --all-targets -- -D warnings` ·
+**GitHub Actions minutes are spent only on releases/prereleases and manual important
+runs — never on ordinary pushes or PRs.** All routine checks run locally on the dev PC:
+
+- **Local full gate — `cargo xtask check`** (run before pushing / opening a PR):
+  `cargo fmt --all --check` · `cargo clippy --workspace --all-targets -- -D warnings` ·
   `cargo test --workspace` · `cargo xtask govern` (whole governor tree: deps + net
   allowlist, lints, docs, adr, errors registry ↔ code ↔ **locales**, primary-data
-  validation + ISO referential integrity) · `audit (rustsec)` · `deny (cargo-deny)` —
-  licenses allow-list (GPL-3.0-or-later compatible), AGPL/SSPL banned, duplicates and
-  wildcards denied, advisories/yanked denied, crates.io-only sources (`deny.toml`);
-  `cargo vet` advisory until M2 · `bench (sanity)` = `cargo bench --workspace -- --test`
-  (benches compile + run once; measured budget comparison lands with the perf governor).
-  Later milestones add: offline smoke test (app fully functional with networking
-  disabled) · **upgrade-path test**: fixtures in `tests/fixtures/versions/` written by
-  every previous tagged release are opened, migrated and verified by the new build
-  (INV-DATA-001, points 14–15) · build artifacts.
-- Branch protection on `main` (set via `gh api`, M0.5): PRs only, required reviews (1)
-  + required status checks = the CI job names above, no force-push, no deletions
-  (fintecheng SDLC, doc 06 §6.7). CODEOWNERS + PR/issue templates in `.github/`.
-- Dependency updates: Renovate (`.github/renovate.json`, cargo weekly / major monthly);
-  every dep PR must pass the full CI incl. `deny`.
-- Pre-commit locally: `cargo xtask hook install` once, then `.githooks/pre-commit` runs
-  fmt + fast governors + clippy on every commit.
+  validation + ISO referential integrity, perf-bench presence) ·
+  `cargo bench --workspace -- --test` (bench sanity) · `cargo deny check` when
+  cargo-deny is installed locally (SKIP note otherwise; CI always runs it on releases).
+- **Pre-commit (fast subset)** — `cargo xtask hook install` once per clone, then every
+  commit runs fmt + fast governors + clippy via `.githooks/pre-commit`.
+
+**On GitHub** (`.github/workflows/`):
+
+- `ci.yml` — triggers: `workflow_dispatch` (manual) + `workflow_call` only. **No `push`,
+  no `pull_request` triggers** — those cost minutes on every commit. Jobs: `check` matrix
+  (ubuntu/windows/macos: fmt, clippy -D warnings, tests, governors), `audit (rustsec)`,
+  `deny (cargo-deny)` (licenses allow-list GPL-compatible only, AGPL/SSPL effectively
+  banned by omission, duplicates + version wildcards denied, advisories/yanked denied,
+  crates.io-only sources — `deny.toml`), `cargo vet` advisory until M2, `bench (sanity)`.
+- `release.yml` — triggers: `release: [published, prereleased]`. Calls `ci.yml`, then
+  builds `--release`, generates `manifest.json` + `SHA256SUMS` (doc 08 wire format v1)
+  and attaches assets to the release. Real installers land with M3/M10
+  (`packaging/README.md`). Later milestones add to the release gate: offline smoke test
+  · **upgrade-path test** over `tests/fixtures/versions/` (INV-DATA-001, points 14–15).
+- Branch protection on `main` (via `gh api`): required PR review (1, CODEOWNERS), no
+  force-push, no deletions, linear history, enforce admins — **no required status
+  checks**, because PRs no longer run actions; the PR gate is the local `cargo xtask
+  check` (PR template checkbox) plus review (fintecheng SDLC, doc 06 §6.7).
+- Dependency updates: Renovate (`.github/renovate.json`, cargo weekly / major monthly) —
+  Renovate PRs are reviewed by the owner and verified with the local gate before merge.
+
+M0.5 CI findings (fixed after the first run failed): cargo-deny 0.22 schema —
+`advisories.unmaintained` is a scope (`all`), `yanked` stays a lint level (`deny`),
+`severity-threshold` and `licenses.deny` were removed (allow-list omission = deny);
+`bans.wildcards` needs `allow-wildcard-paths = true` **and** `publish = false` on all
+member crates (workspace.package) for `workspace = true` inheritance; one unavoidable
+duplicate (`syn` 2/3) is skipped with a documented reason in `deny.toml`.
 
 ## Release & packaging
 

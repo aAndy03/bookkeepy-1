@@ -34,7 +34,8 @@ pub fn new_crate(name: &str) -> ExitCode {
         format!(
             "[package]\nname = \"{pkg}\"\ndescription = \"TODO: one line — see crates/{name}/README.md\"\n\
              version.workspace = true\nedition.workspace = true\nrust-version.workspace = true\n\
-             license.workspace = true\nrepository.workspace = true\nauthors.workspace = true\n\n\
+             license.workspace = true\nrepository.workspace = true\nauthors.workspace = true\n\
+             publish.workspace = true\n\n\
              [lints]\nworkspace = true\n\n[dependencies]\n"
         ),
     )

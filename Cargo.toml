@@ -22,6 +22,9 @@ rust-version = "1.100.0"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/aAndy03/bookkeepy-1"
 authors = ["Andy <andymarin860@gmail.com>"]
+# Distribution is GitHub Releases only (doc 08/09) — never crates.io. This also lets
+# cargo-deny's allow-wildcard-paths accept our `workspace = true` inheritance.
+publish = false
 
 # Dependency policy (RULE-DEP-001, doc 07): latest versions, pinned centrally here;
 # member crates use `dep.workspace = true`.
