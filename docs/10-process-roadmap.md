@@ -279,3 +279,13 @@ of duplication. ADRs only for real decisions; routine changes → CHANGELOG.
 CI green on all platforms · property/golden tests for money · job retry/resume tests ·
 docs updated in the canonical place · CHANGELOG entry · EN/RO strings · no HTTP outside
 `updater`/`rates` (governor) · docs index accurate.
+
+### Round-4 addendum (owner clarifications, 2026-11-24 — rates mirror)
+
+- The mirror repo now carries the **full BNR history 2005→2026** as `kind: "archive"`
+  packages (`packages/bnr/archive-YYYY.json`, additive kind in spec @1) + daily packages;
+  23 packages, manifest + SHA256SUMS, all JSON validated. `.gitattributes` marks packages
+  binary so bytes stay stable for the checksums.
+- The **scheduled** action (`update-rates.yml`, banking days ~after the 13:00 update)
+  fetches ONLY `https://curs.bnr.ro/nbrfxrates.xml`; yearly archives are (re)built by the
+  manual `backfill.yml`. Both ed25519-sign packages once `RATES_SIGNING_KEY` is set.

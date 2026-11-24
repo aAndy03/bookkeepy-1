@@ -6,6 +6,7 @@ move it under the version tag. The release workflow fails if a release section i
 ## [Unreleased]
 
 ### Added
+- Rates mirror (aAndy03/bookkeepy-1-rates): BNR full history 2005–2026 committed as kind="archive" packages (23 packages incl. daily 2026-11-24) + manifest/SHA256SUMS; spec gains the additive archive kind; scheduled update-rates.yml fetches only the latest quote (curs.bnr.ro/nbrfxrates.xml, after 13:00 banking days); manual backfill.yml rebuilds yearly archives; ed25519 signing (ADR-0023) activates once the RATES_SIGNING_KEY secret is set.
 - M0.5 foundation crates: `build-info` (build facts + channel + embedded GPL text),
   `contracts` (EventEnvelope/Actor), `bus`, `diagnostics` (bookkeepy-diagnostic@1 +
   panic hook), `logging` (local rotating logs), `profile` (registry + data-dir layout),

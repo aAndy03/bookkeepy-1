@@ -60,3 +60,13 @@ and **ed25519-signs** each package (secret `RATES_SIGNING_KEY`; public key commi
 `keys/rates-ed25519.pub.pem`). The app pins that pubkey and refuses any package with a bad
 or missing signature (`BK-RATES-0002`) before checksum/import. Packages stay immutable;
 corrections are `kind = "addendum"` packages.
+
+## History backfill (2005 → today, already in the mirror)
+
+BNR publishes yearly archives (`curs.bnr.ro/files/xml/years/nbrfxratesYYYY.xml`). The
+mirror repo **already contains** them as `kind: "archive"` packages
+(`packages/bnr/archive-2005.json … archive-2026.json`, spec addition documented in the
+mirror's `docs/package-format.md`), plus daily `kind: "full"` packages from the latest
+quote feed. The **scheduled** job (`update-rates.yml`, banking days after the 13:00
+update) fetches ONLY `https://curs.bnr.ro/nbrfxrates.xml`; archives are built by the
+manual `backfill.yml`. So: history is in the repo now, automation only chases the latest.
