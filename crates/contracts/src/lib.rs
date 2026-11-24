@@ -8,4 +8,4 @@
 
 pub mod api;
 
-pub use api::{Actor, EventEnvelope};
+pub use api::{Actor, EventEnvelope, kinds};

@@ -71,7 +71,7 @@ mod tests {
         let c2 = count.clone();
         bus.subscribe(move |_| *c2.lock().unwrap() += 1);
         bus.publish(&EventEnvelope::new(
-            "ledger.posted",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "t",
             serde_json::json!({}),
@@ -89,7 +89,7 @@ mod tests {
         bus.subscribe(move |ev| seen3.lock().unwrap().push(format!("b:{}", ev.kind)));
 
         bus.publish(&EventEnvelope::new(
-            "ledger.posted",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "t",
             serde_json::json!({}),
@@ -97,7 +97,7 @@ mod tests {
 
         assert_eq!(
             seen.lock().unwrap().as_slice(),
-            ["a:ledger.posted", "b:ledger.posted"]
+            ["a:ledger.entry.posted", "b:ledger.entry.posted"]
         );
     }
 
@@ -105,7 +105,7 @@ mod tests {
     fn late_subscriber_misses_earlier_events() {
         let bus = Bus::new();
         bus.publish(&EventEnvelope::new(
-            "early",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::System,
             "",
             serde_json::json!({}),
@@ -115,7 +115,7 @@ mod tests {
         let c2 = count.clone();
         bus.subscribe(move |_| *c2.lock().unwrap() += 1);
         bus.publish(&EventEnvelope::new(
-            "late",
+            bookkeepy_contracts::kinds::TRANSACTION_POSTED,
             Actor::System,
             "",
             serde_json::json!({}),

@@ -208,6 +208,13 @@ i18n_key = "err.ledger.amount_not_positive"
 summary = "Amount must be positive (zero/negative movements are not postings)"
 
 [[error]]
+code = "BK-LEDGER-0009"
+area = "ledger"
+severity = "error"
+i18n_key = "err.ledger.self_transfer"
+summary = "Self-transfer not allowed (source and destination are the same, or the account is its own category)"
+
+[[error]]
 code = "BK-ACTION-0001"
 area = "action"
 severity = "error"

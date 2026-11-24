@@ -243,7 +243,7 @@ mod tests {
             append(
                 c,
                 "id-1",
-                "ledger.posted",
+                bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
                 "2026-11-24T10:00:00Z",
                 "user",
                 "t",
@@ -252,7 +252,7 @@ mod tests {
             append(
                 c,
                 "id-2",
-                "ledger.posted",
+                bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
                 "2026-11-24T10:01:00Z",
                 "user",
                 "t",

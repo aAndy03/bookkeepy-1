@@ -122,6 +122,12 @@ crate dispatches to subscribers (`audit`, `search`, `rates`, `jobs`, `ui`); subs
 idempotent; crash-surviving reactions go through a durable local outbox and replay. One crate
 owns each table; others use its `api`.
 
+**Kind registry mechanics (M2-hardening, ADR-0025):** dotted kind strings are defined ONLY
+as consts in `bookkeepy_contracts::kinds` and registered in `data/events.toml` (SSOT, loaded
+by `primary-data::events`). Engines emit via consts, so a rename is a compile error, not
+runtime drift. `cargo xtask govern events` fails on any stray kind literal in code and on
+any const/registry mismatch.
+
 ## 4.7 Async-first (RULE-ASYNC-001)
 
 Primarily async. All engine/pipeline/broker APIs are async; UI drives them with `cx.spawn`;
@@ -139,6 +145,12 @@ surfaced** to the user (toast + Jobs panel). Progress events drive **one shared 
 with pause / resume / cancel**; a startup driver resumes interrupted jobs (full
 resumability). Job types are persisted pipelines (exact resume). UI: one non-modal Jobs
 drawer (RULE-UX-001).
+
+**RULE-JOB-002 (backoff column, M2-hardening, ADR-0025):** the backoff is persisted, not
+in-memory — `jobs.not_before` (schema v4) is set by `fail` to `now + backoff_delay(attempts,
+id)` (exponential 2s→…→cap 300s + deterministic id-hash jitter, no RNG) and `claim_next`
+only picks jobs whose `not_before` has passed. A poison job can never spin in a hot
+retry loop; after `max_attempts` it lands in `failed` for manual retry.
 
 ## 4.9 UI system — gallery-first, Atomic Design, capability traits (RULE-UI-001…009, ADR-0017)
 

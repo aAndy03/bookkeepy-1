@@ -2,5 +2,6 @@
 //! Public API of `bookkeepy-contracts` (RULE-SSOT-001).
 
 mod events;
+pub mod kinds;
 
 pub use events::{Actor, EventEnvelope};

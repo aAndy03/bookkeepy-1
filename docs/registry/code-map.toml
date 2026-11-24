@@ -27,7 +27,7 @@ id = "primary-data"
 path = "crates/primary-data"
 kind = "crate"
 status = "active"
-summary = "Loads + validates data/*.toml (include_str! + OnceLock); scopes: currencies, errors, locales, defaults, load-policies, perf-budgets."
+summary = "Loads + validates data/*.toml (include_str! + OnceLock); scopes: currencies, errors, events (RULE-EVT-001 registry), locales, defaults, load-policies, perf-budgets, settings."
 adr = ["ADR-0008"]
 
 [[item]]
@@ -43,8 +43,8 @@ id = "contracts"
 path = "crates/contracts"
 kind = "crate"
 status = "active"
-summary = "EventEnvelope + Actor — the DTO/event contract every engine talks."
-adr = ["ADR-0009"]
+summary = "EventEnvelope + Actor + kinds (RULE-EVT-001, ADR-0025): the ONLY place event-kind strings are defined in code; data/events.toml is the registry, govern events enforces const set == registry and no stray literals"
+adr = ["ADR-0009", "ADR-0025"]
 
 [[item]]
 id = "bus"
@@ -109,7 +109,7 @@ id = "storage"
 path = "crates/storage"
 kind = "crate"
 status = "active"
-summary = "rusqlite storage engine: WAL conn (autocheckpoint, 0600 unix), forward-only migrations + downgrade refusal + compensating-migration support, durable outbox->bus, hash-chained audit (full + incremental checkpointed verify), crash-safe local live backup/verify/restore/prune, single-instance lock, extended self-check (migrations/orphans/wal/boot_ms), ui_state/settings KV + SSOT validation + snapshot, jobs state machine, atomic tx::post, session::open_session composition root synced to load-policies boot ids (M1, ADR-0005)"
+summary = "rusqlite storage engine: WAL conn (autocheckpoint, 0600 unix), forward-only migrations to v4 (v4: unique partial index transactions_schedule_occ + jobs.not_before backoff, ADR-0025) + downgrade refusal + compensating-migration support, durable outbox->bus, hash-chained audit (full + incremental checkpointed verify), crash-safe local live backup/verify/restore/prune, single-instance lock, extended self-check (migrations/orphans/wal/boot_ms + extra CheckItems via open_session_with), ui_state/settings KV + SSOT validation + snapshot, jobs state machine with persisted backoff (RULE-JOB-002), atomic tx::post, session::open_session composition root synced to load-policies boot ids (M1, ADR-0005)"
 adr = ["ADR-0005"]
 
 [[item]]
@@ -117,7 +117,7 @@ id = "shared"
 path = "crates/shared"
 kind = "crate"
 status = "active"
-summary = "shared action engines (RULE-SHARED-001): rename/archive/restore/change_status, generic over Actionable, audited, with _in_tx variants for composing engines (M2); api/recurrence (M2b, ADR-0020): anchor-based bounded schedule expansion SSOT — validate/nth/step/expand, exceptions, MAX_PER_EXPANSION cap"
+summary = "shared action engines (RULE-SHARED-001): rename/archive/restore/change_status, generic over Actionable, audited (traced), with _in_tx variants for composing engines (M2); api/recurrence (M2b, ADR-0020): anchor-based bounded schedule expansion SSOT — validate/nth/step/expand, exceptions, MAX_PER_EXPANSION cap"
 adr = []
 
 [[item]]
@@ -125,5 +125,5 @@ id = "ledger"
 path = "crates/ledger"
 kind = "crate"
 status = "active"
-summary = "ledger engine (M2, ADR-0009/0010/0024): accounts, catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings, derived balances, lifecycle SSOT; api/schedules (M2b, ADR-0020): schedule CRUD + expand_window projection + materialize_due (near-window boot driver, no backfill) + durable range materialization jobs; proptest invariants"
+summary = "ledger engine (M2, ADR-0009/0010/0024): accounts (archive returns ArchiveOutcome balance warning), catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings (self-transfer rejected BK-LEDGER-0009, replace inherits schedule link, strict row parsing, in-tx materialization guard), derived balances, lifecycle SSOT; api/schedules (M2b + hardening, ADR-0020/0025): schedule CRUD + expand_window projection + materialize_due (near-window boot driver, no backfill) + durable range jobs + Modify patches applied (RULE-RECUR-004); proptest invariants"
 adr = []

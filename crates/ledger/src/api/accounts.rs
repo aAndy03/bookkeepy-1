@@ -11,7 +11,7 @@
 use bookkeepy_bus::Bus;
 use bookkeepy_contracts::Actor;
 use bookkeepy_core::time::now;
-use bookkeepy_core::{CurrencyCode, EntityId};
+use bookkeepy_core::{CurrencyCode, EntityId, Money};
 use bookkeepy_shared::{Actionable, archive, rename, restore};
 use bookkeepy_storage::api::conn::Db;
 use rusqlite::Transaction;
@@ -161,7 +161,7 @@ pub fn create(
     }
     let id = EntityId::new();
     let ev = bookkeepy_contracts::EventEnvelope::new(
-        "account.created",
+        bookkeepy_contracts::kinds::ACCOUNT_CREATED,
         actor.clone(),
         reason,
         serde_json::json!({"id": id.to_string(), "name": name, "type": ty.as_str(), "currency": cur.as_str()}),
@@ -214,15 +214,34 @@ pub fn rename_account(
     Ok(rename(db, bus, actor, account, new_name, reason)?)
 }
 
+/// Outcome of archiving an account: carries the balance at archive time so the UI can
+/// WARN (never block — RULE-UX-001) when an account with money is archived.
+#[derive(Debug, Clone)]
+pub struct ArchiveOutcome {
+    /// Balance of the account at archive time (all time, in the account's currency).
+    pub balance: Money,
+}
+
 /// Archive (soft delete) an account — never hard-delete one with history (F1, ADR-0024).
+/// Returns the balance at archive time as a non-blocking warning signal.
 pub fn archive_account(
     db: &Db,
     bus: &Bus,
     actor: &Actor,
     account: &Account,
     reason: &str,
-) -> Result<(), LedgerError> {
-    Ok(archive(db, bus, actor, account, reason)?)
+) -> Result<ArchiveOutcome, LedgerError> {
+    archive(db, bus, actor, account, reason)?;
+    let balance = crate::api::balances::account_balance(db, account.id, None)?;
+    if balance.amount_minor() != 0 {
+        tracing::warn!(
+            account = %account.id,
+            balance_minor = balance.amount_minor(),
+            currency = %balance.currency().as_str(),
+            "archiving account with non-zero balance (kept in history; hidden from pickers)"
+        );
+    }
+    Ok(ArchiveOutcome { balance })
 }
 
 /// Restore an archived account.

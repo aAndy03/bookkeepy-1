@@ -20,7 +20,7 @@ fn session_open_post_reopen_persists() {
         let s = session::open_session(data_dir, meta.id).unwrap();
         kv::ui_set(&s.db, "window", "0,0,1440,900").unwrap();
         let ev = EventEnvelope::new(
-            "ledger.posted",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "quick add",
             serde_json::json!({"amount": 100}),

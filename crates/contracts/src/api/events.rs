@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn envelope_serde_roundtrip() {
         let ev = EventEnvelope::new(
-            "ledger.posted",
+            crate::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "quick add",
             serde_json::json!({"amount": "10.00", "currency": "RON"}),
@@ -79,7 +79,7 @@ mod tests {
         let s = serde_json::to_string(&ev).unwrap();
         let back: EventEnvelope = serde_json::from_str(&s).unwrap();
         assert_eq!(back.id, ev.id);
-        assert_eq!(back.kind, "ledger.posted");
+        assert_eq!(back.kind, crate::kinds::LEDGER_ENTRY_POSTED);
         assert_eq!(back.actor, Actor::User);
         assert_eq!(back.payload["currency"], "RON");
     }
@@ -88,7 +88,7 @@ mod tests {
     fn actor_import_carries_batch_id() {
         let batch = EntityId::new();
         let ev = EventEnvelope::new(
-            "import.applied",
+            crate::kinds::ENTITY_RENAMED,
             Actor::Import(batch),
             "csv",
             serde_json::json!({}),

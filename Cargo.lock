@@ -145,6 +145,7 @@ dependencies = [
  "sha2",
  "tempfile",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -196,6 +197,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -211,12 +213,14 @@ dependencies = [
  "bookkeepy-profile",
  "fs2",
  "hex",
+ "jiff",
  "rusqlite",
  "serde",
  "serde_json",
  "sha2",
  "tempfile",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

@@ -2,12 +2,14 @@
 //! Whole-registry validation, run at app startup and by `cargo xtask govern data`.
 
 use crate::{
-    PrimaryDataError, currencies, defaults, errors, load_policies, locales, perf_budgets, settings,
+    PrimaryDataError, currencies, defaults, errors, events, load_policies, locales, perf_budgets,
+    settings,
 };
 
 /// Validate every primary-data scope (structure + referential integrity, RULE-DATA-002).
 pub fn validate_all() -> Result<(), PrimaryDataError> {
     currencies::validate_structure()?;
+    events::validate_structure()?;
     errors::validate_registry()?;
     errors::validate_core_codes_registered()?;
     locales::validate_structure()?;

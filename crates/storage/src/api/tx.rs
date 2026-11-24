@@ -65,7 +65,7 @@ mod tests {
         bus.subscribe(move |ev| s2.lock().unwrap().push(ev.kind.clone()));
 
         let ev = EventEnvelope::new(
-            "ledger.posted",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "quick add",
             serde_json::json!({"a": 1}),
@@ -74,6 +74,9 @@ mod tests {
         assert_eq!(seq, 1);
         audit::verify(&db).unwrap();
         assert_eq!(outbox::pending_count(&db).unwrap(), 0);
-        assert_eq!(seen.lock().unwrap().as_slice(), ["ledger.posted"]);
+        assert_eq!(
+            seen.lock().unwrap().as_slice(),
+            [bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED]
+        );
     }
 }

@@ -1,0 +1,83 @@
+# Bookkeepy 1 — primary data: domain event-kind registry (RULE-EVT-001, ADR-0009).
+#
+# SINGLE SOURCE OF TRUTH for bus/audit event kinds. The only place dotted kind strings
+# are DEFINED in code is `bookkeepy_contracts::kinds` (one const per kind); every engine
+# emits via those consts. `cargo xtask govern events` fails if a kind literal appears
+# anywhere else in code, if a const is missing here, or if a registry entry has no const.
+#
+# kind = stable dotted string, never renamed (audit log + outbox are immutable).
+# owner = crate::module that emits it. payload = JSON shape (informational SSOT for UIs).
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR."
+
+[[event]]
+kind = "ledger.entry.posted"
+owner = "ledger::entries"
+payload = "{entry_id, tx_id?, value_ts, postings: [{account_id, side, amount_minor, currency}]}"
+
+[[event]]
+kind = "ledger.entry.reversed"
+owner = "ledger::entries"
+payload = "{entry_id, reversal_id, reason}"
+
+[[event]]
+kind = "transaction.posted"
+owner = "ledger::transactions"
+payload = "{tx_id, entry_id, kind, amount, currency, status, replaces?}"
+
+[[event]]
+kind = "transaction.status_changed"
+owner = "ledger::transactions"
+payload = "{tx_id, from, to}"
+
+[[event]]
+kind = "transaction.replaced"
+owner = "ledger::transactions"
+payload = "{old_tx, new_tx}"
+
+[[event]]
+kind = "schedule.created"
+owner = "ledger::schedules"
+payload = "{schedule_id, rule}"
+
+[[event]]
+kind = "account.created"
+owner = "ledger::accounts"
+payload = "{account_id, name, type, currency}"
+
+[[event]]
+kind = "category.created"
+owner = "ledger::catalog"
+payload = "{category_id, name, account_id}"
+
+[[event]]
+kind = "tag.created"
+owner = "ledger::catalog"
+payload = "{tag_id, name}"
+
+[[event]]
+kind = "party.created"
+owner = "ledger::catalog"
+payload = "{party_id, name}"
+
+[[event]]
+kind = "entity.renamed"
+owner = "shared::actions"
+payload = "{table, id, old, new}"
+
+[[event]]
+kind = "entity.archived"
+owner = "shared::actions"
+payload = "{table, id}"
+
+[[event]]
+kind = "entity.restored"
+owner = "shared::actions"
+payload = "{table, id}"
+
+[[event]]
+kind = "entity.status_changed"
+owner = "shared::actions"
+payload = "{table, id, from, to}"

@@ -14,7 +14,7 @@ use crate::api::conn::Db;
 use crate::api::error::StorageError;
 
 /// Highest schema version this build knows.
-pub const MAX_KNOWN: i64 = 3;
+pub const MAX_KNOWN: i64 = 4;
 
 /// One migration. Append-only — never edit existing entries; "reverts" are compensating
 /// forward migrations (INV-DATA-001), proven by tests/migrations_flow.rs.
@@ -207,8 +207,32 @@ pub const MIGRATION_V3_SCHEDULES: Migration = Migration {
     "#,
 };
 
+/// M2-hardening — two DB-level guards:
+/// (a) at most one NON-VOIDED materialized transaction per `(schedule_id,
+///     occurrence_date)`: the unique-index backstop against double materialization
+///     (BK-RECUR-0003). Voided rows drop out of the index, so an edited occurrence's
+///     replacement can carry the same link. The engine also checks inside the posting
+///     transaction (race-free); this index is the last line of defense.
+/// (b) jobs backoff (RULE-JOB-002): `not_before` delays re-claiming a failed job, so a
+///     poison job cannot spin in a hot retry loop.
+pub const MIGRATION_V4_HARDENING: Migration = Migration {
+    version: 4,
+    name: "v4_hardening",
+    sql: r#"
+    CREATE UNIQUE INDEX IF NOT EXISTS transactions_schedule_occ
+        ON transactions(schedule_id, occurrence_date)
+        WHERE schedule_id IS NOT NULL AND status <> 'voided';
+    ALTER TABLE jobs ADD COLUMN not_before TEXT;
+    "#,
+};
+
 /// Ordered migrations. Append-only — never edit existing entries.
-pub const MIGRATIONS: &[Migration] = &[MIGRATION_V1, MIGRATION_V2_LEDGER, MIGRATION_V3_SCHEDULES];
+pub const MIGRATIONS: &[Migration] = &[
+    MIGRATION_V1,
+    MIGRATION_V2_LEDGER,
+    MIGRATION_V3_SCHEDULES,
+    MIGRATION_V4_HARDENING,
+];
 
 /// Read the current schema version (0 if the meta table doesn't exist yet).
 pub fn current_version(conn: &Connection) -> Result<i64, StorageError> {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Ledger errors — registered BK-codes (RULE-ERR-002): BK-LEDGER-0001..0008, plus
+//! Ledger errors — registered BK-codes (RULE-ERR-002): BK-LEDGER-0001..0009, plus
 //! pass-through of storage/shared codes.
 
 use bookkeepy_core::EntityId;
@@ -42,6 +42,10 @@ pub enum LedgerError {
     /// Amount must be positive — BK-LEDGER-0008.
     #[error("amount must be positive")]
     AmountNotPositive,
+    /// Self-transfer / self-categorized transaction (from == to, or the account is its
+    /// own category's backing account) — BK-LEDGER-0009.
+    #[error("self-transfer not allowed: {0}")]
+    SelfTransfer(String),
     /// Underlying storage failure (code passed through).
     #[error(transparent)]
     Store(#[from] bookkeepy_storage::StorageError),
@@ -76,12 +80,23 @@ pub fn into_storage(e: LedgerError) -> bookkeepy_storage::StorageError {
 }
 
 /// Recover a ledger error from a storage error that crossed a closure boundary.
+/// Downcasts both engine error types so their BK-codes survive the boundary.
 pub fn from_storage(e: bookkeepy_storage::StorageError) -> LedgerError {
     match e {
-        bookkeepy_storage::StorageError::Foreign(b) => b
-            .downcast::<LedgerError>()
-            .map(|b| *b)
-            .unwrap_or_else(|b| LedgerError::InvalidTransaction(b.to_string())),
+        bookkeepy_storage::StorageError::Foreign(b) => {
+            // `is` borrows, `downcast` consumes — check first, then downcast exactly once
+            if b.is::<LedgerError>() {
+                *b.downcast::<LedgerError>()
+                    .unwrap_or_else(|_| unreachable!())
+            } else if b.is::<bookkeepy_shared::SharedError>() {
+                LedgerError::Shared(
+                    *b.downcast::<bookkeepy_shared::SharedError>()
+                        .unwrap_or_else(|_| unreachable!()),
+                )
+            } else {
+                LedgerError::InvalidTransaction(b.to_string())
+            }
+        }
         other => LedgerError::Store(other),
     }
 }
@@ -98,6 +113,7 @@ impl LedgerError {
             LedgerError::UnknownCatalog(_) => "BK-LEDGER-0006",
             LedgerError::InvalidTransaction(_) => "BK-LEDGER-0007",
             LedgerError::AmountNotPositive => "BK-LEDGER-0008",
+            LedgerError::SelfTransfer(_) => "BK-LEDGER-0009",
             LedgerError::Store(e) => e.code(),
             LedgerError::Shared(e) => e.code(),
             LedgerError::Sql(_) => "BK-STORE-0001",

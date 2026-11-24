@@ -45,6 +45,11 @@ rounding account").
   `tx::post(db, bus, ev)` writes outbox + audit in ONE transaction, commits, then publishes
   to the bus (crash between commit and publish is healed by `publish_pending` on next
   start — exactly-once).
+- **Self-check extension point (M2-hardening, ADR-0025):**
+  `session::open_session_with(data_dir, id, &[ExtraCheck])` runs higher-layer checks
+  (plain `fn(&Db, &Path) -> Result<CheckItem, _>` pointers — storage still never depends
+  on ledger, RULE-ARCH-001) inside boot and records them in `Session.report.extra`. The M3
+  app shell registers `ledger::entries::verify_chains` and the schedules due-driver here.
 - Jobs (RULE-JOB-001): durable `jobs` table state machine
   queued → running → done | failed (re-queue until `max_attempts`) | paused/cancelled;
   startup driver `resume_pending` re-queues interrupted `running` rows. WAL is checkpointed
@@ -270,6 +275,15 @@ engine, `expand_window` for projections with `assumed_reconciled` on past unmate
 occurrences. Composition point: app shell (M3) calls it at boot step `jobs_resume`
 (`data/load-policies.toml [boot_sequence]`) — storage may not depend on ledger (govern
 deps direction), so the shell is where the two are joined.
+
+**Hardened in the M2-hardening round (2026-11-24, ADR-0025):**
+- **RULE-RECUR-004** — a `Modify` exception is a shallow JSON patch merged over the
+  template for that occurrence only; unknown keys fail (BK-RECUR-0001), never ignored.
+- Schema **v4**: partial unique index `transactions_schedule_occ (schedule_id,
+  occurrence_date) WHERE schedule_id IS NOT NULL AND status <> 'voided'` — exactly-once
+  materialization even under concurrency (BK-RECUR-0003 backstop; the engine also checks
+  inside the posting transaction). `replace()` voids the old row first and INHERITS the
+  schedule link on the replacement; `expand_window` joins the live (non-voided) row.
 
 ## 5.9 Loading & caching
 

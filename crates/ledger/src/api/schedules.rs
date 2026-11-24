@@ -109,7 +109,7 @@ pub fn create(
     recurrence::validate(&rule).map_err(LedgerError::InvalidSchedule)?;
     let id = EntityId::new();
     let ev = EventEnvelope::new(
-        "schedule.created",
+        bookkeepy_contracts::kinds::SCHEDULE_CREATED,
         actor.clone(),
         reason,
         serde_json::json!({
@@ -267,9 +267,12 @@ pub fn expand_window(
     let exp = recurrence::expand(&s.rule, from, to).map_err(LedgerError::InvalidSchedule)?;
     let mut out = Vec::new();
     for o in exp.occurrences {
+        // the LIVE (non-voided) materialization — an edited occurrence's replacement
+        // carries the link after the original was voided (schema v4 partial index)
         let mat: Option<String> = db.with_conn(|c| {
             Ok(c.query_row(
-                "SELECT id FROM transactions WHERE schedule_id=?1 AND occurrence_date=?2",
+                "SELECT id FROM transactions WHERE schedule_id=?1 AND occurrence_date=?2
+                     AND status<>'voided' ORDER BY created_at DESC LIMIT 1",
                 rusqlite::params![schedule_id.to_string(), o.date.to_string()],
                 |r| r.get(0),
             )
@@ -298,8 +301,43 @@ pub struct Expansion2 {
     pub capped: bool,
 }
 
-fn template_to_new(s: &Schedule, date: Date) -> Result<NewTransaction, LedgerError> {
-    let t = &s.template;
+/// Apply a `Modify` exception patch over the schedule template (RULE-RECUR-004): a
+/// shallow JSON-object merge — `amount_minor`, `note`, `category_id`, … override the
+/// template for THIS occurrence only. Unknown keys fail loudly (typo = visible error,
+/// never silently ignored).
+fn apply_patch(
+    tpl: &ScheduleTemplate,
+    patch: Option<&serde_json::Value>,
+) -> Result<ScheduleTemplate, LedgerError> {
+    let Some(patch) = patch else {
+        return Ok(tpl.clone());
+    };
+    let mut v = serde_json::to_value(tpl)
+        .map_err(|e| LedgerError::InvalidSchedule(format!("template encode: {e}")))?;
+    let Some(obj) = v.as_object_mut() else {
+        return Err(LedgerError::InvalidSchedule(
+            "template not an object".into(),
+        ));
+    };
+    let Some(patch_obj) = patch.as_object() else {
+        return Err(LedgerError::InvalidSchedule(
+            "modify patch must be a JSON object".into(),
+        ));
+    };
+    for (k, val) in patch_obj {
+        obj.insert(k.clone(), val.clone());
+    }
+    serde_json::from_value(v)
+        .map_err(|e| LedgerError::InvalidSchedule(format!("bad modify patch: {e}")))
+}
+
+fn template_to_new(
+    s: &Schedule,
+    date: Date,
+    patch: Option<&serde_json::Value>,
+) -> Result<NewTransaction, LedgerError> {
+    let t = apply_patch(&s.template, patch)?;
+    let t = &t;
     let cur = bookkeepy_core::CurrencyCode::new(&t.currency)
         .map_err(|_| LedgerError::InvalidSchedule(format!("bad currency {:?}", t.currency)))?;
     let value_ts: Timestamp = date
@@ -347,15 +385,21 @@ pub fn materialize_one(
 ) -> Result<EntityId, LedgerError> {
     let s = get(db, schedule_id)?
         .ok_or_else(|| LedgerError::InvalidSchedule(format!("schedule {schedule_id}")))?;
-    if let Some((_, Exception::Skip)) = s.rule.exceptions.iter().find(|(d, _)| *d == date) {
+    let exception = s.rule.exceptions.iter().find(|(d, _)| *d == date);
+    if let Some((_, Exception::Skip)) = exception {
         return Err(LedgerError::InvalidSchedule(format!(
             "occurrence {date} is skip-excepted"
         )));
     }
+    // RULE-RECUR-004: a Modify exception patches the template for this occurrence only
+    let patch = match exception {
+        Some((_, Exception::Modify { patch })) => Some(patch.clone()),
+        _ => None,
+    };
     if is_materialized(db, schedule_id, date)? {
         return Err(LedgerError::AlreadyMaterialized(date.to_string()));
     }
-    let new = template_to_new(&s, date)?;
+    let new = template_to_new(&s, date, patch.as_ref())?;
     transactions::create(db, bus, &Actor::Scheduler, new, reason)
 }
 
@@ -384,6 +428,7 @@ pub fn materialize_due(db: &Db, bus: &Bus, today: Date) -> Result<Vec<EntityId>,
             out.push(tx);
         }
     }
+    tracing::info!(today = %today, posted = out.len(), "schedule due materialization pass (no backfill)");
     Ok(out)
 }
 
@@ -605,5 +650,62 @@ mod tests {
         rule.end = EndRule::OnDate(d("2026-01-01")); // end before start
         let err = create(&db, &bus, &Actor::User, tpl(), rule, "bad").unwrap_err();
         assert_eq!(err.code(), "BK-RECUR-0001");
+    }
+
+    #[test]
+    fn modify_exception_patches_materialized_amount() {
+        let (_t, db, bus, cash, food) = setup();
+        let mut t = tpl();
+        t.from = Some(cash.to_string());
+        t.category_id = Some(food.to_string());
+        let mut rule = monthly_rule("2026-01-31");
+        // RULE-RECUR-004: modify the Feb occurrence to a different amount
+        rule.exceptions = vec![(
+            d("2026-02-28"),
+            Exception::Modify {
+                patch: serde_json::json!({"amount_minor": 250}),
+            },
+        )];
+        let s = create(&db, &bus, &Actor::User, t, rule, "seed").unwrap();
+        materialize_range_as_job(&db, s, d("2026-01-01"), d("2026-03-31")).unwrap();
+        let made = run_materialize_job(&db, &bus, 3).unwrap();
+        assert_eq!(made.len(), 3); // 01-31, 02-28 (modified), 03-31
+        let amount_of = |occ: &str| -> i64 {
+            db.with_conn(|c| {
+                Ok(c.query_row(
+                    "SELECT p.amount_minor FROM postings p
+                     JOIN journal_entries e ON e.id = p.entry_id
+                     JOIN transactions t ON t.entry_id = e.id
+                     WHERE t.schedule_id=?1 AND t.occurrence_date=?2 AND p.side='debit'",
+                    rusqlite::params![s.to_string(), occ],
+                    |r| r.get(0),
+                )?)
+            })
+            .unwrap()
+        };
+        assert_eq!(amount_of("2026-01-31"), 100); // template amount
+        assert_eq!(amount_of("2026-02-28"), 250); // patched amount
+        assert_eq!(amount_of("2026-03-31"), 100);
+    }
+
+    #[test]
+    fn double_materialization_is_rejected() {
+        let (_t, db, bus, cash, food) = setup();
+        let mut t = tpl();
+        t.from = Some(cash.to_string());
+        t.category_id = Some(food.to_string());
+        let s = create(
+            &db,
+            &bus,
+            &Actor::User,
+            t,
+            monthly_rule("2026-11-20"),
+            "seed",
+        )
+        .unwrap();
+        materialize_one(&db, &bus, s, d("2026-11-20"), "first").unwrap();
+        // second attempt on the same occurrence -> BK-RECUR-0003 (in-tx guard + unique index)
+        let err = materialize_one(&db, &bus, s, d("2026-11-20"), "dupe").unwrap_err();
+        assert_eq!(err.code(), "BK-RECUR-0003");
     }
 }

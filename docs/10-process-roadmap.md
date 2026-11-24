@@ -503,3 +503,38 @@ isolation, boot-subsequence invariant, primary-data keys↔defaults sync. Full
   exception, invalid rule), migration flow v3. Full `cargo xtask check` 18/18 PASS.
 - Docs: ADR-0020 implemented as written; doc 05 §5.13 addendum; doc 03 tree; doc 04 §4.2
   registry; doc 02 F2; code-map summaries; changelog.
+
+## M2 hardening round (2026-11-24) — bugs/edge cases found by auditing M2+M2b, all fixed (ADR-0025)
+
+Prompt: *"what can we do to improve m2? find bugs, edge cases, QoL… is everything
+interconnected with m1 and m0?"* — all 10 approved items implemented:
+
+- **Bugs:** (1) `Exception::Modify` patches are now applied at materialization
+  (RULE-RECUR-004, shallow JSON merge over the template, unknown keys fail loudly);
+  (2) schema **v4** partial unique index `transactions_schedule_occ (schedule_id,
+  occurrence_date) WHERE … AND status <> 'voided'` + in-transaction guard + BK-RECUR-0003
+  mapping — exactly-once materialization even under concurrency, and `LedgerError`/
+  `SharedError` BK-codes now survive the storage closure boundary (`from_storage`
+  downcasts both); (3) `replace()` voids the old row first and inherits
+  `schedule_id`/`occurrence_date` on the replacement; `expand_window` joins the live
+  (non-voided) row.
+- **Edge cases:** (4) self-transfer / self-categorized transactions rejected
+  (BK-LEDGER-0009); (5) `transactions::get` parses kind/status strictly (corruption =
+  BK-LEDGER-0007, never a silent default); (6) **RULE-JOB-002** persisted backoff:
+  `jobs.not_before` set by `fail` (exponential 2s→cap 300s + deterministic id-hash jitter,
+  no RNG), `claim_next` only picks due jobs — no poison-job hot loop.
+- **Interconnection/SSOT:** (7) `session::open_session_with(dir, id, &[ExtraCheck])` runs
+  higher-layer boot checks as injected fn pointers, recorded in `SelfCheckReport.extra`
+  — storage still never depends on ledger (RULE-ARCH-001); M3 shell registers
+  `entries::verify_chains` + the schedules due-driver there. (8) engines (ledger/shared/
+  storage jobs) emit `tracing` at their boundaries. (9) **RULE-EVT-001 mechanics**:
+  event kinds exist only as `contracts::kinds` consts + `data/events.toml` registry;
+  new `govern events` check (const set == registry, no stray literals) — 14 kinds.
+- **QoL:** (10) `archive_account` returns `ArchiveOutcome { balance }` — the UI warns
+  (never blocks, RULE-UX-001) when archiving a non-zero account.
+- Tests: modify-patch materialization amounts, double-materialization rejection,
+  replace-inherits-link, self-transfer rejection, backoff growth/cap/determinism,
+  extra-checks boot wiring, migrations_flow now experiments v5/v6. Full
+  `cargo xtask check` green — 19 gates (added `govern events`).
+- Docs: ADR-0025, doc 04 §4.6/§4.8, doc 05 §5.2/§5.13, doc 03 tree, data/README,
+  code-map, changelog.

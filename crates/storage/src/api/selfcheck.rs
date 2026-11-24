@@ -18,6 +18,19 @@ use crate::api::outbox;
 /// recent commits). Auto-checkpoint (1000 pages) normally keeps this small.
 pub const WAL_WARN_BYTES: u64 = 16 * 1024 * 1024;
 
+/// One extra integrity check contributed by a HIGHER layer (RULE-ARCH-001 keeps the
+/// direction clean: storage never depends on ledger — the app shell passes closures in
+/// via `open_session_with`, e.g. ledger hash-chain verification or schedules due count).
+#[derive(Debug, Clone, Serialize)]
+pub struct CheckItem {
+    /// Check name (e.g. `ledger.chains`).
+    pub name: String,
+    /// Passed.
+    pub ok: bool,
+    /// Detail (failure point, counts), optional.
+    pub detail: Option<String>,
+}
+
 /// Self-check report (serializable into a diagnostic bundle entry).
 #[derive(Debug, Clone, Serialize)]
 pub struct SelfCheckReport {
@@ -46,6 +59,10 @@ pub struct SelfCheckReport {
     /// Boot duration in milliseconds, measured by `session::open_session` against the
     /// `cold_start_to_add_transaction` budget in `data/perf-budgets.toml` (INV-LOAD-001).
     pub boot_ms: Option<u64>,
+    /// Extra checks contributed by higher layers via `session::open_session_with`
+    /// (e.g. ledger hash chains). Empty for the plain `open_session`.
+    #[serde(default)]
+    pub extra: Vec<CheckItem>,
 }
 
 impl SelfCheckReport {
@@ -105,6 +122,7 @@ pub fn run(db: &Db, root: &Path) -> Result<SelfCheckReport, StorageError> {
         orphan_settings,
         wal_bytes,
         boot_ms: None,
+        extra: Vec::new(),
     })
 }
 

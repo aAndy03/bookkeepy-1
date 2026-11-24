@@ -101,7 +101,7 @@ mod tests {
         bus.subscribe(move |ev| s2.lock().unwrap().push(ev.kind.clone()));
 
         let ev = EventEnvelope::new(
-            "ledger.posted",
+            bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
             Actor::User,
             "test",
             serde_json::json!({"x":1}),
@@ -111,7 +111,10 @@ mod tests {
 
         assert_eq!(publish_pending(&db, &bus).unwrap(), 1);
         assert_eq!(pending_count(&db).unwrap(), 0);
-        assert_eq!(seen.lock().unwrap().as_slice(), ["ledger.posted"]);
+        assert_eq!(
+            seen.lock().unwrap().as_slice(),
+            [bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED]
+        );
         // second run publishes nothing (exactly-once)
         assert_eq!(publish_pending(&db, &bus).unwrap(), 0);
     }

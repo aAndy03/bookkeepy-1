@@ -88,6 +88,10 @@ pub struct TransactionRow {
     pub entry_id: Option<EntityId>,
     /// Replaces (edit chain).
     pub replaces: Option<EntityId>,
+    /// Owning schedule, if materialized from one (inherited by replacements on edit).
+    pub schedule_id: Option<EntityId>,
+    /// Occurrence date, if materialized from a schedule.
+    pub occurrence_date: Option<jiff::civil::Date>,
 }
 
 impl Actionable for TransactionRow {
@@ -113,6 +117,13 @@ pub fn compile(new: &NewTransaction, db: &Db) -> Result<Vec<Posting>, LedgerErro
             let cat_acc = catalog::get_category(db, cat)?
                 .ok_or_else(|| LedgerError::UnknownCatalog(format!("category {cat}")))?
                 .account_id;
+            // BK-LEDGER-0009: paying into your own category's backing account is a
+            // net-zero self-movement, not a real expense
+            if from == cat_acc {
+                return Err(LedgerError::SelfTransfer(
+                    "expense account is its own category's backing account".into(),
+                ));
+            }
             Ok(vec![
                 Posting {
                     account_id: from,
@@ -136,6 +147,11 @@ pub fn compile(new: &NewTransaction, db: &Db) -> Result<Vec<Posting>, LedgerErro
             let cat_acc = catalog::get_category(db, cat)?
                 .ok_or_else(|| LedgerError::UnknownCatalog(format!("category {cat}")))?
                 .account_id;
+            if to == cat_acc {
+                return Err(LedgerError::SelfTransfer(
+                    "income account is its own category's backing account".into(),
+                ));
+            }
             Ok(vec![
                 Posting {
                     account_id: to,
@@ -156,6 +172,12 @@ pub fn compile(new: &NewTransaction, db: &Db) -> Result<Vec<Posting>, LedgerErro
             let to = new.to.ok_or_else(|| {
                 LedgerError::InvalidTransaction("transfer needs a destination".into())
             })?;
+            // BK-LEDGER-0009: a transfer to yourself is a net-zero self-movement
+            if from == to {
+                return Err(LedgerError::SelfTransfer(
+                    "transfer source and destination are the same account".into(),
+                ));
+            }
             Ok(vec![
                 Posting {
                     account_id: to,
@@ -198,7 +220,7 @@ fn create_in_tx(
     let tx_id = EntityId::new();
     let entry_id = EntityId::new();
     let ev = EventEnvelope::new(
-        "transaction.posted",
+        bookkeepy_contracts::kinds::TRANSACTION_POSTED,
         actor.clone(),
         reason,
         serde_json::json!({
@@ -227,9 +249,25 @@ fn create_in_tx(
     let sched = new.schedule_id.map(|s| s.to_string());
     let occ = new.occurrence_date.map(|d| d.to_string());
     tx::post_with(db, bus, &ev, |tx| {
+        // Race-free materialization guard (BK-RECUR-0003): inside the SAME transaction,
+        // count live (non-voided) rows for this (schedule, occurrence). The partial
+        // unique index `transactions_schedule_occ` (schema v4) is the DB-level backstop
+        // mapped below.
+        if let (Some(sid), Some(occ_date)) = (&new.schedule_id, &new.occurrence_date) {
+            let n: i64 = tx.query_row(
+                "SELECT COUNT(*) FROM transactions WHERE schedule_id=?1 AND occurrence_date=?2 AND status<>'voided'",
+                rusqlite::params![sid.to_string(), occ_date.to_string()],
+                |r| r.get(0),
+            )?;
+            if n > 0 {
+                return Err(crate::api::error::into_storage(
+                    LedgerError::AlreadyMaterialized(occ_date.to_string()),
+                ));
+            }
+        }
         entries::insert_in_tx(tx, entry_id, "entry", &entry, None)
             .map_err(crate::api::error::into_storage)?;
-        tx.execute(
+        let inserted = tx.execute(
             "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at, schedule_id, occurrence_date)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             rusqlite::params![
@@ -247,50 +285,90 @@ fn create_in_tx(
                 sched,
                 occ,
             ],
-        )?;
+        );
+        if let Err(e) = inserted {
+            // Backstop: the partial unique index fired (concurrent materialization).
+            if e.to_string().contains("transactions_schedule_occ") {
+                return Err(crate::api::error::into_storage(
+                    LedgerError::AlreadyMaterialized(
+                        new.occurrence_date
+                            .map(|d| d.to_string())
+                            .unwrap_or_default(),
+                    ),
+                ));
+            }
+            return Err(e.into());
+        }
         catalog::attach_tags_in_tx(tx, tx_id, &tags).map_err(crate::api::error::into_storage)?;
+        tracing::info!(tx_id = %tx_id, kind = new.kind.as_str(), entry_id = %entry_id, "transaction posted");
         Ok(())
-    })?;
+    }).map_err(crate::api::error::from_storage)?;
     Ok((tx_id, entry_id))
 }
 
-/// Get a transaction row.
+/// Get a transaction row. Strict parsing: a corrupt `kind`/`status` value is an error
+/// (BK-LEDGER-0007), never silently defaulted — corruption must surface, not hide.
 pub fn get(db: &Db, id: EntityId) -> Result<Option<TransactionRow>, LedgerError> {
-    Ok(db.with_conn(|c| {
+    let raw = db.with_conn(|c| {
         Ok(c.query_row(
-            "SELECT id, kind, status, value_ts, entry_id, replaces FROM transactions WHERE id=?1",
+            "SELECT id, kind, status, value_ts, entry_id, replaces, schedule_id, occurrence_date
+                 FROM transactions WHERE id=?1",
             [id.to_string()],
             |r| {
-                let kind: String = r.get(1)?;
-                let status: String = r.get(2)?;
-                Ok(TransactionRow {
-                    id: r.get::<_, String>(0)?.parse().map_err(|_| {
-                        rusqlite::Error::FromSqlConversionFailure(
-                            0,
-                            rusqlite::types::Type::Text,
-                            Box::new(std::io::Error::other("bad id")),
-                        )
-                    })?,
-                    kind: match kind.as_str() {
-                        "income" => TxKind::Income,
-                        "transfer" => TxKind::Transfer,
-                        _ => TxKind::Expense,
-                    },
-                    status: TxStatus::from_db(&status).unwrap_or(TxStatus::Cleared),
-                    value_ts: r.get::<_, String>(3)?.parse().map_err(|_| {
-                        rusqlite::Error::FromSqlConversionFailure(
-                            3,
-                            rusqlite::types::Type::Text,
-                            Box::new(std::io::Error::other("bad ts")),
-                        )
-                    })?,
-                    entry_id: r.get::<_, Option<String>>(4)?.and_then(|s| s.parse().ok()),
-                    replaces: r.get::<_, Option<String>>(5)?.and_then(|s| s.parse().ok()),
-                })
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, String>(3)?,
+                    r.get::<_, Option<String>>(4)?,
+                    r.get::<_, Option<String>>(5)?,
+                    r.get::<_, Option<String>>(6)?,
+                    r.get::<_, Option<String>>(7)?,
+                ))
             },
         )
         .optional()?)
-    })?)
+    })?;
+    let Some((id_s, kind_s, status_s, ts_s, entry_s, replaces_s, sched_s, occ_s)) = raw else {
+        return Ok(None);
+    };
+    let kind = match kind_s.as_str() {
+        "income" => TxKind::Income,
+        "expense" => TxKind::Expense,
+        "transfer" => TxKind::Transfer,
+        other => {
+            return Err(LedgerError::InvalidTransaction(format!(
+                "corrupt transaction {id}: unknown kind {other:?}"
+            )));
+        }
+    };
+    let status = TxStatus::from_db(&status_s).ok_or_else(|| {
+        LedgerError::InvalidTransaction(format!(
+            "corrupt transaction {id}: unknown status {status_s:?}"
+        ))
+    })?;
+    let parse_id = |s: Option<String>| s.and_then(|s| s.parse().ok());
+    Ok(Some(TransactionRow {
+        id: id_s.parse().map_err(|_| {
+            LedgerError::InvalidTransaction(format!("corrupt transaction id {id_s:?}"))
+        })?,
+        kind,
+        status,
+        value_ts: ts_s.parse().map_err(|_| {
+            LedgerError::InvalidTransaction(format!("corrupt transaction {id}: bad value_ts"))
+        })?,
+        entry_id: parse_id(entry_s),
+        replaces: parse_id(replaces_s),
+        schedule_id: parse_id(sched_s),
+        occurrence_date: match occ_s {
+            Some(s) => Some(s.parse().map_err(|_| {
+                LedgerError::InvalidTransaction(format!(
+                    "corrupt transaction {id}: bad occurrence_date"
+                ))
+            })?),
+            None => None,
+        },
+    }))
 }
 
 /// Change a transaction's status. `voided` posts the linked reversal in the SAME
@@ -315,7 +393,7 @@ pub fn set_status(
         LedgerError::InvalidTransaction(format!("transaction {tx_id} has no posted entry"))
     })?;
     let ev = EventEnvelope::new(
-        "transaction.status_changed",
+        bookkeepy_contracts::kinds::TRANSACTION_STATUS_CHANGED,
         actor.clone(),
         reason,
         serde_json::json!({"tx_id": tx_id.to_string(), "from": row.status.as_str(), "to": new_status.as_str()}),
@@ -328,7 +406,8 @@ pub fn set_status(
         }
         change_status_in_tx(tx, &row, &status_s).map_err(bookkeepy_shared::into_storage)?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(())
 }
 
@@ -428,7 +507,7 @@ pub fn replace(
     let new_tx = EntityId::new();
     let new_entry = EntityId::new();
     let ev = EventEnvelope::new(
-        "transaction.replaced",
+        bookkeepy_contracts::kinds::TRANSACTION_REPLACED,
         actor.clone(),
         reason,
         serde_json::json!({"old_tx": old_tx_id.to_string(), "new_tx": new_tx.to_string()}),
@@ -446,10 +525,19 @@ pub fn replace(
     let cat = new.category_id.map(|c| c.to_string());
     let note = new.note.clone();
     let tags = new.tag_ids.clone();
-    let sched = new.schedule_id.map(|s| s.to_string());
-    let occ = new.occurrence_date.map(|d| d.to_string());
+    // The replacement INHERITS the schedule link of the old row unless explicitly
+    // overridden — editing a materialized occurrence must not orphan it in projections.
+    // The old row is voided first, so the partial unique index (v4) admits the new row.
+    let sched = new.schedule_id.or(row.schedule_id).map(|s| s.to_string());
+    let occ = new
+        .occurrence_date
+        .or(row.occurrence_date)
+        .map(|d| d.to_string());
     tx::post_with(db, bus, &ev, |tx| {
         reverse_in_tx(tx, old_entry, reason).map_err(crate::api::error::into_storage)?;
+        // void the old row BEFORE inserting the replacement (unique index excludes voided)
+        change_status_in_tx(tx, &row, TxStatus::Voided.as_str())
+            .map_err(bookkeepy_shared::into_storage)?;
         entries::insert_in_tx(tx, new_entry, "entry", &entry, None)
             .map_err(crate::api::error::into_storage)?;
         tx.execute(
@@ -472,10 +560,9 @@ pub fn replace(
             ],
         )?;
         catalog::attach_tags_in_tx(tx, new_tx, &tags).map_err(crate::api::error::into_storage)?;
-        change_status_in_tx(tx, &row, TxStatus::Voided.as_str())
-            .map_err(bookkeepy_shared::into_storage)?;
+        tracing::info!(old_tx = %old_tx_id, new_tx = %new_tx, "transaction replaced (reversal + replacement, old voided)");
         Ok(())
-    })?;
+    }).map_err(crate::api::error::from_storage)?;
     Ok(new_tx)
 }
 
@@ -631,5 +718,118 @@ mod tests {
             7000
         );
         entries::verify_chains(&db).unwrap();
+    }
+
+    #[test]
+    fn self_transfer_rejected() {
+        let (_t, db, bus, cash, _bank, _food) = setup();
+        let ron = CurrencyCode::new("RON").unwrap();
+        let err = create(
+            &db,
+            &bus,
+            &Actor::User,
+            NewTransaction {
+                kind: TxKind::Transfer,
+                amount: Money::new(100, ron),
+                from: Some(cash),
+                to: Some(cash), // same account — BK-LEDGER-0009
+                category_id: None,
+                payee_id: None,
+                tag_ids: vec![],
+                note: None,
+                value_ts: now(),
+                status: TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
+            },
+            "self",
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), "BK-LEDGER-0009");
+    }
+
+    #[test]
+    fn duplicate_schedule_occurrence_rejected_in_tx() {
+        let (_t, db, bus, cash, _bank, food) = setup();
+        let ron = CurrencyCode::new("RON").unwrap();
+        let sid = EntityId::new();
+        let occ: jiff::civil::Date = "2026-03-31".parse().unwrap();
+        let mk = || NewTransaction {
+            kind: TxKind::Expense,
+            amount: Money::new(100, ron.clone()),
+            from: Some(cash),
+            to: None,
+            category_id: Some(food),
+            payee_id: None,
+            tag_ids: vec![],
+            note: None,
+            value_ts: now(),
+            status: TxStatus::Cleared,
+            schedule_id: Some(sid),
+            occurrence_date: Some(occ),
+        };
+        create(&db, &bus, &Actor::User, mk(), "first").unwrap();
+        // second materialization of the SAME occurrence must fail BK-RECUR-0003
+        // (in-tx guard; the v4 partial unique index is the DB backstop)
+        let err = create(&db, &bus, &Actor::User, mk(), "dupe").unwrap_err();
+        assert_eq!(err.code(), "BK-RECUR-0003");
+    }
+
+    #[test]
+    fn replace_inherits_schedule_link() {
+        let (_t, db, bus, cash, _bank, food) = setup();
+        let ron = CurrencyCode::new("RON").unwrap();
+        let sid = EntityId::new();
+        let occ: jiff::civil::Date = "2026-03-31".parse().unwrap();
+        let tx = create(
+            &db,
+            &bus,
+            &Actor::User,
+            NewTransaction {
+                kind: TxKind::Expense,
+                amount: Money::new(100, ron.clone()),
+                from: Some(cash),
+                to: None,
+                category_id: Some(food),
+                payee_id: None,
+                tag_ids: vec![],
+                note: Some("orig".into()),
+                value_ts: now(),
+                status: TxStatus::Cleared,
+                schedule_id: Some(sid),
+                occurrence_date: Some(occ),
+            },
+            "materialized",
+        )
+        .unwrap();
+        // edit WITHOUT re-passing the schedule fields — the replacement must inherit them
+        let tx2 = replace(
+            &db,
+            &bus,
+            &Actor::User,
+            tx,
+            NewTransaction {
+                kind: TxKind::Expense,
+                amount: Money::new(200, ron),
+                from: Some(cash),
+                to: None,
+                category_id: Some(food),
+                payee_id: None,
+                tag_ids: vec![],
+                note: Some("edited".into()),
+                value_ts: now(),
+                status: TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
+            },
+            "edit",
+        )
+        .unwrap();
+        let new = get(&db, tx2).unwrap().unwrap();
+        assert_eq!(new.schedule_id, Some(sid));
+        assert_eq!(new.occurrence_date, Some(occ));
+        assert_eq!(get(&db, tx).unwrap().unwrap().status, TxStatus::Voided);
+        entries::verify_chains(&db).unwrap();
+        crate::api::balances::assert_trial_balance(&db, None).unwrap();
     }
 }

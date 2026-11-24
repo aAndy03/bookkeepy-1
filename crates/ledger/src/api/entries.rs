@@ -251,7 +251,7 @@ pub fn post(
     validate_postings(db, &new.postings)?;
     let id = EntityId::new();
     let ev = EventEnvelope::new(
-        "ledger.entry.posted",
+        bookkeepy_contracts::kinds::LEDGER_ENTRY_POSTED,
         actor.clone(),
         reason,
         serde_json::json!({"entry_id": id.to_string(), "tx_id": new.tx_id.map(|t| t.to_string()), "postings": new.postings.len()}),
@@ -341,7 +341,7 @@ pub fn reverse(
     };
     let id = EntityId::new();
     let ev = EventEnvelope::new(
-        "ledger.entry.reversed",
+        bookkeepy_contracts::kinds::LEDGER_ENTRY_REVERSED,
         actor.clone(),
         reason,
         serde_json::json!({"entry_id": id.to_string(), "reversal_of": entry_id.to_string()}),

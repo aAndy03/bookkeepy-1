@@ -122,7 +122,7 @@ pub fn create_category(
     let id = EntityId::new();
     let account_id = EntityId::new();
     let ev = EventEnvelope::new(
-        "category.created",
+        bookkeepy_contracts::kinds::CATEGORY_CREATED,
         actor.clone(),
         reason,
         serde_json::json!({"id": id.to_string(), "name": name, "account_id": account_id.to_string()}),
@@ -207,7 +207,7 @@ pub fn create_tag(
 ) -> Result<EntityId, LedgerError> {
     let id = EntityId::new();
     let ev = EventEnvelope::new(
-        "tag.created",
+        bookkeepy_contracts::kinds::TAG_CREATED,
         actor.clone(),
         reason,
         serde_json::json!({"id": id.to_string(), "name": name}),
@@ -232,7 +232,7 @@ pub fn create_party(
 ) -> Result<EntityId, LedgerError> {
     let id = EntityId::new();
     let ev = EventEnvelope::new(
-        "party.created",
+        bookkeepy_contracts::kinds::PARTY_CREATED,
         actor.clone(),
         reason,
         serde_json::json!({"id": id.to_string(), "name": name}),

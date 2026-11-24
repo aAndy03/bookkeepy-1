@@ -9,6 +9,7 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 |---|---|---|
 | `currencies.toml` | ISO 4217 currencies: code, name, numeric, minor units, countries | Official ISO 4217 via SIX Group, published 2026-09-17 (`[source]` header) |
 | `errors.toml` | Registry of every user-facing error/warning BK-code: severity + i18n key | Project-maintained; governor enforces code ↔ registry ↔ locales |
+| `events.toml` | Registry of every domain event kind (RULE-EVT-001): owner crate + payload shape | Project-maintained; `xtask govern events` enforces registry ↔ `contracts::kinds` consts and no stray literals in code |
 | `defaults.toml` | Fallback/default policies (rates fallback chain, deleted-manual-rates behavior, system-context defaults) | Project-maintained |
 | `load-policies.toml` | What loads when; hot/warm/cold tiers; prefetch rules; usage-tracking scope | Project-maintained |
 | `perf-budgets.toml` | Performance budgets asserted in CI by criterion benches + `xtask govern perf` | Project-maintained |

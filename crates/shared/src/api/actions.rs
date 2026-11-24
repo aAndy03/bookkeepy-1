@@ -101,6 +101,12 @@ fn public(db: &Db, bus: &Bus, actor: &Actor, act: &Act) -> Result<(), SharedErro
         run_in_tx(tx, act).map_err(super::error::into_storage)?;
         Ok(())
     })?;
+    tracing::info!(
+        kind = act.kind,
+        table = act.entity.table(),
+        id = %act.entity.id(),
+        "shared action applied (audited)"
+    );
     Ok(())
 }
 
@@ -113,7 +119,7 @@ pub fn rename_in_tx(
     run_in_tx(
         tx,
         &Act {
-            kind: "entity.renamed",
+            kind: bookkeepy_contracts::kinds::ENTITY_RENAMED,
             entity,
             reason: "",
             payload: serde_json::Value::Null,
@@ -153,7 +159,7 @@ pub fn rename(
         bus,
         actor,
         &Act {
-            kind: "entity.renamed",
+            kind: bookkeepy_contracts::kinds::ENTITY_RENAMED,
             entity,
             reason,
             payload: serde_json::json!({"table": table, "id": entity.id().to_string(), "old": old, "new": new_name}),
@@ -169,7 +175,7 @@ pub fn archive_in_tx(tx: &Transaction, entity: &impl Actionable) -> Result<(), S
     run_in_tx(
         tx,
         &Act {
-            kind: "entity.archived",
+            kind: bookkeepy_contracts::kinds::ENTITY_ARCHIVED,
             entity,
             reason: "",
             payload: serde_json::Value::Null,
@@ -194,7 +200,7 @@ pub fn archive(
         bus,
         actor,
         &Act {
-            kind: "entity.archived",
+            kind: bookkeepy_contracts::kinds::ENTITY_ARCHIVED,
             entity,
             reason,
             payload: serde_json::json!({"table": entity.table(), "id": entity.id().to_string()}),
@@ -210,7 +216,7 @@ pub fn restore_in_tx(tx: &Transaction, entity: &impl Actionable) -> Result<(), S
     run_in_tx(
         tx,
         &Act {
-            kind: "entity.restored",
+            kind: bookkeepy_contracts::kinds::ENTITY_RESTORED,
             entity,
             reason: "",
             payload: serde_json::Value::Null,
@@ -234,7 +240,7 @@ pub fn restore(
         bus,
         actor,
         &Act {
-            kind: "entity.restored",
+            kind: bookkeepy_contracts::kinds::ENTITY_RESTORED,
             entity,
             reason,
             payload: serde_json::json!({"table": entity.table(), "id": entity.id().to_string()}),
@@ -254,7 +260,7 @@ pub fn change_status_in_tx(
     run_in_tx(
         tx,
         &Act {
-            kind: "entity.status_changed",
+            kind: bookkeepy_contracts::kinds::ENTITY_STATUS_CHANGED,
             entity,
             reason: "",
             payload: serde_json::Value::Null,
@@ -281,7 +287,7 @@ pub fn change_status(
         bus,
         actor,
         &Act {
-            kind: "entity.status_changed",
+            kind: bookkeepy_contracts::kinds::ENTITY_STATUS_CHANGED,
             entity,
             reason,
             payload: serde_json::json!({"table": entity.table(), "id": entity.id().to_string(), "status": new_status}),

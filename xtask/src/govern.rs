@@ -14,7 +14,7 @@ fn root() -> PathBuf {
 
 /// All governors, in tree order.
 const ALL: &[&str] = &[
-    "data", "errors", "adr", "docs", "deps", "net", "lints", "perf", "ui", "meta",
+    "data", "errors", "events", "adr", "docs", "deps", "net", "lints", "perf", "ui", "meta",
 ];
 
 /// Run one governor, or all when `sub` is None. Non-zero exit if any fails.
@@ -28,6 +28,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
         let ok = match name {
             "data" => data(),
             "errors" => errors(),
+            "events" => events(),
             "adr" => adr(),
             "docs" => docs(),
             "deps" => deps(),
@@ -110,6 +111,109 @@ fn errors() -> bool {
             false
         }
     }
+}
+
+/// `govern events` — RULE-EVT-001: event kinds are defined ONLY as consts in
+/// `bookkeepy_contracts::kinds` and registered in `data/events.toml`. The const set and
+/// the registry must be identical, and no other source file may contain a kind literal
+/// (first arg of `EventEnvelope::new(...)` or a `kind: "..."` field).
+fn events() -> bool {
+    let reg: Vec<String> = match bookkeepy_primary_data::events::get() {
+        Ok(list) => list.iter().map(|e| e.kind.clone()).collect(),
+        Err(e) => {
+            eprintln!("govern events: FAIL: registry invalid: {e}");
+            return false;
+        }
+    };
+    let kinds_path = root().join("crates/contracts/src/api/kinds.rs");
+    let kinds_src = match std::fs::read_to_string(&kinds_path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!(
+                "govern events: FAIL: cannot read {}: {e}",
+                kinds_path.display()
+            );
+            return false;
+        }
+    };
+    let mut consts: Vec<String> = Vec::new();
+    for line in kinds_src.lines() {
+        if line.contains("pub const")
+            && let Some(q1) = line.find("\"")
+            && let Some(q2) = line[q1 + 1..].find("\"")
+        {
+            consts.push(line[q1 + 1..q1 + 1 + q2].to_string());
+        }
+    }
+    let mut reg_sorted = reg.clone();
+    reg_sorted.sort_unstable();
+    let mut consts_sorted = consts.clone();
+    consts_sorted.sort_unstable();
+    let mut ok = true;
+    if reg_sorted != consts_sorted {
+        eprintln!("govern events: FAIL: kinds consts != data/events.toml registry");
+        eprintln!(
+            "  only in code: {:?}",
+            consts_sorted
+                .iter()
+                .filter(|c| !reg_sorted.contains(c))
+                .collect::<Vec<_>>()
+        );
+        eprintln!(
+            "  only in registry: {:?}",
+            reg_sorted
+                .iter()
+                .filter(|c| !consts_sorted.contains(c))
+                .collect::<Vec<_>>()
+        );
+        ok = false;
+    }
+    // no kind literals outside kinds.rs
+    let mut files = Vec::new();
+    collect_rs(&root().join("crates"), &mut files);
+    for f in &files {
+        if f.file_name().is_some_and(|n| n == "kinds.rs") {
+            continue;
+        }
+        let Ok(content) = std::fs::read_to_string(f) else {
+            continue;
+        };
+        let mut rest = content.as_str();
+        while let Some(idx) = rest.find("EventEnvelope::new(") {
+            let tail = &rest[idx + "EventEnvelope::new(".len()..];
+            let trimmed = tail.trim_start();
+            if let Some(stripped) = trimmed.strip_prefix('"') {
+                let lit: String = stripped.chars().take_while(|c| *c != '"').collect();
+                eprintln!(
+                    "govern events: FAIL: kind literal {lit:?} in {} — use bookkeepy_contracts::kinds const",
+                    f.display()
+                );
+                ok = false;
+            }
+            rest = tail;
+        }
+        for line in content.lines() {
+            let t = line.trim_start();
+            if t.starts_with("kind:") && t.contains('"') {
+                let q1 = t.find('"').unwrap_or(0);
+                let lit: String = t[q1 + 1..].chars().take_while(|c| *c != '"').collect();
+                if lit.contains('.') {
+                    eprintln!(
+                        "govern events: FAIL: kind literal {lit:?} in {} — use bookkeepy_contracts::kinds const",
+                        f.display()
+                    );
+                    ok = false;
+                }
+            }
+        }
+    }
+    if ok {
+        println!(
+            "govern events: PASS ({} kinds, registry == consts, no stray literals)",
+            reg.len()
+        );
+    }
+    ok
 }
 
 /// `govern adr` — ADRs are numbered sequentially, have a Status, and supersede-links resolve.

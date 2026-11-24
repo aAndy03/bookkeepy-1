@@ -14,6 +14,7 @@
 pub mod currencies;
 pub mod defaults;
 pub mod errors;
+pub mod events;
 pub mod load_policies;
 pub mod locales;
 pub mod perf_budgets;

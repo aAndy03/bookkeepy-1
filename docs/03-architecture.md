@@ -15,7 +15,7 @@ bookkeepy-1/                     workspace root
 │   ├── core/                    Money, Currency (from primary data), ids, time, error-code type. No I/O. ✅ M0
 │   ├── primary-data/            loads data/*.toml via include_str!; typed accessors (ADR-0008) ✅ M0; locales/ added M0.5
 │   ├── build-info/              version/git-sha/rustc embedded via build.rs + LICENSE text ✅ M0.5
-│   ├── contracts/               DTOs + domain event envelope (`EventEnvelope`/`Actor`); UI- and storage-agnostic ✅ M0.5
+│   ├── contracts/               DTOs + domain event envelope (`EventEnvelope`/`Actor`) ✅ M0.5; ✅ M2-hardening kinds/ — the ONLY definition point of event-kind strings (RULE-EVT-001, data/events.toml registry, govern events)
 │   ├── bus/                     typed in-process event bus over the envelope ✅ M0.5; durable local outbox lands with storage (M1)
 │   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
 │   ├── reminders/               local reminders/notifications engine (F16) — dismissible, never blocking
