@@ -1,0 +1,47 @@
+# Bookkeepy 1 — primary data: error/warning code registry (RULE-ERR-002, doc 04 §4.4).
+#
+# SINGLE SOURCE OF TRUTH for user-facing diagnostics. Every error variant in code carries a
+# BK-code listed here; `xtask govern errors` fails CI if a code is missing here, or lacks a
+# message in every shipped locale (i18n crates map `i18n_key` → text in the chosen language).
+# severity: warning (toast) | error (dialog, app continues) | fatal (surfaced with
+# "Copy diagnostic" for reporting; the flow halts, the app keeps running elsewhere).
+# Codes are never reused or renumbered; retired codes stay listed with status = "retired".
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR."
+
+[[error]]
+code = "BK-STORE-0001"
+area = "storage"
+severity = "fatal"
+i18n_key = "err.store.open_failed"
+summary = "Cannot open the data file"
+
+[[error]]
+code = "BK-STORE-0002"
+area = "storage"
+severity = "fatal"
+i18n_key = "err.store.migrate_failed"
+summary = "Database migration failed"
+
+[[error]]
+code = "BK-FX-0002"
+area = "rates"
+severity = "error"
+i18n_key = "err.fx.no_rate"
+summary = "No rate available for this currency and date — download rates or enter a manual one"
+
+[[error]]
+code = "BK-IMPORT-0001"
+area = "import"
+severity = "error"
+i18n_key = "err.import.parse_failed"
+summary = "Could not parse the imported file"
+
+[[error]]
+code = "BK-RATES-0001"
+area = "rates"
+severity = "warning"
+i18n_key = "warn.rates.checksum_mismatch"
+summary = "A rates package failed checksum verification and was skipped"

@@ -1,97 +1,99 @@
 # 02 — Feature inventory (user-facing)
 
-Features are grouped by domain. Each domain maps to one crate and one "engine" under the
-conventions of doc 04. "User sees" describes the surface; "Engine does" describes the
-hidden machinery the prompt must software-engineer.
+Features are grouped by domain. Each domain maps to one crate/slice and one "engine" under
+doc 04 conventions. "User sees" = surface; "Engine does" = hidden machinery.
 
 ## F1 — Accounts
-- **User sees:** a list of accounts (cash, bank, card, wallet, loan, investment…), each
-  with a name, type (asset/liability), currency, opening balance, current balance, and a
-  color/icon. Create, rename, archive (never hard-delete an account with history).
-- **Engine does:** account types drive debit/credit normal balance; balances are
-  *derived* from ledger postings, never stored (doc 06); archiving keeps history intact.
+- **User sees:** accounts (cash, bank, card, wallet, loan…): name, type (asset/liability),
+  currency, opening balance, current balance, color/icon; create/rename/archive (never
+  hard-delete an account with history).
+- **Engine does:** account types drive debit/credit normal balance; balances derived from
+  postings, never stored; archiving keeps history.
 
 ## F2 — Transactions
-- **User sees:** add/edit income, expense, transfer between accounts; split
-  transactions; categories and tags; payee (party); note; attachments; value date vs
-  entry date; status (pending / cleared / reconciled); recurring & scheduled
-  transactions.
-- **Engine does:** every user transaction compiles into balanced double-entry postings
-  (fees and splits become extra movements — fintecheng: "one transaction, many
-  movements"); posted entries are immutable, edits post linked reversals/corrections;
-  scheduled transactions materialize through a durable, resumable pipeline (doc 06).
+- **User sees:** add/edit income, expense, transfer; splits; categories, tags, payee, note,
+  attachments; value date vs entry date; status (pending/cleared/reconciled); recurring &
+  scheduled transactions.
+- **Engine does:** user transactions compile into balanced double-entry postings (splits/fees
+  = extra movements); posted entries immutable — edits post linked reversals; scheduled
+  transactions materialize via durable resumable pipelines.
 
 ## F3 — Import / export
-- **User sees:** import bank files (CSV, OFX/QFX, QIF) with a column-mapping step and a
-  preview; duplicates are detected and skipped; export the ledger and any report to
-  CSV/JSON; full-file backup/restore.
-- **Engine does:** import pipeline = parse → map → validate → dedup by import idempotency
-  keys → post to ledger → index; re-running an import never double-posts (fintecheng
-  idempotency); export is a pure projection of the ledger.
+- **User sees:** import bank files (CSV, OFX/QFX, QIF) with column mapping + preview; duplicates
+  detected/skipped; export ledger & reports to CSV/JSON; full backup/restore.
+- **Engine does:** pipeline parse → map → validate → dedup by explicit idempotency keys →
+  post → index; re-import never double-posts; reconciliation breaks surfaced, never
+  overwritten.
 
 ## F4 — Budgets & planning
-- **User sees:** envelope budgets per category per period (month/quarter/year/custom);
-  planned vs actual bars; rollover rules; simple forecasts.
-- **Engine does:** budgets are projections over the ledger, not separate money; actuals
-  computed at value date with the account's currency, converted at stored rates.
+- **User sees:** envelope budgets per category/period; planned vs actual; rollover; forecasts.
+- **Engine does:** budgets are projections over the ledger, computed at value date.
 
 ## F5 — Reports
-- **User sees:** cashflow, spending by category/tag/party, net worth over time,
-  income vs expense, per-account statements, period comparison; print/PDF export.
-- **Engine does:** every report is a deterministic projection of the journal, golden-tested
-  (doc 09); reports group by value date and convert currencies at the rate *of that date*
-  with its source recorded (fintecheng FX).
+- **User sees:** cashflow, spending by category/tag/party, net worth over time, income vs
+  expense, per-account statements, period comparison; print/PDF/CSV export.
+- **Engine does:** deterministic projections of the journal, golden-tested; value-date rates
+  with recorded source.
 
-## F6 — Multi-currency & FX
-- **User sees:** each account has a currency from the ISO 4217 primary data
-  (`data/currencies.toml`); a base currency for totals; a rate table the user enters
-  manually (rate, date, source note); net worth in base currency.
-- **Engine does:** no cross-currency arithmetic without an explicit stored rate;
-  rates are directional and time-stamped; **no live rate fetching** — offline adaptation
-  of fintecheng FX (doc 06). Conversion keeps full precision and rounds once, at the
-  boundary, with the residual booked to an explicit rounding account.
+## F6 — Multi-currency & FX (live via mirror + manual)
+- **User sees:** per-account currency from ISO 4217 primary data; base currency for totals;
+  a **rates browser** showing all downloaded sources side by side (date + source badge),
+  primary-source picker, manual rate entry, "adjust this live rate" (manual override),
+  "Download rates" button, last-sync status; net worth in base currency; a clear note that
+  deleted manual rates cannot be recovered (default chain applies).
+- **Engine does:** rates come **only** from the `bookkeepy-1-rates` mirror repo as immutable
+  checksummed packages (doc 11); app never contacts sources; live rows immutable; manual
+  rows `origin=manual`, deletable-irreversible, defaults from `data/defaults.toml`; switching
+  primary source never rewrites history; sources accumulate; conversion at the chosen rate,
+  full precision, round once at the boundary, residual → rounding account.
 
 ## F7 — Search
-- **User sees:** instant full-text search over payees, notes, categories, amounts and
+- **User sees:** instant full-text search over payees, notes, categories, tags, amounts,
   dates; saved searches.
-- **Engine does:** 100% tantivy (ADR-0006). The index is derived state: built
-  write-through from ledger events and fully rebuildable from the SQLite file, so it can
-  never become a second source of truth. No custom indexing engine is ever written.
+- **Engine does:** 100% tantivy; index = derived cache, write-through, rebuildable.
 
 ## F8 — Documents & attachments
-- **User sees:** attach receipts/invoices (PDF, images) to transactions; view them inline.
-- **Engine does:** files stored in the user's data folder, referenced by the DB; optional
-  encryption at rest; PII separation so erasure can delete attachments without rewriting
-  the ledger (fintecheng GDPR section, doc 06).
+- **User sees:** attach receipts/invoices to transactions; view inline.
+- **Engine does:** files in the user's data folder; optional encryption; PII separable for
+  erasure.
 
 ## F9 — Security & privacy
-- **User sees:** optional app lock with a passphrase; privacy statement; "open data
-  folder"; integrity check.
-- **Engine does:** no telemetry, no network except updater (doc 08); optional whole-file
-  encryption (passphrase-derived key, AEAD) or field-level encryption with
-  crypto-shredding for erasure; audit log records what/when/who/why for every change.
+- **User sees:** optional app lock (passphrase); privacy statement; Settings → Privacy →
+  "Data we collect" (every locally collected item listed, viewable, clearable); first-run
+  disclosure dialog; "open data folder"; integrity check.
+- **Engine does:** no transmission of personal data ever (doc 08); optional at-rest
+  encryption / crypto-shredding; audit log records what/when/who/why.
 
 ## F10 — Backups & data management
-- **User sees:** one-click snapshot backup (timestamped copy), restore, verify, and a
-  "data folder" location display; the file can be moved/copied freely.
-- **Engine does:** SQLite `VACUUM INTO` snapshots + verification on restore; the data
-  file is plain and portable — Bookkeepy never locks it exclusively; hash-chain tamper
-  evidence over the journal (doc 05).
+- **User sees:** one-click snapshot backup, restore, verify, data-folder location; retention
+  policy; the file is portable.
+- **Engine does:** `VACUUM INTO` + verify; hash-chain tamper evidence; seamless across
+  versions (INV-DATA-001).
 
 ## F11 — Settings & customization
-- **User sees:** theme (gpui-kit theming), locale (EN/RO first), date & number formats,
-  first day of week, base currency, custom categories/tags, primary-data overrides.
-- **Engine does:** settings stored in the DB + a local config file; primary data
-  (currencies etc.) comes from `data/*.toml` compiled into the app (ADR-0008).
+- **User sees:** theme (gpui-kit + theme tokens), locale (EN/RO), date & number formats, first
+  day of week, base currency, primary rates source, custom categories/tags, update & rates
+  sync toggles.
+- **Engine does:** settings in DB + local config; primary data from `data/*.toml`.
 
 ## F12 — Updates
-- **User sees:** "Check for updates"; release notes; download & install from GitHub
-  Releases only after explicit approval.
-- **Engine does:** the *only* crate allowed to do HTTP (RULE-NET-001); verifies SHA-256
-  checksums of downloaded artifacts; never auto-installs (doc 08, ADR-0003).
+- **User sees:** "Check for updates", release notes, download & install from GitHub Releases
+  after explicit approval, SHA-256 verified.
+- **Engine does:** `updater` crate — one of only two HTTP-allowed crates (RULE-NET-001).
 
 ## F13 — Help & diagnostics
-- **User sees:** about dialog (version, build, license), log viewer, DB integrity check,
-  open data folder, reset app settings (never user data).
-- **Engine does:** diagnostics are read-only over the data file; logs never contain
-  amounts/payees unless the user explicitly enables verbose diagnostics locally.
+- **User sees:** about (version/build/license), log viewer, DB integrity + hash-chain verify,
+  open data folder, reset app settings (never user data), cold-start performance info.
+- **Engine does:** read-only diagnostics; fatal errors surface with one-click "Copy
+  diagnostic" (BK-code + localized message + context + version) for GitHub issues.
+
+## F14 — Rates manager (part of F6, called out)
+- Browser of all downloaded rate packages per source/currency/date; choose rate per
+  conversion/report; manual adjustments; re-download; delete-manual warning; offline note.
+- **Engine does:** `engine_rates` + `rates_packages`/`fx_rates` tables (doc 05 §5.3).
+
+## F15 — Performance & loading behavior (invisible but felt)
+- **User sees:** the app opens fast and lets them add a transaction immediately; lists scroll
+  smoothly; heavy things load when needed.
+- **Engine does:** `engine_loadpolicy` + `data/load-policies.toml` (hot/warm/cold, prefetch
+  on idle, INV-LOAD-001 cold-start budget); local-only usage stats to tune prefetch.

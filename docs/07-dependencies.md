@@ -27,7 +27,9 @@
 | `toml` | latest | parsing `data/*.toml` primary data |
 | `thiserror` / `anyhow` | latest | error rules RULE-ERR-001/002 |
 | `uuid` | latest, v7 + serde | entity ids |
-| `jiff` | latest, serde | civil dates/times (gpui-kit 0.11 itself moved off chrono to jiff) |
+| `jiff` | latest, serde | civil dates/times (gpui-kit 0.11 itself moved off chrono to jiff); IANA time-zone database ships as a dependency = primary data as a library (point 11) |
+| `iana-time-zone` | latest | OS time-zone detection (local system context, doc 08) |
+| `sysinfo` | latest | CPU/RAM/OS/process info for local diagnostics + perf budgets — local-only, never transmitted (doc 08) |
 | `sha2` / `hex` | latest | hash chain tamper evidence (doc 05 §5.5) |
 | `argon2` + `chacha20poly1305` (or `aes-gcm`) + `zeroize` | latest | optional app lock / at-rest encryption (doc 05 §5.8) |
 | `csv` + `encoding_rs` | latest | bank CSV imports incl. Windows-1250 encodings |

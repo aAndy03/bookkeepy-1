@@ -1,37 +1,58 @@
-# 08 — Network policy, updates, privacy (ADR-0003)
+# 08 — Network policy, updates, rates, privacy (ADR-0011)
 
-## Offline-first: the hard rule (RULE-NET-001)
+## Offline-first: the hard rule, v2 (RULE-NET-001)
 
-- Bookkeepy 1 is **mainly offline**. The only internet connection the app ever makes is to
-  **download app updates** (and, later, only if the user explicitly enables it, other
-  user-approved fetches we define as we go).
-- Exactly one crate (`updater`) may contain HTTP code, with exactly one client (`ureq` +
-  rustls). `cargo xtask check-deps` fails the build if any other crate depends on an HTTP
-  stack. There is no analytics, no telemetry, no crash upload, no "check for news", no
-  license server.
-- The rest of the app must compile and run with the network cable pulled. CI includes an
-  offline smoke test.
+- Bookkeepy 1 is **mainly offline**. The app's only internet connections are:
+  1. **App updates** — GitHub Releases of `aAndy03/bookkeepy-1` (updater crate), SHA-256
+     verified, user-approved install. (F12)
+  2. **Rates packages** — `manifest.json` + package files from `aAndy03/bookkeepy-1-rates`
+     only (rates crate, doc 11). The app **never** connects to BNR or any other rate source
+     directly.
+- Exactly two crates may contain HTTP code (`updater`, `rates`), each with one client
+  (`ureq` + rustls), each restricted to its allowlisted host(s). `xtask govern deps`
+  (RULE-NET-001) fails the build if any other crate depends on an HTTP stack, and
+  `govern net` scans for hardcoded hosts outside the allowlist. CI includes an offline smoke
+  test (app fully functional with networking disabled).
+- Everything else — no telemetry, no analytics, no crash upload, no bank APIs, no cloud.
 
 ## Updater behavior (F12)
 
-1. Only when the user clicks **Check for updates** (plus an optional, default-off,
-   once-a-week automatic check — clearly documented in settings).
-2. Query the GitHub Releases API of this repository (`aAndy03/bookkeepy-1`) for the latest
-   release; compare with the running version using semver.
-3. If newer: show release notes (changelog) and the asset list for the user's OS/arch.
-4. On explicit user approval: download the asset, **verify its SHA-256 against the
-   checksum published in the release** (SHA256SUMS artifact / release body), then hand
-   off to the installer. Never auto-install; never run anything unverified.
-5. Releases are the only distribution channel (README). Later phases add signing
-   (minisign/signify) — until then installers are unsigned and the README says so.
+User clicks **Check for updates** (or the default-off weekly check) → latest release of the
+main repo is compared (semver) → release notes shown → on explicit approval the asset is
+downloaded, SHA-256-verified against the published checksum, then installed. Never
+auto-installs, never runs unverified code. Releases are the only distribution channel.
+
+## Rates sync (F14, doc 11)
+
+User clicks **Download rates** (or default-off periodic check) → fetch manifest from the
+mirror repo only → download missing incrementals → verify SHA-256 → import as
+`origin = "live"`. Fully resumable; works offline afterwards.
+
+## Local system context — collected, never transmitted (point 10)
+
+The app collects **locally only** the data it needs to function correctly on this machine:
+
+| Data | Why | Where |
+|---|---|---|
+| Displays: count, resolution, scale/DPI, viewport | window opens at the right size/position on the right monitor | `system_context` table |
+| GPU adapter / renderer backend | choose correct gpui render path; perf budgets | `system_context` |
+| CPU model/cores, RAM total | perf budgets contextualized to this machine (RULE-PERF-001) | `system_context` |
+| OS + version, app version, build | diagnostics, fatal-error reports, upgrade path | `system_context` / audit |
+| Timezone, locale | correct dates/times, number formats | `settings` |
+| Network state (online/offline, interface type) | know whether update/rates sync is possible | in-memory only |
+| Minimal usage stats (which views opened, when) | tune prefetch (hot/warm/cold, doc 03) | `usage_stats` table |
+
+Rules: all of it stays on the device (never sent anywhere — the only egress is the two
+allowlisted syncs above, which carry no personal data); the **first-run setup dialog
+discloses the collection**; **Settings → Privacy → "Data we collect"** lists every item,
+its purpose, and lets the user view/clear it (usage stats and system context are deletable;
+deleting them never breaks the app — defaults apply). Logs are local-only; verbose
+diagnostics that could contain amounts/payees are opt-in and local-only.
 
 ## Privacy guarantees (user-facing statement)
 
-- Your financial data never leaves your device. Bookkeepy 1 has no accounts, no cloud, no
-  sync.
-- The app contains no trackers. Logs are written locally only and never transmitted; verbose
-  diagnostics that could contain amounts/payees are opt-in and local-only.
-- The data file is plain SQLite (or encrypted if you enable the app lock) in a folder you
-  choose — you can read it, copy it, back it up, delete it.
-- Erasure: delete the data folder/file; inside the app, PII is separable and deletable
-  without rewriting the immutable ledger (doc 06 §6.4 GDPR adaptation).
+- Your financial data never leaves your device. No accounts, no cloud, no sync, no trackers.
+- The data file is plain SQLite (or encrypted with the optional app lock) in a folder you
+  choose — you can read, copy, back up, delete it.
+- Erasure: delete the data folder/file; inside the app, PII (payees, notes, attachments) is
+  separable and deletable without rewriting the immutable ledger (doc 06 GDPR adaptation).

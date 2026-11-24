@@ -57,10 +57,13 @@ precision, name) drives display only (doc 05 §5.1, RULE-DATA-001).
 > Reference rate (mid-market or central bank) … There is no canonical rate … the source
 > should be part of the data.
 
-**Adaptation (offline):** Bookkeepy never fetches rates. The user records reference rates
-manually (rate, date, source note) in `fx_rates`; transactional rates fall out of
-recorded conversions. Valuation uses the latest stored rate ≤ value date; every stored
-conversion keeps the rate id + source. No live FX, ever (doc 05 §5.3, ADR-0003).
+**Adaptation (offline app, mirrored live data):** Bookkeepy itself never contacts rate
+sources. Live reference rates reach the app only as immutable checksummed packages from the
+`bookkeepy-1-rates` mirror sub-repo (doc 11, ADR-0011/0012); the user can also enter/adjust
+rates manually (`origin = "manual"`, irreversible once deleted, defaults from
+`data/defaults.toml`). Transactional rates fall out of recorded conversions. Valuation uses
+the chosen source's latest stored rate ≤ value date; every stored row keeps rate id + source
++ package id. Switching primary source never rewrites historical rows (doc 05 §5.3).
 
 ## 6.4 Recording money: the ledger
 
@@ -161,8 +164,11 @@ are durable state machines in the DB; on startup a driver resumes stalled pipeli
 **Adaptation:** "external provider" = the bank's statement file. Imported statement rows
 persisted with their external id enable exact matching; unmatched rows surface as
 reconciliation breaks fixed via correction entries, never by overwriting (doc 05 §5.6).
-Not adopted (online-only): consuming APIs, webhooks, outbox/CDC, payment rails, KYC/AML,
-custody, trading.
+Not adopted (app never talks to payment/financial providers): consuming provider APIs,
+webhooks, payment rails, KYC/AML, custody, trading. Note: a **durable local outbox** *is*
+adopted for event reactions (search indexing, audit) — fintecheng's outbox pattern adapted
+to a single machine (doc 04 §4.6). FX data is fetched only via the rates mirror sub-repo
+(doc 11).
 
 ## 6.7 Controls and access
 

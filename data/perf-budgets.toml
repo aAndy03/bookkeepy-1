@@ -1,0 +1,50 @@
+# Bookkeepy 1 — primary data: performance budgets (point 7, RULE-PERF-001, doc 03).
+# SINGLE SOURCE OF TRUTH for budgets. Every engine/pipeline/layer registers its hot paths
+# here; criterion benches + `xtask govern perf` compare measurements against these in CI,
+# so no backend part drifts unoptimized. Contextualized by `diagnostics` (this machine).
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR."
+
+[[budget]]
+id = "cold_start_to_add_transaction"
+unit = "ms"
+target = 400
+max = 800
+description = "INV-LOAD-001: from app launch (cold) to the add-transaction view being usable"
+
+[[budget]]
+id = "transactions_page_query"
+unit = "ms"
+target = 10
+max = 30
+description = "one warm page (50 rows) of the transactions list, incl. derived amounts"
+
+[[budget]]
+id = "ledger_post_transaction"
+unit = "ms"
+target = 5
+max = 20
+description = "validate + post a double-entry transaction in one SQLite transaction + events"
+
+[[budget]]
+id = "search_query"
+unit = "ms"
+target = 20
+max = 60
+description = "tantivy full-text query over the current book"
+
+[[budget]]
+id = "rates_sync_incremental"
+unit = "s"
+target = 3
+max = 10
+description = "fetch manifest + download + verify + import one incremental rates package"
+
+[[budget]]
+id = "report_monthly_cashflow"
+unit = "ms"
+target = 50
+max = 200
+description = "a monthly report over a year of data (warm), golden-tested in doc 09"

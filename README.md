@@ -5,9 +5,12 @@ personal finances. One app for cash, bank accounts, cards, wallets, loans, budge
 subscriptions, documents and multiple currencies — with a double-entry ledger underneath
 so the books always balance.
 
-- **Offline first.** The app works fully offline. The only internet connection ever used
-  is to download app updates from this repository's GitHub Releases (see
-  [docs/08-network-updates-privacy.md](docs/08-network-updates-privacy.md)).
+- **Offline first.** The app works fully offline. Its only internet connections are
+  downloading app updates from this repository's GitHub Releases and FX-rates packages from
+  the mirror sub-repo [aAndy03/bookkeepy-1-rates](https://github.com/aAndy03/bookkeepy-1-rates)
+  (the app never contacts rate sources directly) — see
+  [docs/08-network-updates-privacy.md](docs/08-network-updates-privacy.md) and
+  [docs/11-rates-mirror-and-live-data.md](docs/11-rates-mirror-and-live-data.md).
 - **Your data is yours.** Bookkeepy never closes your data in. Everything you create lives
   in a single SQLite file on your device that you own, can copy, move, back up and delete
   (see [docs/05-data-money-storage.md](docs/05-data-money-storage.md)).
@@ -43,6 +46,9 @@ bookkeepy-1/
 ├── skills/          gpui-kit + gpui-kit-design-guides skill files (vendored from longbridge/gpui-kit)
 ├── LICENSE          GPL-3.0-or-later
 └── (app code will live here as a Cargo workspace once implementation starts)
+
+Companion repo: [aAndy03/bookkeepy-1-rates](https://github.com/aAndy03/bookkeepy-1-rates) —
+the FX-rates mirror the app downloads rates packages from (never the sources directly).
 ```
 
 ## Getting help

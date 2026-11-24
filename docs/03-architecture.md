@@ -1,105 +1,119 @@
 # 03 — Architecture
 
-## Repo topology: monorepo (ADR-0001)
+## Repo topology: monorepo + one mirror sub-repo (ADR-0001, ADR-0011/0012)
 
-One GitHub repository, one **Cargo workspace** (monorepo). Multirepo was considered and
-rejected for now: Bookkeepy 1's crates share domain types (Money, Currency, ids, events)
-intensively, and atomic cross-crate refactors are the norm, not the exception. A split into
-multiple repos is possible *later* and is a deliberate, criteria-based decision (see
-ADR-0001 "Revisit criteria"); until then, crate boundaries inside the workspace give us the
-same ownership clarity a multirepo would.
+- **Main repo** `aAndy03/bookkeepy-1`: one Cargo workspace (ADR-0001 rationale stands).
+- **Rates mirror sub-repo** `aAndy03/bookkeepy-1-rates`: automation pulls FX rates from
+  public sources (BNR first) and publishes immutable checksummed packages (spec:
+  `bookkeepy-1-rates/docs/package-format.md`). **The app never connects to rate sources
+  directly — only to this sub-repo** (ADR-0011). Docs: [11-rates-mirror-and-live-data.md](11-rates-mirror-and-live-data.md).
 
 ```
-bookkeepy-1/                     (this repo, workspace root)
-├── Cargo.toml                   workspace manifest: pinned versions, workspace lints
-├── rust-toolchain.toml          channel = "1.100.0"
+bookkeepy-1/                     workspace root
+├── Cargo.toml · rust-toolchain.toml (1.100.0)
 ├── crates/
-│   ├── core/                    Money, Currency (from primary data), ids, time, errors, invariants. No I/O.
-│   ├── primary-data/            loads data/*.toml (include_str!) and exposes typed accessors (ADR-0008)
-│   ├── contracts/               DTOs + domain events shared across crates; UI- and storage-agnostic
-│   ├── storage/                 rusqlite: connection, migrations, repositories, hash-chained journal (ADR-0005)
-│   ├── ledger/                  engine_ledger: double-entry posting, balances derivation, reversals (ADR-0009/0010)
-│   ├── transactions/            engine_transactions: user-level transactions → postings; splits, schedules
-│   ├── catalog/                 categories, tags, parties (payees) — user-editable, presets from primary data
-│   ├── fx/                      engine_fx: stored rates, valuation, conversion with rounding account
+│   ├── core/                    Money, Currency (from primary data), ids, time, error-code type. No I/O.
+│   ├── primary-data/            loads data/*.toml via include_str!; typed accessors (ADR-0008)
+│   ├── contracts/               DTOs + domain events; UI- and storage-agnostic
+│   ├── bus/                     typed event bus + durable local outbox (crash-safe reactions)
+│   ├── storage/                 rusqlite: connection (background thread), migrations, repositories, hash-chained journal
+│   ├── audit/                   append-only audit log + hash-chain verification
+│   ├── ledger/                  double-entry postings, derived balances, reversals
+│   ├── transactions/            user transactions → postings; splits; schedules (durable state machines)
+│   ├── catalog/                 categories, tags, parties
+│   ├── rates/                   engine_rates: package download/verify/import, source registry, manual rates, fallback defaults
+│   ├── fx/                      valuation/conversion at stored rates, rounding account
 │   ├── import/                  pipeline_import: parse → map → validate → dedup → post → index
-│   ├── export/                  pipeline_export: ledger/reports → CSV/JSON/PDF (pure projections)
-│   ├── budget/                  engine_budget: envelopes, planned vs actual, rollover
-│   ├── reporting/               engine_reporting: cashflow, net worth, statements… (golden-tested)
-│   ├── search/                  engine_search: tantivy wrapper, write-through + rebuild (ADR-0006)
-│   ├── documents/               attachments storage + reference
-│   ├── backup/                  engine_backup: snapshot / restore / verify
-│   ├── audit/                   append-only audit trail + hash-chain verification
-│   ├── settings/                app config (DB + local file), locale, formats
-│   ├── i18n/                    locale catalogs (EN, RO first)
+│   ├── export/                  projections → CSV/JSON/PDF
+│   ├── budget/ · reporting/     envelopes; golden-tested reports
+│   ├── search/                  tantivy wrapper, write-through + rebuild (ADR-0006)
+│   ├── documents/               attachments
+│   ├── backup/                  snapshot / restore / verify + retention
+│   ├── loadpolicy/              engine_loadpolicy: what loads when (data/load-policies.toml) — hot/warm/cold (point 12)
+│   ├── diagnostics/             local system context (displays/DPI/GPU/CPU/RAM/OS/tz/net state) — local-only (doc 08)
+│   ├── settings/ · i18n/        config, locales (EN/RO)
 │   ├── security/                app lock, key derivation, optional at-rest encryption
-│   ├── updater/                 the ONLY crate allowed to perform HTTP (RULE-NET-001, ADR-0003)
-│   ├── app-services/            composition root: wires engines to storage, exposes `api` to the UI
-│   └── ui/                      gpui-kit views: shell + one module per feature; presenters; theme
-├── app/                         the binary crate (thin): window setup, DI, run
-├── xtask/                       repo governors: CI checks as cargo commands (dep rules, lints, ADR lint)
-├── data/                        primary data (TOML) — imported, never hardcoded
-├── tests/                       workspace-level integration tests + fixtures (old-format corpus)
-└── packaging/                   installers per OS (later phase)
+│   ├── updater/                 app updates from main repo Releases (allowed HTTP #1)
+│   ├── app-services/            composition root + brokers; the `api` the UI uses
+│   └── ui/                      gpui-kit views, widgets (Figma-model), presenters, theme
+├── app/                         thin binary: window, DI, run
+├── xtask/                       governor tree (doc 04 §4.9)
+├── data/                        primary data (currencies, errors, defaults, load-policies, perf-budgets, theme…)
+├── tests/                       integration + old-version fixtures (upgrade-path CI)
+└── packaging/                   installers
 ```
 
 ## Dependency direction (RULE-ARCH-001)
 
+`core ← primary-data ← contracts ← bus ← storage ← domain engines ← app-services ← ui ← app`;
+`rates` and `updater` are leaves with the only HTTP deps (RULE-NET-001); `diagnostics` is a
+leaf read-only over the OS. No cycles; UI never touches storage (`updater`/`rates` never
+touch domain engines directly — they go through `app-services`). Enforced by
+`xtask govern deps`.
+
+## Layers — vertical and horizontal (point 6)
+
+Engines/pipelines/APIs grow on **layers**, vertically and horizontally:
+
+- **Vertical layers** (call direction is strictly downward; upward only via events):
+  `L0 platform (OS/GPU/window)` → `L1 ui shell` → `L2 feature views` → `L3 presenters` →
+  `L4 app-services api + brokers` → `L5 engines` → `L6 pipelines` → `L7 storage` →
+  `L8 primary data`.
+- **Horizontal slices** = feature domains (ledger, rates, budget…). A slice may span all
+  layers, but slices talk to each other **only through `app-services` brokers and the
+  event bus** — never directly (when/why: a change in one slice must not ripple; events
+  decouple; brokers make interactions explicit and optimized).
+- New capability → new vertical layer or a new module in an existing one; new feature → new
+  horizontal slice. Both are async (RULE-ASYNC-001), use bounded channels (backpressure),
+  and never block the UI thread.
+
+## Runtime data flow
+
 ```
-core ← primary-data ← contracts ← storage ← {ledger, transactions, catalog, fx, …}
-                                                        ↓
-                                              app-services ← ui ← app
-updater → (HTTP only, isolated)          search ← storage events (write-through)
-audit  ← storage events
+UI action → api (L4) → validate → guard → engine (L5) → storage tx (L7) → events on bus
+   → audit (append) → search (write-through) → rates/index updates → ui notify
 ```
 
-- `core` depends on nothing in the workspace.
-- Domain crates never depend on `ui` or `app` (RULE-UI-004).
-- `ui` talks only to `app-services`' public `api` — never to storage directly.
-- `updater` is a leaf with exactly one HTTP client; nothing else may open sockets
-  (RULE-NET-001). Enforced by `cargo xtask check-deps`.
-- Cycles are forbidden; enforced by `cargo xtask check-deps` (cargo metadata based).
+DB write = source of truth; balances, index, caches = derived.
 
-## Data flow (runtime)
+## Async (point 5)
 
-```
-UI action → app-services api → validate (RULE-VAL-001) → engine_* (state machine)
-    → storage transaction (rusqlite) → domain events emitted
-        → audit (append-only log)  → search (tantivy write-through)  → UI notify (gpui cx.notify)
-```
+Primarily async everywhere (RULE-ASYNC-001, doc 04 §4.7): gpui `cx.spawn` in the UI,
+background executor / dedicated DB thread for storage, progress events for long flows.
 
-Every state change is: validate → mutate DB in one transaction → emit events → observers
-react. The DB write is the source of truth; the tantivy index and all balances are derived.
+## Loading, caching, prefetch — hot / warm / cold (point 12)
+
+Bookkeepy becomes an **archival record** over years of use; it must stay fast, so loading is
+demand-driven, governed by one SSOT: `data/load-policies.toml` (consumed by
+`engine_loadpolicy`):
+
+- **Hot cache:** in-memory LRU + live gpui entities (current view models, accounts summary).
+- **Warm:** SQLite (WAL, prepared statements, indexes, paginated/virtualized lists — never
+  load the whole journal), tantivy index.
+- **Cold:** attachment files, downloaded rates packages, old reports — read on demand only.
+- **On app open:** shell + settings + accounts summary + last view only (INV-LOAD-001: the
+  user can add a transaction within the budget in `data/perf-budgets.toml` on a cold start).
+- **On navigation/idle:** prefetch per the policy table (next page, rates manifest if
+  enabled, index warm-up for the current book).
+- **Minimal local usage tracking:** a local `usage_stats` table (which views, when) used
+  *only* to tune prefetching, contextualized to this machine; local-only, visible and
+  deletable in Settings → Privacy (doc 08).
+
+## Optimization everywhere — no drift (point 7, RULE-PERF-001)
+
+Every engine/pipeline/layer registers its budgets in `data/perf-budgets.toml` (SSOT) and has
+criterion benches; `xtask govern perf` + CI compare measurements against budgets, so no part
+of the backend drifts unoptimized. Budgets are contextualized by `diagnostics` (this machine's
+CPU/RAM/GPU/display) where relevant.
 
 ## UI stack (ADR-0007)
 
-- `gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }` — the single UI dependency.
-- **All** styled components from the [component catalog](https://gpui-kit.com/component/)
-  are used for the interface; unstyled `base` primitives only where the catalog has no
-  equivalent (and the gap is documented in an ADR).
-- Conventions for components follow the vendored skills in `skills/gpui-kit/`
-  (component-family conventions, recipes, coding guides) and the design guides in
-  `skills/gpui-kit-design-guides/`.
-- Screens are `Entity` + `Render`; domain → view-model conversion happens in `presenters`
-  inside `ui`, so views never touch the DB.
+`gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }` — the single UI dependency;
+all styled components catalog-first; our widgets follow the Figma model (components +
+variables + variants linked to SSOT, doc 04 §4.8) on top of gpui-kit's styled components.
 
-## Search (ADR-0006)
+## Search & storage (ADR-0005/0006)
 
-Tantivy, 100% of its API — we do not build an indexing/searching engine. The index lives
-in the app data directory next to (never inside) the SQLite file, is written through from
-storage events, and is fully rebuildable from the ledger (`engine_search::rebuild()`), so
-it is a cache, never a source of truth.
-
-## Storage (ADR-0005)
-
-One SQLite file per user "book", opened through `rusqlite` with the `bundled` feature,
-WAL mode, foreign keys ON, `PRAGMA user_version` for migrations. Schema and rules in
-doc 05.
-
-## Why this shape
-
-The user prompts describe surfaces ("manage my finances offline"); this architecture is
-the hidden machinery that makes those surfaces trustworthy: a validated command layer, a
-double-entry ledger as the single source of truth, derived caches (balances, index,
-reports), append-only audit, and a hard network boundary. Additions/refactors/deprecations
-land in exactly one crate each, which is what keeps a long-term project maintainable.
+Tantivy index = derived cache next to the DB, write-through, rebuildable (ADR-0006). One
+user-owned SQLite file via rusqlite, WAL, migrations, hash-chained append-only journal
+(ADR-0005/0010, doc 05).

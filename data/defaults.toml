@@ -1,0 +1,29 @@
+# Bookkeepy 1 — primary data: default/fallback policies (point 2: "we have to provide what
+# happens, a default"). SINGLE SOURCE OF TRUTH for what the app does when user data is
+# missing or deleted (e.g. deleted manual rates are irrecoverable → this chain applies).
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR."
+
+# Fallback chain used when no fx_rates row matches a conversion request.
+# Steps are tried in order; the first that yields a rate wins.
+[fx_rates.fallback_chain]
+steps = [
+  "latest live rate from the user's primary source with date <= value date",
+  "latest live rate from any source with date <= value date",
+  "nearest earlier live rate from the primary source",
+  "fail with BK-FX-0002 (user-facing: download rates or enter a manual one)",
+]
+
+# What happens when the user deletes manual/adjusted rates: they are NOT recoverable; the
+# fallback chain above applies from that moment. The UI warns before deletion.
+[fx_rates.manual_deleted]
+recoverable = false
+behavior = "apply fx_rates.fallback_chain"
+
+# Defaults applied when local system context is missing/cleared (doc 08).
+[system_context.defaults]
+dpi_scale = 1.0
+assume_single_display = true
+perf_tier = "medium"

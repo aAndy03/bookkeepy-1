@@ -1,6 +1,6 @@
 # ADR-0003 — Offline-first: the only network use is downloading app updates
 
-- **Status:** accepted
+- **Status:** superseded by ADR-0011 (network scope widened: updates + rates mirror)
 - **Date:** 2026-11-24
 - **Context:** "Bookkeepy is mainly offline. The only internet connection is used to
   download app updates and other things that we will define as we go."

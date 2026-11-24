@@ -1,0 +1,30 @@
+# Bookkeepy 1 — primary data: load policies (point 12, doc 03 "Loading, caching, prefetch").
+# SINGLE SOURCE OF TRUTH for what the app loads, when, and what it prefetches. Consumed by
+# the `loadpolicy` crate (engine_loadpolicy). Tiers: hot = in-memory, warm = SQLite/tantivy,
+# cold = files on disk. INV-LOAD-001: on a cold start the user can add a transaction within
+# the budget in perf-budgets.toml.
+
+[source]
+kind = "bookkeepy-primary-data"
+note = "Maintained by the project; schema changes require an ADR."
+
+[on_app_open]
+tier = "hot+warm"
+loads = ["ui shell + theme tokens", "settings", "accounts summary (balances derived, cached)", "last open view", "rates manifest cache (no network)"]
+never = ["full journal", "all attachments", "all reports", "full search index load"]
+
+[on_navigate]
+transactions_list = { tier = "warm", page_size = 50, virtualized = true, prefetch_next_pages = 1 }
+account_detail = { tier = "warm", page_size = 50 }
+reports = { tier = "warm", computed_on_demand = true, cached = true }
+rates_browser = { tier = "warm", query_local_only = true }
+
+[on_idle]
+prefetch = ["next page of the current list", "rates manifest re-check if the user enabled periodic sync", "warm tantivy index for the current book", "backup reminder if due"]
+
+[usage_tracking]
+enabled = true
+scope = "local-only prefetch tuning"
+stored_in = "usage_stats table"
+visible_in = "Settings -> Privacy -> Data we collect"
+clearable = true

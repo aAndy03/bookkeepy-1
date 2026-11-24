@@ -26,11 +26,17 @@ years, not months.
 | M4 | Import/export | CSV/OFX/QIF pipeline with mapping, dedup, reconciliation breaks; CSV/JSON export. |
 | M5 | Search | tantivy engine, write-through + rebuild, search UI. |
 | M6 | Budgets & reports | envelopes, cashflow/net-worth reports, golden tests, PDF/CSV export. |
-| M7 | Multi-currency & FX | per-account currency, manual rate table, base-currency valuation, rounding account. |
+| M7 | Multi-currency, FX & live rates | per-account currency, base-currency valuation, rounding account; **rates mirror sub-repo automation (BNR first) + app-side `engine_rates`** (download/verify/import packages, manual rates, defaults, rates UI F14) — docs/11. |
 | M8 | Documents & backups UI | attachments, snapshots, verify, open data folder. |
 | M9 | Security | app lock + optional at-rest encryption, privacy statement, integrity check UI. |
 | M10 | Updater & packaging | GitHub Releases updater with checksum verification; installers; first `v0.1.0` release. |
 | M11 | Polish | i18n completeness, theming, performance (gpui-fast), accessibility, docs site. |
+
+## Docs hygiene (point 16)
+
+Docs follow the same rules as code: modular files, one canonical place per topic
+(RULE-DOC-001), cross-links instead of duplication. ADRs only for real decisions — routine
+changes go to the CHANGELOG, not to new ADRs.
 
 ## Definition of done (per milestone)
 

@@ -26,9 +26,12 @@ requires a property test before merge.
 
 - Matrix: Windows / macOS / Linux × stable Rust 1.100.
 - Jobs: `cargo fmt --check` · `cargo clippy --workspace -- -D warnings` · `cargo test
-  --workspace` · `cargo xtask check-deps` (dependency direction + RULE-NET-001) ·
-  `cargo audit` · `cargo deny check` (licenses/bans) · offline smoke test (app starts with
-  networking disabled) · build artifacts.
+  --workspace` · `cargo xtask govern` (whole governor tree: deps + net allowlist, lints,
+  docs, adr, errors registry ↔ code ↔ locales, primary-data validation + ISO referential
+  integrity, perf budgets vs criterion benches) · `cargo audit` · `cargo deny check`
+  (licenses/bans) · offline smoke test (app fully functional with networking disabled) ·
+  **upgrade-path test**: fixtures written by every previous tagged release are opened,
+  migrated and verified by the new build (INV-DATA-001, points 14–15) · build artifacts.
 - Branch protection on `main`: PRs only, required reviews + required status checks, no
   force-push (fintecheng SDLC, doc 06 §6.7).
 

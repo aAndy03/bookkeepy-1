@@ -1,109 +1,121 @@
 # 05 — Data, money and storage
 
-Everything here follows the quoted principles in [06-fintech-principles.md](06-fintech-principles.md)
+Quoted fintech principles behind this doc: [06-fintech-principles.md](06-fintech-principles.md)
 (source: `references/fintecheng.txt`).
 
 ## 5.1 Money model (ADR-0004)
 
-```text
-Money = { amount_minor: i64, currency: CurrencyCode }   // CurrencyCode validated against data/currencies.toml
-```
-
-- Minor units per currency come from ISO 4217 primary data — *"don't assume it's always 2,
-  it's not!"* (fintecheng, Precision handling). `data/currencies.toml` carries `minor_units`
-  per currency (e.g. JPY = 0, BHD = 3).
-- No cross-currency arithmetic; conversion only via an explicit stored rate (5.3).
-- Rounding (fintecheng, Rounding strategies): explicit, a product decision, done as seldom
-  as possible and at boundaries (persist/display); **residuals are tracked, never dropped** —
-  conversion rounding differences post to an explicit *rounding account* in the ledger.
-- Serialization: amounts cross any boundary as string or integer minor units, never a bare
-  JSON number.
+`Money = { amount_minor: i64, currency: CurrencyCode }` — minor units per currency from ISO
+4217 primary data ("don't assume it's always 2, it's not!"); no floats; serialize as string
+or minor-unit integer, never a bare JSON number; rounding explicit, once, at boundaries, with
+an explicit **rounding account** for residuals ("Rounding breaks sums… e.g. an explicit
+rounding account").
 
 ## 5.2 Storage (ADR-0005)
 
-- One SQLite file per user book, via `rusqlite` with `bundled`. WAL mode, `foreign_keys=ON`,
-  `busy_timeout`, `journal_mode=WAL`. The app never holds the file exclusively; the user
-  can copy it anytime.
-- Location: OS app-data dir by default (e.g. `%APPDATA%/Bookkeepy 1/` on Windows), user
-  changeable; "Open data folder" in Help shows it.
-- Migrations: numbered SQL files in `crates/storage/migrations/`, applied inside a
-  transaction, recorded in `PRAGMA user_version` + a `schema_migrations` table. Every
-  migration is tested up *and* down against fixture DBs (doc 09).
-- Backups: `VACUUM INTO 'backup-<ts>.db'` snapshots + restore with verification
-  (`PRAGMA integrity_check` + hash-chain verify, 5.5). Export/import of the whole book as
-  JSON/CSV is a pure projection (F3).
+- One SQLite file per user book via `rusqlite` (`bundled`), WAL, foreign keys ON, background
+  thread (RULE-ASYNC-001). User-chosen folder; never locked exclusively.
+- Migrations: numbered SQL files, applied in a transaction, recorded in `user_version` +
+  `schema_migrations`. Every migration tested up *and* down on fixtures.
+- Backups: `VACUUM INTO` snapshots + restore verification (`quick_check` + hash chain).
 
-### Schema overview (tables; owned by the crate named)
+### Seamless, long-lived data (points 14–15, INV-DATA-001)
+
+- **Seamless is a principle**: a user on any version can install any later version and the
+  data works — 1, 5, 10, 20 years of updates. Enforced by:
+  - migrations are **forward-only, additive, never destructive** (no dropped columns/data
+    without a superseding ADR + export path);
+  - the data-file format is versioned; every release ships an **upgrade-path CI test** that
+    opens fixtures produced by every previous tagged release and verifies them (doc 09);
+  - backward-compat corpus in `tests/fixtures/` (fintecheng: "today's code must still read
+    what old code wrote");
+  - primary data upgrades (e.g. new currencies) merge, never remove codes in use;
+  - rates packages are additive by design (doc 11);
+  - settings/config migrate with defaults; UI state never blocks data access.
+- INV-DATA-001: *for any release N and any later release M, a data file written by N opens
+  unaltered in M.* Property/CI-enforced via the fixture corpus.
+
+### Schema overview
 
 | Table | Owner | Notes |
 |---|---|---|
-| `accounts` | ledger | type asset/liability, currency, archived flag; balance **derived**, never stored |
-| `journal_entries` + `postings` | ledger | double-entry, append-only (5.4); hash chain |
-| `transactions` | transactions | user-level view/compilation of entries; status, value date, schedule |
+| `accounts` | ledger | type asset/liability, currency; balance **derived**, never stored |
+| `journal_entries` + `postings` | ledger | double-entry, append-only, hash chain (5.4/5.5) |
+| `transactions` | transactions | user-level compilation; status, value date, schedule |
 | `categories`, `tags`, `tx_tags`, `parties` | catalog | user-editable; presets from primary data |
-| `attachments` | documents | file path + hash + linked entry |
-| `budgets`, `budget_lines` | budget | envelopes per category/period |
-| `fx_rates` | fx | rate, from/to, date, source note (5.3) |
-| `import_batches`, `import_ids` | import | idempotency keys for dedup (5.6) |
-| `audit_log` | audit | what/when/who/why for every change |
-| `settings`, `schema_migrations` | settings/storage | app config + migration bookkeeping |
+| `attachments` | documents | path + hash; PII store, separately erasable |
+| `budgets`, `budget_lines` | budget | |
+| `fx_rates` | rates | see 5.3: origin live/manual/adjusted, source, package id, date, rate (string), hash |
+| `rates_packages` | rates | installed packages (id, source, sha256, kind, file path) — immutable once installed |
+| `import_batches`, `import_ids` | import | idempotency keys |
+| `audit_log` | audit | what/when/who/why |
+| `usage_stats` | loadpolicy | local-only prefetch tuning; visible+deletable in Settings→Privacy |
+| `system_context` | diagnostics | local machine context snapshot (doc 08); local-only |
+| `settings`, `schema_migrations` | settings/storage | |
 
-## 5.3 FX (offline adaptation)
+## 5.3 FX rates — live via the mirror sub-repo + manual (points 2, 2.1–2.4; ADR-0011/0012)
 
-fintecheng FX rates, adapted: a rate is always directional; its time is critical; there are
-transactional rates (fall out of original+result amounts) and reference rates (valuation).
-**Bookkeepy never fetches live rates.** The user enters rates manually (or imports them in a
-CSV) with date + source; every conversion stores which rate was used. Valuation in the base
-currency uses the latest stored rate on or before the value date. Quotes and adaptation in
-doc 06 §FX.
+Architecture and package format: [11-rates-mirror-and-live-data.md](11-rates-mirror-and-live-data.md)
++ `bookkeepy-1-rates/docs/package-format.md`. Semantics here:
 
-## 5.4 The ledger (ADR-0009, ADR-0010)
+- **The app never contacts rate sources.** It downloads immutable, checksummed packages
+  **only from `aAndy03/bookkeepy-1-rates`** (ADR-0011). Live rates = the latest publication
+  each source pushes to the mirror. The app always works offline with downloaded data.
+- **2.1 linking:** every rate's currency code must exist in `data/currencies.toml`
+  (RULE-DATA-002); packages are validated against it on import.
+- **2.3 source switching:** each `fx_rates` row stores its source + package id + rate as
+  published. Changing the user's *primary source* never rewrites historical rows — they were
+  already computed with their source's rate; only a manual update changes them.
+- **2.4 accumulation:** packages from different sources add together; the UI shows all
+  sources' rates and lets the user choose which rate a given conversion/report uses.
+- **Manual rates & adjustments:** the user can enter a rate or adjust a live one
+  (`origin = "manual"`). Manual rows are user data: **deleting them is irreversible** — the
+  UI warns, and the fallback from `data/defaults.toml` applies (default chain: latest live
+  rate of the primary source ≤ value date → latest live rate of any source ≤ value date →
+  nearest earlier live rate → error `BK-FX-0002` "no rate available").
+- fintecheng FX (quoted, doc 06 §6.3): rates are directional and time-stamped; transactional
+  vs reference rate; "the source should be part of the data" — we store source + package id
+  + fetched_at with every row.
+- Rates are stored as decimal **strings** in packages and as integer minor-unit ratios
+  internally where possible; conversion keeps full precision, rounds once at the boundary,
+  residual → rounding account.
 
-- Double-entry (fintecheng): every entry moves the same amount out of one account into
-  another — "money is only moved, never created or destroyed". External world gets dedicated
-  accounts (e.g. "Income:Salary", "Expense:Groceries"), so money entering/leaving is tracked.
-- "Balance is never stored. It's derived from the movements of money." Balances, reports,
-  budgets are projections over postings; they may be cached/snapshotted for speed.
-- Posting = commit. Posted entries are **immutable**: append-only tables, UPDATE/DELETE
-  revoked at the DB permission level where possible, no mutating API in the app layer, plus
-  tamper evidence — a hash chain (SHA-256) over journal rows, verifiable from Help
-  (fintecheng, Immutability toolbox: "by construction / runtime checks / post-factum").
-- Corrections fix forward: a **reversal** negates the original and links both ways; a
-  **correction** books the difference. Value date vs booking date are both recorded
-  (fintecheng, Value/booking/settlement time): value date = when it happened, booking =
-  when recorded; reports use value date.
-- Overdrafts: negative balances are *representable* (never clamped to zero — "clamping a
-  negative balance to zero mints money"); policy warnings at entry time, detection post-factum.
-- Audit trail (fintecheng): for every change record **what** happened, **when**, **who/what
-  triggered it** (user / import batch / scheduler / system), **why** (reference to the
-  instruction/batch). Configuration changes are audited too.
+## 5.4 The ledger (ADR-0009/0010)
+
+- Double-entry: "money is only moved, never created or destroyed"; external world gets
+  dedicated accounts; balances derived, never stored; one transaction → many postings.
+- Posted entries **immutable**: append-only tables, no mutating API, SHA-256 hash chain
+  (verify via `engine_audit::verify_chain()`); corrections = linked reversals/corrections,
+  fix-forward; value date + booking date both stored; reports use value date.
+- Overdrafts representable, never clamped ("clamping… mints money"); warn at entry, detect
+  post-factum.
+- Audit trail: what / when / who-or-what (user, import batch, scheduler, updater, rates
+  sync) / why (reference).
 
 ## 5.5 Integrity & tamper evidence
 
-- `postings` carry `prev_hash`/`hash` forming a chain; `engine_audit::verify_chain()` checks
-  it (post-factum invariant check, run on open optionally and from Help).
-- `PRAGMA integrity_check` on open (cheap `quick_check`).
+`postings.prev_hash`/`hash` chain (SHA-256); `quick_check` on open; both verifiable from
+Help → Diagnostics.
 
 ## 5.6 Imports & idempotency
 
-- Each import run gets a batch id; every imported row stores an explicit idempotency key
-  scoped to (batch, source row) — fintecheng: "prefer explicit keys… scoped to a particular
-  operation and client". Re-importing the same file posts nothing twice.
-- Reconciliation (fintecheng, adapted offline): imported bank statements can be matched
-  against ledger entries by the persisted external id (or amount+date heuristics);
-  discrepancies surface as first-class "reconciliation breaks" — never silently overwritten.
+Explicit idempotency keys scoped to (import batch, source row); re-import posts nothing
+twice; reconciliation against imported statements by persisted external id; discrepancies
+are first-class "breaks", fixed by correction entries, never by overwriting.
 
 ## 5.7 Search index (ADR-0006)
 
-- Tantivy index directory lives next to the DB (`search.index/`). Documents = transactions,
-  payees, notes, categories, tags, attachments names. Written through on ledger events;
-  `rebuild()` recreates it from the DB at any time. The index is a cache: if deleted, it is
-  rebuilt; it is never authoritative.
+Tantivy, 100% of its API; index dir next to the DB; write-through from events; rebuildable
+from the ledger — a cache, never a source of truth.
 
 ## 5.8 Encryption at rest (optional, phase 2)
 
-- Phase 1: plain SQLite file owned by the user (they can encrypt their disk/folder
-  themselves). Phase 2: optional app lock — passphrase → Argon2id → AEAD key; either
-  whole-file encryption of the DB or field-level encryption of PII with per-record keys so
-  erasure = key deletion ("crypto-shredding", fintecheng GDPR section). Attachments (PII)
-  live outside the immutable ledger, in a mutable store that *can* be redacted/erased.
+Phase 1: plain user-owned file. Phase 2: optional app lock (Argon2id → AEAD), whole-file or
+field-level with per-record keys for PII → erasure = key deletion ("crypto-shredding");
+attachments/PII live in the mutable store, separate from the immutable journal.
+
+## 5.9 Loading & caching
+
+Demand-driven loading per `data/load-policies.toml` + `engine_loadpolicy`; hot (memory) /
+warm (SQLite+tantivy) / cold (files, packages); prefetch on idle; INV-LOAD-001 cold-start
+budget in `data/perf-budgets.toml`. Details: doc 03 §"Loading, caching, prefetch".
