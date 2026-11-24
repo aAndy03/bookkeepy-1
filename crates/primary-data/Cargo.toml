@@ -1,0 +1,22 @@
+[package]
+name = "bookkeepy-primary-data"
+description = "Loads + validates data/*.toml primary data (RULE-DATA-001/002/003, ADR-0008)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+
+[dependencies]
+bookkeepy-core.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -1,10 +1,12 @@
-# Bookkeepy 1 - primary data: supported currencies (ISO 4217).
+# Bookkeepy 1 - primary data: supported currencies (ISO 4217, fiat scope).
 #
 # PRIMARY DATA file (docs/04-conventions.md RULE-DATA-001, ADR-0008): engines/APIs/pipelines import
 # this file; no currency list is ever hardcoded in source code.
 # Source: official ISO 4217 list published by SIX Group on behalf of ISO.
 #   url       = "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml"
 #   published = "2026-09-17"
+# Scope: fiat currencies. Supplementary/funds codes that carry no currency name in the
+# source list (XAD, BOV, CLF, ...) are omitted - fintecheng: currency codes identify fiat only.
 # Regenerate only from the official source; never edit codes or minor units by hand.
 
 [source]
@@ -61,13 +63,6 @@ name = "East Caribbean Dollar"
 numeric = "951"
 minor_units = 2
 countries = ["ANGUILLA", "ANTIGUA AND BARBUDA", "DOMINICA", "GRENADA", "MONTSERRAT", "SAINT KITTS AND NEVIS", "SAINT LUCIA", "SAINT VINCENT AND THE GRENADINES"]
-
-[[currency]]
-code = "XAD"
-name = ""
-numeric = "396"
-minor_units = 2
-countries = ["ARAB MONETARY FUND"]
 
 [[currency]]
 code = "ARS"
@@ -182,13 +177,6 @@ minor_units = 2
 countries = ["BOLIVIA (PLURINATIONAL STATE OF)"]
 
 [[currency]]
-code = "BOV"
-name = ""
-numeric = "984"
-minor_units = 2
-countries = ["BOLIVIA (PLURINATIONAL STATE OF)"]
-
-[[currency]]
 code = "BAM"
 name = "Convertible Mark"
 numeric = "977"
@@ -273,13 +261,6 @@ minor_units = 0
 countries = ["CHILE"]
 
 [[currency]]
-code = "CLF"
-name = ""
-numeric = "990"
-minor_units = 4
-countries = ["CHILE"]
-
-[[currency]]
 code = "CNY"
 name = "Yuan Renminbi"
 numeric = "156"
@@ -290,13 +271,6 @@ countries = ["CHINA"]
 code = "COP"
 name = "Colombian Peso"
 numeric = "170"
-minor_units = 2
-countries = ["COLOMBIA"]
-
-[[currency]]
-code = "COU"
-name = ""
-numeric = "970"
 minor_units = 2
 countries = ["COLOMBIA"]
 
@@ -735,13 +709,6 @@ minor_units = 2
 countries = ["MEXICO"]
 
 [[currency]]
-code = "MXV"
-name = ""
-numeric = "979"
-minor_units = 2
-countries = ["MEXICO"]
-
-[[currency]]
 code = "MDL"
 name = "Moldovan Leu"
 numeric = "498"
@@ -949,7 +916,7 @@ code = "XSU"
 name = "Sucre"
 numeric = "994"
 minor_units = "N.A."
-countries = ["SISTEMA UNITARIO DE COMPENSACION REGIONAL DE PAGOS "SUCRE""]
+countries = ["SISTEMA UNITARIO DE COMPENSACION REGIONAL DE PAGOS \"SUCRE\""]
 
 [[currency]]
 code = "SBD"
@@ -999,20 +966,6 @@ name = "Swedish Krona"
 numeric = "752"
 minor_units = 2
 countries = ["SWEDEN"]
-
-[[currency]]
-code = "CHE"
-name = ""
-numeric = "947"
-minor_units = 2
-countries = ["SWITZERLAND"]
-
-[[currency]]
-code = "CHW"
-name = ""
-numeric = "948"
-minor_units = 2
-countries = ["SWITZERLAND"]
 
 [[currency]]
 code = "SYP"
@@ -1106,31 +1059,10 @@ minor_units = 2
 countries = ["UNITED ARAB EMIRATES (THE)"]
 
 [[currency]]
-code = "USN"
-name = ""
-numeric = "997"
-minor_units = 2
-countries = ["UNITED STATES OF AMERICA (THE)"]
-
-[[currency]]
 code = "UYU"
 name = "Peso Uruguayo"
 numeric = "858"
 minor_units = 2
-countries = ["URUGUAY"]
-
-[[currency]]
-code = "UYI"
-name = ""
-numeric = "940"
-minor_units = 0
-countries = ["URUGUAY"]
-
-[[currency]]
-code = "UYW"
-name = ""
-numeric = "927"
-minor_units = 4
 countries = ["URUGUAY"]
 
 [[currency]]

@@ -6,10 +6,10 @@
 kind = "bookkeepy-primary-data"
 note = "Maintained by the project; schema changes require an ADR."
 
-# Fallback chain used when no fx_rates row matches a conversion request.
+# FX defaults: fallback chain used when no fx_rates row matches a conversion request.
 # Steps are tried in order; the first that yields a rate wins.
-[fx_rates.fallback_chain]
-steps = [
+[fx_rates]
+fallback_chain = [
   "latest live rate from the user's primary source with date <= value date",
   "latest live rate from any source with date <= value date",
   "nearest earlier live rate from the primary source",

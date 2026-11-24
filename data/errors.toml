@@ -13,21 +13,21 @@ note = "Maintained by the project; schema changes require an ADR."
 
 [[error]]
 code = "BK-STORE-0001"
-area = "storage"
+area = "store"
 severity = "fatal"
 i18n_key = "err.store.open_failed"
 summary = "Cannot open the data file"
 
 [[error]]
 code = "BK-STORE-0002"
-area = "storage"
+area = "store"
 severity = "fatal"
 i18n_key = "err.store.migrate_failed"
 summary = "Database migration failed"
 
 [[error]]
 code = "BK-FX-0002"
-area = "rates"
+area = "fx"
 severity = "error"
 i18n_key = "err.fx.no_rate"
 summary = "No rate available for this currency and date — download rates or enter a manual one"
@@ -45,3 +45,38 @@ area = "rates"
 severity = "warning"
 i18n_key = "warn.rates.checksum_mismatch"
 summary = "A rates package failed checksum verification and was skipped"
+
+[[error]]
+code = "BK-CORE-0001"
+area = "core"
+severity = "fatal"
+i18n_key = "err.core.currency_mismatch"
+summary = "Internal: cross-currency arithmetic without a controlled rate"
+
+[[error]]
+code = "BK-CORE-0002"
+area = "core"
+severity = "fatal"
+i18n_key = "err.core.amount_overflow"
+summary = "Internal: amount overflow in minor units"
+
+[[error]]
+code = "BK-CORE-0003"
+area = "core"
+severity = "error"
+i18n_key = "err.core.invalid_currency_code"
+summary = "Not a valid currency code (expected 3 letters, e.g. RON)"
+
+[[error]]
+code = "BK-CORE-0004"
+area = "core"
+severity = "fatal"
+i18n_key = "err.core.invalid_error_code"
+summary = "Internal: malformed error code"
+
+[[error]]
+code = "BK-DATA-0001"
+area = "data"
+severity = "fatal"
+i18n_key = "err.data.invalid_primary_data"
+summary = "Internal: a primary data file failed validation"

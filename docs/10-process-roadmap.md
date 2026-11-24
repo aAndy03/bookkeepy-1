@@ -14,7 +14,7 @@
 
 | M | Name | Outcome |
 |---|---|---|
-| M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **Current.** |
+| M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **DONE 2026-11-24 — see "M0 completed" below.** |
 | M1 | Storage skeleton | `storage`: connection, migrations, WAL, backup/restore/verify, single-instance lock, crash-recovery self-check. |
 | M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests. |
 | M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
@@ -27,6 +27,49 @@
 | M9 | Scale & polish | materialized aggregations, a11y/keyboard pass, multi-display window mgmt, perf budgets green. |
 | M10 | Updater & packaging | updater, installers/uninstallers (INV-APP-001), first `v0.1.0` release. |
 | M11 | Future security | app lock / at-rest encryption (parked, see below). |
+
+## M0 completed (2026-11-24) — what was actually built + findings the docs didn't cover
+
+Built (backend only; UI comes from M3 via the frontend agent, RULE-PROC-002):
+
+- `rust-toolchain.toml` (1.100.0 + rustfmt/clippy), workspace `Cargo.toml` (edition 2024,
+  workspace lints: `unsafe_code=forbid`, deny unwrap/expect/dbg/todo, `float_arithmetic`
+  denied crate-level in `core`), `.cargo/config.toml` alias.
+- `crates/core` (`bookkeepy-core`): `Money` (i64 minor units + `CurrencyCode`, checked
+  add/sub/neg, conservation property-tested with proptest, serde as integer struct — never
+  a bare JSON number), `CurrencyCode` (shape-checked; ISO-set validation lives in
+  primary-data), `ErrorCode` (`BK-<AREA>-<NNNN>`), `EntityId` (UUIDv7), `time` (jiff 1),
+  `codes` + `all_error_codes()` (governor-checked against `data/errors.toml`).
+- `crates/primary-data` (`bookkeepy-primary-data`): one module per data scope, each
+  `include_str!` + `OnceLock` parse + structural validation; `validate_all()` runs at
+  startup and in `cargo xtask govern data`. 27 tests green.
+- `xtask` governor tree: `data`, `errors`, `adr`, `docs`, `deps`, `net` implemented and
+  green; `lints`/`perf`/`ui`/`meta` are explicit stubs that activate as code lands
+  (never silently skipped). CI (`.github/workflows/ci.yml`): fmt + clippy -D warnings +
+  tests + governors on ubuntu/windows/macos + cargo audit.
+
+Findings discovered while coding (now part of the architecture, recorded here per the
+overlay rule):
+
+1. `cargo xtask` does not auto-expose a workspace member binary → added
+   `.cargo/config.toml` `[alias] xtask = "run -p xtask --"`.
+2. Cargo 1.100 warns on *unused* `[workspace.dependencies]` entries → dependency entries
+   are declared on first use; the full policy set stays in doc 07 (noted in root
+   Cargo.toml). Keeps builds warning-free under `-D warnings`.
+3. `[lints] workspace = true` is a separate table (not `package.lints`).
+4. `Money` is `Clone` but not `Copy` (`CurrencyCode` owns a String) — ops take `self` by
+   value; callers clone. Fine for a money type (no accidental copies).
+5. `core::Display` for `Money` is the canonical *machine* form (`1234 RON`); user-facing
+   formatting with locale separators + always the ISO code (RULE-FMT-001) belongs to the
+   shared `format` helper, which reads minor units from primary data (dependency direction
+   forbids core from reading `currencies.toml`). Noted in doc 05 §5.1.
+6. Data generation bugs the governors/tests caught: unescaped quotes in country names
+   (SUCRE), empty-name funds codes (XAD/BOV/… — omitted, fiat-only scope, fintecheng:
+   "currency codes identify fiat only"; 168 fiat currencies), error-registry `area` must
+   equal the code prefix (`store`, `fx`, …), `defaults.toml` table structure.
+7. `clippy::should_implement_trait` → `Money::neg` renamed `checked_neg` (avoids confusion
+   with `std::ops::Neg`).
+8. Rust 2024 `let`-chains used where clippy demands collapsing.
 
 ## Round-2 brainstorming decisions (approved by owner)
 

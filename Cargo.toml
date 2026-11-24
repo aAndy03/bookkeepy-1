@@ -1,0 +1,64 @@
+# Bookkeepy 1 workspace — monorepo (ADR-0001). Crate layout + dependency direction: doc 03.
+# Lints + dependency policy: docs 04/07. Governors: `cargo xtask govern` (doc 04 §4.11).
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/primary-data",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100.0"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/aAndy03/bookkeepy-1"
+authors = ["Andy <andymarin860@gmail.com>"]
+
+# Dependency policy (RULE-DEP-001, doc 07): latest versions, pinned centrally here;
+# member crates use `dep.workspace = true`.
+#
+# M0 finding: cargo 1.100 warns on *unused* workspace.dependencies entries, so the full
+# policy set lives in docs/07-dependencies.md and each entry is declared here on FIRST USE
+# (keeps the build warning-free). Entries below are the ones in use.
+[workspace.dependencies]
+# Workspace-internal crates (path deps; direction rules enforced by `xtask govern deps`).
+bookkeepy-core = { path = "crates/core" }
+bookkeepy-primary-data = { path = "crates/primary-data" }
+# Foundation (in use now)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v7", "serde"] }
+jiff = { version = "1", features = ["serde"] }  # civil dates/times + IANA tzdb (primary data as a dependency)
+# Testing (doc 09)
+proptest = "1"
+
+# Declared on first use (full policy set with rationale: docs/07-dependencies.md):
+#   gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }   (M3, ADR-0007)
+#   rusqlite = { version = "0.43", features = ["bundled","blob","backup"] }  (M1, ADR-0005)
+#   tantivy = "0.27"                                                (M5, ADR-0006)
+#   anyhow, sha2, hex, directories, tracing(+subscriber/appender), csv, encoding_rs,
+#   roxmltree, semver, iana-time-zone, sysinfo, os_info, opener, printpdf, insta, tempfile,
+#   criterion — see doc 07 for versions/rationale
+#   ureq = { version = "3", default-features = false, features = ["rustls","gzip"] }
+#     ONLY for the updater/rates crates (RULE-NET-001, ADR-0011; enforced by `govern net`)
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+# RULE-ERR-002: no unwrap/expect outside tests (tests allow them via cfg_attr in lib.rs).
+unwrap_used = "deny"
+expect_used = "deny"
+dbg_macro = "deny"
+todo = "deny"
+# INV-MONEY-001: money crates deny float arithmetic at the crate level (core does; UI geometry excepted).
+float_arithmetic = "allow"
+
+[profile.release]
+lto = "thin"
+strip = true

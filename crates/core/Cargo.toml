@@ -1,0 +1,23 @@
+[package]
+name = "bookkeepy-core"
+description = "Money, currency codes, entity ids, error codes, time. No I/O, no workspace deps (doc 03)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

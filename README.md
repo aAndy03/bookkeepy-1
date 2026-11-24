@@ -30,10 +30,17 @@ so the books always balance.
 
 ## Status
 
-**Brainstorming / pre-implementation.** No application code exists yet. The product
-vision, feature inventory, architecture, coding conventions, data model and engineering
-principles are defined under [docs/](docs/README.md). Development follows the process in
-[docs/10-process-roadmap.md](docs/10-process-roadmap.md).
+**M0 done (2026-11-24):** Cargo workspace scaffold + `bookkeepy-core` (Money/CurrencyCode/
+ErrorCode/EntityId/time) + `bookkeepy-primary-data` (loads and validates `data/*.toml`) +
+`xtask` governor tree + CI. Brainstorming docs are complete under [docs/](docs/README.md);
+development follows [docs/10-process-roadmap.md](docs/10-process-roadmap.md) (next: M1
+storage, M2 ledger).
+
+```bash
+cargo test --workspace   # unit + property + registry tests
+cargo xtask govern       # the governor tree (data/errors/adr/docs/deps/net/…)
+cargo clippy --workspace --all-targets -- -D warnings
+```
 
 ## Repository layout
 

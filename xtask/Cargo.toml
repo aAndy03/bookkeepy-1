@@ -1,0 +1,23 @@
+[package]
+name = "xtask"
+description = "Bookkeepy 1 governor tree: `cargo xtask govern [sub]` (RULE-GOV-001, doc 04 §4.11)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+
+[dependencies]
+bookkeepy-core.workspace = true
+bookkeepy-primary-data.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[lints]
+workspace = true

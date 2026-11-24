@@ -14,6 +14,9 @@ rounding account").
   e.g. `1.234,56 RON`, `12.34 EUR` (symbol optional per settings, code always present) —
   locale-aware grouping/decimal separators. The shared `format`/`parse` helpers (doc 04
   registry) are the SSOT for this, so display and input parsing can never diverge.
+  (M0 note: `core::Money`'s own `Display` is the canonical machine form `1234 RON`;
+  user-facing formatting reads minor units from primary data in the shared helper — core
+  cannot depend on primary data.)
 
 ## 5.2 Storage (ADR-0005)
 

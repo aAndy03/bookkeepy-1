@@ -232,10 +232,16 @@ never duplicate; split by subtopic when a file outgrows its topic. ADRs are for 
 only, numbered, immutable once accepted (supersede via new ADR). Routine changes →
 CHANGELOG. Every pub item documented; every crate has a README.
 
-## 4.13 Git & CI hygiene (RULE-PROC-001)
+## 4.13 Git & CI hygiene (RULE-PROC-001/002)
 
 `main` protected: PRs only, required CI + review, conventional commits referencing the
 issue; branch `<type>/<short-name>`.
+
+**Frontend delegation (RULE-PROC-002):** backend work (engines/pipelines/storage/docs) is
+done in this session; when UI work is needed, this session produces a **short prompt** for a
+separate frontend AI agent, which implements in this same repo following these docs
+(gallery-first, one component set, capability traits). The frontend agent never changes
+backend contracts without an ADR.
 
 ## 4.14 Change propagation (RULE-SYS-001)
 

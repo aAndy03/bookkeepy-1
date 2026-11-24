@@ -3,9 +3,14 @@
 ## Policy (RULE-DEP-001)
 
 - **Latest versions** of every dependency, always. Upgrades are routine, small and frequent
-  (`cargo update` weekly cadence in CI), never big-bang.
+  (`cargo update` weekly cadence in CI), never big-bang. (Verified 2026-11-24: serde 1.0.229,
+  toml 1.2.2, jiff 1.0.3, uuid 1.29.3, thiserror 2.0.21, rusqlite 0.43.0, tantivy 0.27.0,
+  gpui-kit 0.11.0, sha2 0.11.1.)
 - All versions pinned centrally in the workspace `Cargo.toml` (`[workspace.dependencies]`);
   member crates use `dep.workspace = true`. The binary's `Cargo.lock` is committed.
+- **Declared on first use (M0 finding):** cargo 1.100 warns on unused
+  `[workspace.dependencies]` entries, so an entry is added to the manifest when the first
+  crate uses it; this doc remains the policy SSOT with versions + rationale.
 - Rust toolchain pinned by `rust-toolchain.toml` (`channel = "1.100.0"`, edition 2024).
 - Minimalism: a dependency is added only with a written rationale (which doc/ADR needs it)
   in the PR description. Prefer the standard ecosystem crate over hand-rolled code —
@@ -32,7 +37,7 @@
 | `toml` | latest | parsing `data/*.toml` primary data |
 | `thiserror` / `anyhow` | latest | error rules RULE-ERR-001/002 |
 | `uuid` | latest, v7 + serde | entity ids |
-| `jiff` | latest, serde | civil dates/times (gpui-kit 0.11 itself moved off chrono to jiff); IANA time-zone database ships as a dependency = primary data as a library (point 11) |
+| `jiff` | `"1"`, serde | civil dates/times; IANA time-zone database ships as a dependency = primary data as a library (point 11). (gpui-kit 0.11 uses jiff 0.2 internally; our workspace uses jiff 1 independently — no shared types needed.) |
 | `iana-time-zone` | latest | OS time-zone detection (local system context, doc 08) |
 | `sysinfo` | latest | CPU/RAM/process info for local diagnostics + perf budgets — local-only, never transmitted (doc 08) |
 | `os_info` | latest | OS name/version for diagnostics + fatal-error reports (doc 08) |
