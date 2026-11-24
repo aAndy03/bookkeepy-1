@@ -31,7 +31,6 @@
 | Crate | Version policy | Why |
 |---|---|---|
 | `gpui-kit` | `= "0.11.0"`, features `["gpui-fast"]` | the one UI dependency (ADR-0007); GPUI Fast backend via the `gpui-fast` feature |
-| `rusqlite` | latest, features `bundled`, `blob`, `backup` | all database access (ADR-0005); bundled SQLite so users need no system SQLite |
 | `tantivy` | latest | 100% of its API for search (ADR-0006) |
 | `serde` / `serde_json` | latest, derive | DTOs, primary data, exports |
 | `toml` | latest | parsing `data/*.toml` primary data |
@@ -41,7 +40,9 @@
 | `iana-time-zone` | latest | OS time-zone detection (local system context, doc 08) |
 | `sysinfo` | latest | CPU/RAM/process info for local diagnostics + perf budgets — local-only, never transmitted (doc 08) |
 | `os_info` | latest | OS name/version for diagnostics + fatal-error reports (doc 08) |
-| `sha2` / `hex` | latest | hash chain tamper evidence (doc 05 §5.5) |
+| `sha2` 0.11.1 + `hex` 0.4 (M1) | audit hash chain tamper evidence (doc 05 §5.5) |
+| `rusqlite` 0.43.0 (bundled, blob, backup) (M1) | the ONLY sqlite binding (ADR-0005) |
+| `fs2` 0.4.3 (M1) | cross-platform single-instance lockfile (ADR-0016) |
 | `argon2` + `chacha20poly1305` (or `aes-gcm`) + `zeroize` | latest | optional app lock / at-rest encryption (doc 05 §5.8) |
 | `csv` + `encoding_rs` | latest | bank CSV imports incl. Windows-1250 encodings |
 | `roxmltree` | latest | OFX/QFX XML parsing (no full XML stack) |

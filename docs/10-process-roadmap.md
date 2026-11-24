@@ -16,7 +16,7 @@
 |---|---|---|
 | M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **DONE 2026-11-24 — see "M0 completed" below.** |
 | M0.5 | Repo-grade foundation | contracts+bus, diagnostics+panic hook, deny/vet/Renovate, branch protection+templates, `xtask new-crate`, build-info, logging, i18n pipeline, profile registry, GPL embed, updater wire spec, fixtures structure, gitattributes+pre-commit, criterion harness. **DONE 2026-11-24 — see "M0.5 completed" below.** |
-| M1 | Storage skeleton | `storage`: connection, migrations, WAL, backup/restore/verify, single-instance lock, crash-recovery self-check. |
+| M1 | Storage skeleton | ✅ DONE 2026-11-24 — `storage` crate: WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, backup/verify/restore, single-instance lock, self-check, KV. See "M1 completed" below. |
 | M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests. |
 | M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
 | M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
@@ -314,3 +314,30 @@ README badges (license + toolchain + CI-minutes note).
   view/timeline scope/selection/drafts), single-instance IPC per ADR-0016 (named mutex on
   Windows, lockfile+socket elsewhere; second process forwards argv and exits).
 - Locale seeds for the above screens added to en+ro (parity enforced by `govern errors`).
+
+## M1 completed (2026-11-24) — storage skeleton
+
+`crates/storage` (`bookkeepy-storage`, ADR-0005), scaffolded with `cargo xtask new-crate`:
+
+- `conn`: one SQLite file per profile, WAL + foreign_keys + busy_timeout, `Mutex<Connection>`
+  behind `Db::with_conn` (transactions explicit).
+- `schema`: append-only migration list in code, applied in one transaction; `meta.schema_version`;
+  too-new profiles refused without writing (RULE-DATA-004 / ADR-0022 → BK-DATA-0002); v1 tables:
+  meta, schema_migrations, settings, ui_state, audit_log, outbox, jobs + audit immutability triggers.
+- `outbox`: durable envelope store; `publish_pending` feeds the in-process `Bus` exactly-once
+  after commit (ADR-0009 split is now real).
+- `audit`: sha256 hash-chained append-only log; UPDATE/DELETE rejected by triggers; `verify`
+  detects tampering (BK-STORE-0006).
+- `backup`: online backup API → `backups/`, verify (integrity_check + audit chain), restore.
+- `lock`: single-instance `app.lock` (fs2), second launch → BK-STORE-0004 (app shell focuses window).
+- `selfcheck`: startup report (integrity, audit chain, pending outbox, drafts) — never blocks.
+- `kv`: `ui_state` + `settings` tables; settings resolve = user override over primary-data defaults.
+- New BK codes BK-STORE-0003..0006 (+locales en/ro). Deps pinned (doc 07): rusqlite 0.43.0
+  (bundled/blob/backup), sha2 0.11.1, hex 0.4.3, fs2 0.4.3.
+- 8 new tests (migrations idempotent + downgrade refusal, outbox exactly-once, audit tamper,
+  backup/restore roundtrip, lock, selfcheck). Full `cargo xtask check` green.
+
+Findings: rusqlite `Backup::new` needs `&mut` dest and `run_to_completion` takes a progress
+callback; `Connection::transaction` needs `&mut` (so `with_conn` hands out `&mut`);
+file copies of a WAL DB must be preceded by `wal_checkpoint(TRUNCATE)`; restore must happen
+with no open handle (caller holds the lock).

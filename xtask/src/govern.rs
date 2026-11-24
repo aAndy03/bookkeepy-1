@@ -314,6 +314,16 @@ fn deps() -> bool {
         vec!["bookkeepy-core", "bookkeepy-primary-data"],
     );
     allowed.insert("bookkeepy-primary-data", vec!["bookkeepy-core"]);
+    allowed.insert(
+        "bookkeepy-storage",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-contracts",
+            "bookkeepy-bus",
+            "bookkeepy-profile",
+            "bookkeepy-primary-data",
+        ],
+    );
     allowed.insert("xtask", vec!["bookkeepy-core", "bookkeepy-primary-data"]);
 
     let mut ok = true;

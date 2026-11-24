@@ -115,3 +115,31 @@ area = "rates"
 severity = "error"
 i18n_key = "err.rates.bad_signature"
 summary = "A rates package failed signature verification and was rejected"
+
+[[error]]
+code = "BK-STORE-0003"
+area = "store"
+severity = "fatal"
+i18n_key = "err.store.integrity_failed"
+summary = "Data integrity check failed — restore from a backup (Settings → Backups)"
+
+[[error]]
+code = "BK-STORE-0004"
+area = "store"
+severity = "error"
+i18n_key = "err.store.lock_held"
+summary = "This profile is already open in another Bookkeepy window"
+
+[[error]]
+code = "BK-STORE-0005"
+area = "store"
+severity = "error"
+i18n_key = "err.store.backup_failed"
+summary = "The backup operation failed"
+
+[[error]]
+code = "BK-STORE-0006"
+area = "store"
+severity = "fatal"
+i18n_key = "err.store.audit_broken"
+summary = "The audit log failed verification (tamper detected) — restore from a backup"

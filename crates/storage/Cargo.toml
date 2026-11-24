@@ -1,0 +1,29 @@
+[package]
+name = "bookkeepy-storage"
+description = "rusqlite storage: connection, forward-only migrations, WAL, backup/verify, single-instance lock, self-check, outbox, audit chain (M1, ADR-0005)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bookkeepy-core.workspace = true
+bookkeepy-contracts.workspace = true
+bookkeepy-bus.workspace = true
+bookkeepy-profile.workspace = true
+rusqlite.workspace = true
+sha2.workspace = true
+hex.workspace = true
+fs2.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

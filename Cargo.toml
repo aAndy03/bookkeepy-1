@@ -3,6 +3,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/storage",
     "crates/build-info",
     "crates/i18n",
     "crates/profile",
@@ -38,9 +39,10 @@ bookkeepy-core = { path = "crates/core" }
 bookkeepy-primary-data = { path = "crates/primary-data" }
 bookkeepy-build-info = { path = "crates/build-info" }
 bookkeepy-contracts = { path = "crates/contracts" }
-# Declared on first use (cargo 1.100 warns on unused workspace deps): bookkeepy-bus,
-# bookkeepy-diagnostics, bookkeepy-logging, bookkeepy-profile, bookkeepy-i18n get their
-# path entries here when the first crate depends on them (M1+).
+bookkeepy-bus = { path = "crates/bus" }
+bookkeepy-profile = { path = "crates/profile" }
+# Declared on first use (cargo 1.100 warns on unused workspace deps): bookkeepy-diagnostics,
+# bookkeepy-logging, bookkeepy-i18n get their path entries here when first depended on.
 # Foundation (in use now)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -54,15 +56,19 @@ tempfile = "3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
+# Storage stack, first used in M1 (ADR-0005)
+rusqlite = { version = "0.43", features = ["bundled", "blob", "backup"] }
+sha2 = "0.11"   # audit hash chain (doc 05 §5.5)
+hex = "0.4"     # hex-encode chain hashes
+fs2 = "0.4"     # single-instance lockfile (ADR-0016)
 # Testing / benches (doc 09)
 proptest = "1"
 criterion = "0.8"
 
 # Declared on first use (full policy set with rationale: docs/07-dependencies.md):
 #   gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }   (M3, ADR-0007)
-#   rusqlite = { version = "0.43", features = ["bundled","blob","backup"] }  (M1, ADR-0005)
 #   tantivy = "0.27"                                                (M5, ADR-0006)
-#   anyhow, sha2, hex, csv, encoding_rs,
+#   anyhow, csv, encoding_rs,
 #   roxmltree, semver, iana-time-zone, sysinfo, os_info, opener, printpdf, insta
 #   — see doc 07 for versions/rationale
 #   ureq = { version = "3", default-features = false, features = ["rustls","gzip"] }

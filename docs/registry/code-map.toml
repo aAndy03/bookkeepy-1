@@ -103,3 +103,11 @@ adr = []
 # status = "deprecated"
 # successor = "new-thing"
 # adr = ["ADR-0024"]
+
+[[item]]
+id = "storage"
+path = "crates/storage"
+kind = "crate"
+status = "active"
+summary = "rusqlite storage engine: WAL conn, forward-only migrations + downgrade refusal, durable outbox->bus, audit hash chain, backup/verify/restore, single-instance lock, self-check, ui_state/settings KV (M1, ADR-0005)"
+adr = ["ADR-0005"]
