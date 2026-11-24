@@ -4,7 +4,7 @@
 //! not Sync; all access goes through `Db::with_conn` so transactions stay explicit.
 
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use rusqlite::Connection;
 
@@ -13,8 +13,9 @@ use crate::api::schema;
 use bookkeepy_profile::ProfileRoots;
 
 /// A profile database handle.
+#[derive(Clone)]
 pub struct Db {
-    pub(crate) conn: Mutex<Connection>,
+    pub(crate) conn: Arc<Mutex<Connection>>,
 }
 
 impl std::fmt::Debug for Db {
@@ -50,7 +51,7 @@ impl Db {
         // Privacy on shared/multi-user machines (RULE-PRIV-001): the DB file is owner-only.
         harden_file(path);
         let db = Db {
-            conn: Mutex::new(conn),
+            conn: Arc::new(Mutex::new(conn)),
         };
         schema::migrate(&db)?;
         Ok(db)

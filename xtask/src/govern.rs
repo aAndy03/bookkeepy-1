@@ -752,6 +752,18 @@ fn deps() -> bool {
         ],
     );
     allowed.insert(
+        "bookkeepy-app-services",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-contracts",
+            "bookkeepy-bus",
+            "bookkeepy-storage",
+            "bookkeepy-ledger",
+            "bookkeepy-shared",
+            "bookkeepy-profile",
+        ],
+    );
+    allowed.insert(
         "xtask",
         vec![
             "bookkeepy-core",

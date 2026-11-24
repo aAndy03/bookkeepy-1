@@ -493,6 +493,19 @@ pub fn run_materialize_job(
         jobs::resume(db, &job.id).ok();
         return Ok(Vec::new());
     }
+    run_claimed_job(db, bus, &job, max_attempts)
+}
+
+/// Run an ALREADY-CLAIMED `schedule.materialize` job (the app shell's worker dispatches
+/// claimed jobs here): materializes the range (skipping already-materialized and
+/// skip-exceptions), then completes or fails (retry via max_attempts + backoff,
+/// RULE-JOB-002). Returns materialized tx ids.
+pub fn run_claimed_job(
+    db: &Db,
+    bus: &Bus,
+    job: &jobs::Job,
+    max_attempts: i64,
+) -> Result<Vec<EntityId>, LedgerError> {
     let result = (|| -> Result<Vec<EntityId>, LedgerError> {
         let p: serde_json::Value = serde_json::from_str(&job.payload)
             .map_err(|e| LedgerError::InvalidSchedule(e.to_string()))?;

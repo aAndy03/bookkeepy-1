@@ -19,7 +19,7 @@
 | M1 | Storage skeleton | ✅ DONE 2026-11-24 — `storage` crate: WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, backup/verify/restore, single-instance lock, self-check, KV. See "M1 completed" below. |
 | M2 | Ledger engine | ✅ DONE 2026-11-24 — `ledger` + `shared` crates + storage v2: double-entry postings (hash-chained, trigger-guarded), derived balances, linked reversals, transactions→balanced postings, shared audited actions, lifecycle/soft-delete (ADR-0024), proptest invariants. See "M2 completed" below. |
 | M2b | Recurring / scheduled transactions | ✅ DONE 2026-11-24 — storage v3 (`schedules` table, `transactions.schedule_id`/`occurrence_date`), shared `recurrence` helper (anchor-based expansion), `ledger::schedules` (create/expand/materialize + durable range job), BK-RECUR-0001..0003. See "M2b completed" below. |
-| M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
+| M3 | Accounts & transactions UI | **Backend shell DONE 2026-11-24** (`app-services` composition root — see "M3 backend" below); UI (gpui-kit shell, gallery, first screens, ui-state, onboarding, EN/RO, keyboard map, timeline spine) handed to the UI agent via prompts — see "M3 backend" below. |
 | M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
 | M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
 | M5 | Search | tantivy engine + query DSL, write-through + rebuild. |
@@ -572,3 +572,30 @@ schema migrations (indexes/pragmas), `data/perf-budgets.toml` + per-crate criter
 
 - Docs: ADR-0026, doc 04 §4.11 (RULE-SEAM-001), doc 03 optimization section, doc 10,
   data/README, perf-budgets, code-map, changelog.
+
+## M3 backend (2026-11-24) — app-services composition root; UI handed to the UI agent
+
+Backend half of M3, done here (UI prompts for the other agent are listed at the end):
+
+- **`crates/app-services` (`bookkeepy-app-services`)** — the composition root (doc 03:
+  `… ← ledger ← app-services ← ui ← app`). `App::open(data_dir, profile_id)`:
+  1. `session::open_session_with(.., &[ledger_chains_check, schedules_check])` — the
+     ADR-0025 extension point in action: ledger hash-chain verification and the schedules
+     inventory run inside the boot self-check and land in `report.extra` (storage still
+     never depends on ledger; govern deps edge app-services→ledger registered).
+  2. Boot `jobs_resume` driver: `schedules::materialize_due(db, bus, today_utc)` (near
+     window, no backfill).
+  3. Background job worker thread (`worker::start`): claim due (`not_before` backoff
+     honored) → dispatch by kind (`schedule.materialize` → `schedules::run_claimed_job`;
+     unknown kinds **fail fast** to `failed` — surfaced, never spin) → complete/fail.
+     `App::drain_jobs_once` for tests/manual drain; `Drop` stops+joins the worker.
+  4. `Db` is now `Clone` (Arc<Mutex<Connection>>) so the worker shares the one connection.
+- Guard tests (`tests/app_flow.rs`, RULE-TEST-001): boot checks present + ledger write
+  through the app handle; range job processed by worker dispatch (3 occurrences, trial
+  balance holds); unknown job kind fails fast without re-claim; background worker
+  processes a queued job and stops on drop.
+- `bookkeepy-ledger` got its first workspace-dep user (path entry added, per the
+  first-use rule). `cargo xtask check` green — 21 gates.
+- **UI half of M3 (for the other AI agent, short prompts):** gpui-kit shell + component
+  gallery first (all styled components, versioned variants, gallery-first workflow),
+  then first screens on top of `app-services` api only.

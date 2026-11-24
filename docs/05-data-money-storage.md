@@ -272,7 +272,7 @@ storage v3 `schedules` table + `transactions.schedule_id`/`occurrence_date`. Dri
 `ledger::schedules`: `materialize_due` at boot (near window only, never backfills),
 `materialize_range_as_job`/`run_materialize_job` for opt-in bounded history via the jobs
 engine, `expand_window` for projections with `assumed_reconciled` on past unmaterialized
-occurrences. Composition point: app shell (M3) calls it at boot step `jobs_resume`
+occurrences. Composition point: ✅ `app-services::App::open` (M3 backend) calls it at boot step `jobs_resume`
 (`data/load-policies.toml [boot_sequence]`) — storage may not depend on ledger (govern
 deps direction), so the shell is where the two are joined.
 

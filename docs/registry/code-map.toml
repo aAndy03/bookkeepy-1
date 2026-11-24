@@ -127,3 +127,11 @@ kind = "crate"
 status = "active"
 summary = "ledger engine (M2, ADR-0009/0010/0024): accounts (archive returns ArchiveOutcome balance warning), catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings (self-transfer rejected BK-LEDGER-0009, replace inherits schedule link, strict row parsing, in-tx materialization guard), derived balances, lifecycle SSOT; api/schedules (M2b + hardening, ADR-0020/0025): schedule CRUD + expand_window projection + materialize_due (near-window boot driver, no backfill) + durable range jobs + Modify patches applied (RULE-RECUR-004); proptest invariants"
 adr = []
+
+[[item]]
+id = "app-services"
+path = "crates/app-services"
+kind = "crate"
+status = "active"
+summary = "M3 backend composition root: App::open = session::open_session_with (injected boot checks: ledger.chains, schedules) + schedules::materialize_due boot driver + background job worker (claim → kind dispatch → complete/fail with backoff; unknown kinds fail fast); api/ is the only surface the ui crate may use; tests/app_flow.rs guards the flow"
+adr = ["ADR-0025"]

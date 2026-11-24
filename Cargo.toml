@@ -3,6 +3,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/app-services",
     "crates/ledger",
     "crates/shared",
     "crates/storage",
@@ -47,8 +48,7 @@ bookkeepy-logging = { path = "crates/logging" }
 bookkeepy-diagnostics = { path = "crates/diagnostics" }
 bookkeepy-shared = { path = "crates/shared" }
 bookkeepy-storage = { path = "crates/storage" }
-# bookkeepy-ledger gets its path entry here on first use by another crate (cargo 1.100
-# warns on unused workspace deps); the app-services/app crates (M3) will be first.
+bookkeepy-ledger = { path = "crates/ledger" } # first used by app-services (M3)
 # bookkeepy-i18n gets its path entry here on first use by another crate (cargo 1.100 warns
 # on unused workspace deps).
 # Foundation (in use now)

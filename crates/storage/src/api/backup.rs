@@ -134,7 +134,7 @@ pub fn verify_backup(path: &Path) -> Result<(), StorageError> {
         )));
     }
     let db = Db {
-        conn: std::sync::Mutex::new(conn),
+        conn: std::sync::Arc::new(std::sync::Mutex::new(conn)),
     };
     audit::verify(&db)?;
     Ok(())

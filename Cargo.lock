@@ -73,6 +73,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "bookkeepy-app-services"
+version = "0.1.0"
+dependencies = [
+ "bookkeepy-bus",
+ "bookkeepy-contracts",
+ "bookkeepy-core",
+ "bookkeepy-ledger",
+ "bookkeepy-profile",
+ "bookkeepy-shared",
+ "bookkeepy-storage",
+ "jiff",
+ "tempfile",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "bookkeepy-build-info"
 version = "0.1.0"
 

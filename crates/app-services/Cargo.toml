@@ -1,0 +1,29 @@
+[package]
+name = "bookkeepy-app-services"
+description = "Composition root (M3 backend): opens the profile session with injected boot checks (ledger chains, schedules), runs the due-schedule driver, and the background job worker; the api the UI uses"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bookkeepy-core.workspace = true
+bookkeepy-contracts.workspace = true
+bookkeepy-bus.workspace = true
+bookkeepy-storage.workspace = true
+bookkeepy-ledger.workspace = true
+jiff.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+bookkeepy-profile.workspace = true
+bookkeepy-shared.workspace = true
+jiff.workspace = true

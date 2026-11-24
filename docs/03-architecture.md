@@ -41,7 +41,7 @@ bookkeepy-1/                     workspace root
 │   ├── settings/ · i18n/        config; i18n/ ✅ M0.5: locale lookup over data/locales (EN/RO, EN fallback)
 │   ├── security/                app lock, key derivation, optional at-rest encryption
 │   ├── updater/                 app updates from main repo Releases (allowed HTTP #1)
-│   ├── app-services/            composition root + brokers; the `api` the UI uses
+│   ├── app-services/            ✅ M3-backend: composition root (`App::open`: session with injected boot checks ledger.chains/schedules, due-schedule driver, background job worker with kind dispatch + backoff); the `api` the UI uses
 │   └── ui/                      gpui-kit views, widgets (Figma-model), presenters, theme
 ├── app/                         thin binary: window, DI, run; **single instance + focus IPC** (RULE-APP-001, ADR-0016); **profile registry + switching** (F18, ADR-0018)
 ├── gallery/                     component gallery binary (RULE-UI-006/008): ALL gpui-kit styled components + our versioned variants, atomic-design arranged; gallery-first workflow — components are approved here before use in the app; ONE component set only
