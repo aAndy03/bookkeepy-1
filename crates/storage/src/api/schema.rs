@@ -14,7 +14,7 @@ use crate::api::conn::Db;
 use crate::api::error::StorageError;
 
 /// Highest schema version this build knows.
-pub const MAX_KNOWN: i64 = 2;
+pub const MAX_KNOWN: i64 = 3;
 
 /// One migration. Append-only — never edit existing entries; "reverts" are compensating
 /// forward migrations (INV-DATA-001), proven by tests/migrations_flow.rs.
@@ -171,8 +171,44 @@ pub const MIGRATION_V2_LEDGER: Migration = Migration {
     "#,
 };
 
+/// M2b — recurrence schedules (ADR-0020). `schedules` holds the RULE (template JSON +
+/// frequency/interval/start/end/exceptions), never occurrence rows; occurrences are derived
+/// projections until materialized. Schedules are not posted money, so the table is mutable
+/// (every change audited via the shared action engines / scheduler actor). `transactions`
+/// gains `schedule_id`/`occurrence_date` linking a materialized occurrence back; the
+/// status-only trigger is recreated to cover the new columns.
+pub const MIGRATION_V3_SCHEDULES: Migration = Migration {
+    version: 3,
+    name: "v3_schedules",
+    sql: r#"
+    CREATE TABLE IF NOT EXISTS schedules (
+        id TEXT PRIMARY KEY,
+        template TEXT NOT NULL,
+        frequency TEXT NOT NULL CHECK(frequency IN ('daily','weekly','monthly','yearly')),
+        interval INTEGER NOT NULL DEFAULT 1 CHECK(interval > 0),
+        start_date TEXT NOT NULL,
+        end_kind TEXT NOT NULL CHECK(end_kind IN ('never','on_date','after_count')),
+        end_value TEXT,
+        exceptions TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+    );
+    ALTER TABLE transactions ADD COLUMN schedule_id TEXT;
+    ALTER TABLE transactions ADD COLUMN occurrence_date TEXT;
+    DROP TRIGGER IF EXISTS tx_only_status;
+    CREATE TRIGGER tx_only_status BEFORE UPDATE ON transactions
+    WHEN NEW.kind IS NOT OLD.kind OR NEW.value_ts IS NOT OLD.value_ts
+        OR NEW.entry_ts IS NOT OLD.entry_ts OR NEW.payee_id IS NOT OLD.payee_id
+        OR NEW.category_id IS NOT OLD.category_id OR NEW.note IS NOT OLD.note
+        OR NEW.entry_id IS NOT OLD.entry_id OR NEW.replaces IS NOT OLD.replaces
+        OR NEW.created_at IS NOT OLD.created_at
+        OR NEW.schedule_id IS NOT OLD.schedule_id
+        OR NEW.occurrence_date IS NOT OLD.occurrence_date
+    BEGIN SELECT RAISE(ABORT, 'transactions: only status may change; edit via reversal (ADR-0010)'); END;
+    "#,
+};
+
 /// Ordered migrations. Append-only — never edit existing entries.
-pub const MIGRATIONS: &[Migration] = &[MIGRATION_V1, MIGRATION_V2_LEDGER];
+pub const MIGRATIONS: &[Migration] = &[MIGRATION_V1, MIGRATION_V2_LEDGER, MIGRATION_V3_SCHEDULES];
 
 /// Read the current schema version (0 if the meta table doesn't exist yet).
 pub fn current_version(conn: &Connection) -> Result<i64, StorageError> {

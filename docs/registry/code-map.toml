@@ -117,7 +117,7 @@ id = "shared"
 path = "crates/shared"
 kind = "crate"
 status = "active"
-summary = "shared action engines (RULE-SHARED-001): rename/archive/restore/change_status, generic over Actionable, audited, with _in_tx variants for composing engines (M2)"
+summary = "shared action engines (RULE-SHARED-001): rename/archive/restore/change_status, generic over Actionable, audited, with _in_tx variants for composing engines (M2); api/recurrence (M2b, ADR-0020): anchor-based bounded schedule expansion SSOT — validate/nth/step/expand, exceptions, MAX_PER_EXPANSION cap"
 adr = []
 
 [[item]]
@@ -125,5 +125,5 @@ id = "ledger"
 path = "crates/ledger"
 kind = "crate"
 status = "active"
-summary = "ledger engine (M2, ADR-0009/0010/0024): accounts, catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings, derived balances, lifecycle SSOT; proptest invariants"
+summary = "ledger engine (M2, ADR-0009/0010/0024): accounts, catalog, hash-chained entries/postings with reversals, transactions compiled to balanced postings, derived balances, lifecycle SSOT; api/schedules (M2b, ADR-0020): schedule CRUD + expand_window projection + materialize_due (near-window boot driver, no backfill) + durable range materialization jobs; proptest invariants"
 adr = []

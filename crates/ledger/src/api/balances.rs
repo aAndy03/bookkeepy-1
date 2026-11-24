@@ -184,6 +184,8 @@ mod tests {
                 note: None,
                 value_ts: now(),
                 status: crate::api::lifecycle::TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
             },
             "x",
         )

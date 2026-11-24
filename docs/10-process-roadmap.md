@@ -18,6 +18,7 @@
 | M0.5 | Repo-grade foundation | contracts+bus, diagnostics+panic hook, deny/vet/Renovate, branch protection+templates, `xtask new-crate`, build-info, logging, i18n pipeline, profile registry, GPL embed, updater wire spec, fixtures structure, gitattributes+pre-commit, criterion harness. **DONE 2026-11-24 — see "M0.5 completed" below.** |
 | M1 | Storage skeleton | ✅ DONE 2026-11-24 — `storage` crate: WAL conn, forward-only migrations + downgrade refusal, durable outbox, audit hash chain, backup/verify/restore, single-instance lock, self-check, KV. See "M1 completed" below. |
 | M2 | Ledger engine | ✅ DONE 2026-11-24 — `ledger` + `shared` crates + storage v2: double-entry postings (hash-chained, trigger-guarded), derived balances, linked reversals, transactions→balanced postings, shared audited actions, lifecycle/soft-delete (ADR-0024), proptest invariants. See "M2 completed" below. |
+| M2b | Recurring / scheduled transactions | ✅ DONE 2026-11-24 — storage v3 (`schedules` table, `transactions.schedule_id`/`occurrence_date`), shared `recurrence` helper (anchor-based expansion), `ledger::schedules` (create/expand/materialize + durable range job), BK-RECUR-0001..0003. See "M2b completed" below. |
 | M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
 | M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
 | M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
@@ -461,3 +462,44 @@ isolation, boot-subsequence invariant, primary-data keys↔defaults sync. Full
   reversal restores exact prior balances, both chains verify after every op.
 - Docs: ADR-0024, doc 04 §4.10 (RULE-LIFE-001), doc 05 §5.4 rewritten to the implemented
   reality, doc 03 crate tree/direction, code-map. Full `cargo xtask check` green.
+
+## M2b completed (2026-11-24) — recurring / scheduled transactions (ADR-0020, RULE-RECUR-001…003)
+
+- **storage v3** (`MAX_KNOWN=3`): `schedules` table (template JSON + frequency/interval/
+  start/end-kind/end-value + exceptions JSON), `transactions` gains `schedule_id` +
+  `occurrence_date`; the `tx_only_status` trigger is dropped and recreated to cover the new
+  columns. Migration is forward-only as always; `migrations_flow.rs` now experiments v4/v5.
+- **SSOT for recurrence math: `shared::api::recurrence`** (RULE-SHARED-001 helper layer).
+  `ScheduleRule`/`Frequency`/`EndRule`/`Exception`/`Occurrence`/`Expansion`, `validate`,
+  `nth`, `step`, `expand` — pure, window-explicit (no hidden "today"), bounded by
+  `MAX_PER_EXPANSION=1000` + a 100k iteration guard. **Anchor-based expansion
+  (RULE-RECUR-003):** occurrence k is computed from the schedule START (`nth(rule,k)`),
+  with the anchor day clamped into each target month — a monthly rule starting 2026-01-31
+  yields 02-28, **03-31**, 04-30… and never drifts to the 28th. This bug was caught by the
+  M2b tests (skip-exception on 03-31 didn't match a drifted 03-28) and fixed before merge.
+  Exceptions are internally tagged (`{"kind":"skip"}` / `{"kind":"modify","patch":…}`) so
+  they round-trip through the JSON column.
+- **`ledger::api::schedules`**: `create` (validates rule → BK-RECUR-0001), `get`/`list`,
+  `expand_window` (projection: materialized occurrences linked to their tx; past
+  unmaterialized ones flagged `assumed_reconciled` — RULE-RECUR-002), `materialize_one`
+  (posts a real audited transaction with `Actor::Scheduler`, `schedule_id` +
+  `occurrence_date` set; BK-RECUR-0003 if already materialized), **`materialize_due`**
+  (boot driver: near window `[today-7d, today]` per schedule, NEVER backfills the past),
+  `materialize_range_as_job` + `run_materialize_job` (bounded history = durable job through
+  `storage::jobs`: claim → materialize → complete/fail with auto-retry, RULE-JOB-001).
+- **Interconnection (owner requirement "interconnect all crates as we go"):** the schedule
+  engine is wired INTO the existing storage machinery, not alongside it — every
+  materialization goes through `transactions::create` → `tx::post_with` → audit + outbox +
+  bus in ONE atomic transaction; range materialization goes through the jobs engine.
+  The only deliberate non-wiring: `storage` cannot call `ledger` (govern deps direction
+  storage→ledger is forbidden), so the composition point is the app shell (M3): at boot
+  step `jobs_resume` (data/load-policies.toml `[boot_sequence]`) the shell calls
+  `schedules::materialize_due(&session.db, &session.bus, today)` then drains
+  `schedules::run_materialize_job`. Noted in doc 05 §5.9.
+- Errors BK-RECUR-0001..0003 (+ en/ro locale parity, `govern errors` PASS). Edges unchanged
+  (ledger→shared→storage already allowed; govern deps PASS 29 edges).
+- Tests: recurrence unit + proptest (cap, window, monotonic), schedules unit
+  (no-backfill, assumed-reconciled projection, idempotent re-run, range job + skip
+  exception, invalid rule), migration flow v3. Full `cargo xtask check` 18/18 PASS.
+- Docs: ADR-0020 implemented as written; doc 05 §5.13 addendum; doc 03 tree; doc 04 §4.2
+  registry; doc 02 F2; code-map summaries; changelog.

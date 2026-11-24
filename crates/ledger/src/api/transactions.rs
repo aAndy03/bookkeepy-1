@@ -67,6 +67,10 @@ pub struct NewTransaction {
     pub value_ts: Timestamp,
     /// Initial status (default cleared).
     pub status: TxStatus,
+    /// Owning schedule, if materialized from one.
+    pub schedule_id: Option<EntityId>,
+    /// Occurrence date, if materialized from a schedule.
+    pub occurrence_date: Option<jiff::civil::Date>,
 }
 
 /// A transaction row (the user-facing record; `entry_id` points at its posted entry).
@@ -220,12 +224,14 @@ fn create_in_tx(
     let cat = new.category_id.map(|c| c.to_string());
     let note = new.note.clone();
     let tags = new.tag_ids.clone();
+    let sched = new.schedule_id.map(|s| s.to_string());
+    let occ = new.occurrence_date.map(|d| d.to_string());
     tx::post_with(db, bus, &ev, |tx| {
         entries::insert_in_tx(tx, entry_id, "entry", &entry, None)
             .map_err(crate::api::error::into_storage)?;
         tx.execute(
-            "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at, schedule_id, occurrence_date)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             rusqlite::params![
                 tx_id.to_string(),
                 kind,
@@ -237,7 +243,9 @@ fn create_in_tx(
                 note,
                 entry_id.to_string(),
                 replaces.map(|r| r.to_string()),
-                now().to_string()
+                now().to_string(),
+                sched,
+                occ,
             ],
         )?;
         catalog::attach_tags_in_tx(tx, tx_id, &tags).map_err(crate::api::error::into_storage)?;
@@ -438,13 +446,15 @@ pub fn replace(
     let cat = new.category_id.map(|c| c.to_string());
     let note = new.note.clone();
     let tags = new.tag_ids.clone();
+    let sched = new.schedule_id.map(|s| s.to_string());
+    let occ = new.occurrence_date.map(|d| d.to_string());
     tx::post_with(db, bus, &ev, |tx| {
         reverse_in_tx(tx, old_entry, reason).map_err(crate::api::error::into_storage)?;
         entries::insert_in_tx(tx, new_entry, "entry", &entry, None)
             .map_err(crate::api::error::into_storage)?;
         tx.execute(
-            "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            "INSERT INTO transactions (id, kind, status, value_ts, entry_ts, payee_id, category_id, note, entry_id, replaces, created_at, schedule_id, occurrence_date)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             rusqlite::params![
                 new_tx.to_string(),
                 kind,
@@ -456,7 +466,9 @@ pub fn replace(
                 note,
                 new_entry.to_string(),
                 Some(old_tx_id.to_string()),
-                now().to_string()
+                now().to_string(),
+                sched,
+                occ,
             ],
         )?;
         catalog::attach_tags_in_tx(tx, new_tx, &tags).map_err(crate::api::error::into_storage)?;
@@ -530,6 +542,8 @@ mod tests {
                 note: Some("groceries".into()),
                 value_ts: now(),
                 status: TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
             },
             "buy food",
         )
@@ -565,6 +579,8 @@ mod tests {
                 note: None,
                 value_ts: now(),
                 status: TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
             },
             "move",
         )
@@ -598,6 +614,8 @@ mod tests {
                 note: None,
                 value_ts: now(),
                 status: TxStatus::Cleared,
+                schedule_id: None,
+                occurrence_date: None,
             },
             "fix amount",
         )

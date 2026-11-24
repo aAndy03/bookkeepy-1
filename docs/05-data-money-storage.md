@@ -261,6 +261,16 @@ with a 2010 start must not make the user mark 16 years of occurrences):
 - The shared `recurrence` helper (doc 04 registry) owns expansion/validation; the `timeline`
   renders the bounded window; the jobs engine materializes.
 
+**Implemented in M2b (2026-11-24):** SSOT = `bookkeepy_shared::api::recurrence` (pure,
+anchor-based `expand`; see doc 10 "M2b completed" for the anti-drift fix). Persistence =
+storage v3 `schedules` table + `transactions.schedule_id`/`occurrence_date`. Driver =
+`ledger::schedules`: `materialize_due` at boot (near window only, never backfills),
+`materialize_range_as_job`/`run_materialize_job` for opt-in bounded history via the jobs
+engine, `expand_window` for projections with `assumed_reconciled` on past unmaterialized
+occurrences. Composition point: app shell (M3) calls it at boot step `jobs_resume`
+(`data/load-policies.toml [boot_sequence]`) — storage may not depend on ledger (govern
+deps direction), so the shell is where the two are joined.
+
 ## 5.9 Loading & caching
 
 Demand-driven loading per `data/load-policies.toml` + `engine_loadpolicy`; hot (memory) /

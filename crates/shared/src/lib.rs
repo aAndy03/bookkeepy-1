@@ -17,3 +17,7 @@ pub use api::actions::{
     restore, restore_in_tx,
 };
 pub use api::error::{SharedError, into_storage};
+pub use api::recurrence::{
+    EndRule, Exception, Expansion, Frequency, MAX_PER_EXPANSION, Occurrence, ScheduleRule, expand,
+    step, validate,
+};

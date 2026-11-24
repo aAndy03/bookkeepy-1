@@ -51,6 +51,15 @@ pub enum LedgerError {
     /// Underlying SQL failure (mapped to BK-STORE-0001 like storage does).
     #[error(transparent)]
     Sql(#[from] rusqlite::Error),
+    /// Invalid recurrence schedule (BK-RECUR-0001).
+    #[error("invalid schedule: {0}")]
+    InvalidSchedule(String),
+    /// Expansion hit its cap (BK-RECUR-0002, warning severity).
+    #[error("expansion capped at {0} occurrences")]
+    ExpansionCapped(usize),
+    /// Occurrence already materialized (BK-RECUR-0003).
+    #[error("occurrence {0} already materialized")]
+    AlreadyMaterialized(String),
 }
 
 /// Map into the storage error type (for running ledger `_in_tx` steps inside
@@ -92,6 +101,9 @@ impl LedgerError {
             LedgerError::Store(e) => e.code(),
             LedgerError::Shared(e) => e.code(),
             LedgerError::Sql(_) => "BK-STORE-0001",
+            LedgerError::InvalidSchedule(_) => "BK-RECUR-0001",
+            LedgerError::ExpansionCapped(_) => "BK-RECUR-0002",
+            LedgerError::AlreadyMaterialized(_) => "BK-RECUR-0003",
         }
     }
 }

@@ -23,4 +23,5 @@ pub use api::catalog::{self, Category, Party, Tag};
 pub use api::entries::{self, NewEntry, Posting, Side};
 pub use api::error::LedgerError;
 pub use api::lifecycle::{Lifecycle, TxStatus};
+pub use api::schedules::{self, Schedule, ScheduleTemplate};
 pub use api::transactions::{self, NewTransaction, TxKind};

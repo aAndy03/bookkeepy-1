@@ -7,4 +7,5 @@ pub mod catalog;
 pub mod entries;
 pub mod error;
 pub mod lifecycle;
+pub mod schedules;
 pub mod transactions;

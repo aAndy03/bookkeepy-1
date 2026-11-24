@@ -21,15 +21,15 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
         ui_set(&db, "window", "0,0,1440,900").unwrap();
     }
 
-    // dev experiment beyond MAX_KNOWN: v3 adds a column, v4 (the "revert") drops it again
+    // dev experiment beyond MAX_KNOWN: v4 adds a column, v5 (the "revert") drops it again
     let experiment = [
         Migration {
-            version: 3,
+            version: 4,
             name: "test_add_ui_note",
             sql: "ALTER TABLE ui_state ADD COLUMN note TEXT",
         },
         Migration {
-            version: 4,
+            version: 5,
             name: "test_revert_ui_note",
             sql: "ALTER TABLE ui_state DROP COLUMN note",
         },
@@ -37,10 +37,10 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
     {
         // a newer dev build applies the experiment through the public machinery
         let mut conn = rusqlite::Connection::open(&path).unwrap();
-        schema::migrate_with(&mut conn, &experiment, 4).unwrap();
+        schema::migrate_with(&mut conn, &experiment, 5).unwrap();
         // re-running is idempotent
-        schema::migrate_with(&mut conn, &experiment, 4).unwrap();
-        assert_eq!(schema::current_version(&conn).unwrap(), 4);
+        schema::migrate_with(&mut conn, &experiment, 5).unwrap();
+        assert_eq!(schema::current_version(&conn).unwrap(), 5);
         // user data survived the add+drop round trip
         let v: String = conn
             .query_row("SELECT value FROM ui_state WHERE key='window'", [], |r| {
@@ -50,7 +50,7 @@ fn compensating_migration_preserves_data_and_downgrade_is_refused() {
         assert_eq!(v, "0,0,1440,900");
     }
 
-    // this build (MAX_KNOWN=2) refuses the v4 profile read-only
+    // this build (MAX_KNOWN=3) refuses the v5 profile read-only
     let err = Db::open(&path).unwrap_err();
     assert_eq!(err.code(), "BK-DATA-0002");
 }

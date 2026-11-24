@@ -213,3 +213,24 @@ area = "action"
 severity = "error"
 i18n_key = "err.action.unknown_entity"
 summary = "Shared action failed: unknown entity or entity kind"
+
+[[error]]
+code = "BK-RECUR-0001"
+area = "recur"
+severity = "error"
+i18n_key = "err.recur.invalid_schedule"
+summary = "Invalid recurrence schedule (bad interval, end before start, or unknown frequency)"
+
+[[error]]
+code = "BK-RECUR-0002"
+area = "recur"
+severity = "warning"
+i18n_key = "err.recur.expansion_capped"
+summary = "The occurrence expansion hit its cap — narrow the time range to see more"
+
+[[error]]
+code = "BK-RECUR-0003"
+area = "recur"
+severity = "error"
+i18n_key = "err.recur.already_materialized"
+summary = "This occurrence is already materialized as a transaction"

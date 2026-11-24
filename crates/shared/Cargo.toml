@@ -18,8 +18,11 @@ bookkeepy-contracts.workspace = true
 bookkeepy-bus.workspace = true
 bookkeepy-storage.workspace = true
 rusqlite.workspace = true
+jiff.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+proptest.workspace = true

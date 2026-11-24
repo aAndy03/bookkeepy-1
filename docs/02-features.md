@@ -24,7 +24,9 @@ machinery (naming the shared engine it uses).
   = extra movements); posted entries immutable — edits post linked reversals (implemented M2: `reversal_of` + `replaces` chains); **recurring**
   applies to income/expense/transfer and most other actionable things — schedules are bounded,
   lazy projections with reconciled-by-default past occurrences (ADR-0020, RULE-RECUR-001…003,
-  doc 05 §5.13).
+  doc 05 §5.13) — ✅ implemented M2b: `shared::api::recurrence` + `ledger::schedules` +
+  storage v3 (near-window materialization at boot, durable range jobs, assumed-reconciled
+  projection).
 
 ## F3 — Import / export
 - **User sees:** import bank files (CSV, OFX/QFX, QIF) with column mapping + preview; duplicates

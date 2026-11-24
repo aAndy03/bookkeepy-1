@@ -112,6 +112,8 @@ proptest! {
                             note: None,
                             value_ts: now(),
                             status: TxStatus::Cleared,
+                            schedule_id: None,
+                            occurrence_date: None,
                         },
                         "prop expense",
                     )
