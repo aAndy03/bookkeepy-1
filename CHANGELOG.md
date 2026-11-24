@@ -6,6 +6,7 @@ move it under the version tag. The release workflow fails if a release section i
 ## [Unreleased]
 
 ### Added
+- M1 hardening: crash-safe restore (stale WAL sidecars removed, read-only backup verify, collision-free auto names), incremental checkpointed audit verify at boot, self-check gains migrations_match/orphan_settings/wal_bytes/boot_ms, boot order synced to load-policies.toml step ids (BOOT_STEPS subsequence test), settings snapshot + SSOT default_value, bus panic isolation, unix 0600 perms, dev-channel 'cargo xtask dev-reset-profile' (no down-migrations; compensating-migration fixture test proves data-preserving reverts)
 - M1 addendum: session::open_session composition root (registry->lock->db->logging->selfcheck->outbox->auto backup->set_active), durable jobs state machine (RULE-JOB-001), atomic tx::post (outbox+audit one tx), settings keys validated against SSOT (BK-DATA-0003), i18n error_text, backup prune KEEP_BACKUPS=10, wal_autocheckpoint, 'local live backup' terminology (fully offline)
 - M1 storage skeleton: crates/storage (WAL conn, forward-only migrations + downgrade refusal BK-DATA-0002, durable outbox->bus, audit hash chain, backup/verify/restore, single-instance lock, self-check, ui_state/settings KV); +BK-STORE-0003..0006; deps rusqlite 0.43.0, sha2 0.11.1, hex 0.4.3, fs2 0.4.3
 - round-5 QoL: xtask pr/changelog commands, .vscode settings, README badges; data/settings-defaults.toml (SSOT settings schema, governor-validated); load-policies boot_sequence; doc 02 F22 app chrome; doc 05 §5.14 window/session state + single-instance spec

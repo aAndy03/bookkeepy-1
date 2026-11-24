@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Session composition root (doc 05 §5.2 boot sequence, `data/load-policies.toml`
-//! `[boot_sequence]`): wires, in order — profile registry → profile roots → single-instance
-//! lock → DB open + migrations → logging (once per process) → panic hook (once) → jobs
-//! resume → self-check → outbox replay → auto local live backup + prune → registry
-//! `set_active`. Everything the app shell needs for one open profile is in [`Session`].
-//! Nothing here ever blocks the user on a recoverable condition (RULE-UX-001): logging and
-//! the auto backup are best-effort and reported, not fatal.
+//! `[boot_sequence]`): wires, in canonical order — panic hook (`diagnostics_logging`) →
+//! profile registry (`registry`) → single-instance lock + DB open + migrations
+//! (`profile_open`) → settings snapshot (`settings`) → jobs resume (`jobs_resume`) →
+//! self-check → outbox replay → auto local live backup + prune → `registry.set_active`.
+//! The executed order of [`BOOT_STEPS`] is asserted (unit test) to be a subsequence of
+//! the canonical boot ids, so code and primary data cannot drift (RULE-SYS-001).
+//!
+//! Everything the app shell needs for one open profile is in [`Session`]. Nothing here
+//! ever blocks the user on a recoverable condition (RULE-UX-001): logging and the auto
+//! backup are best-effort and reported, not fatal.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, Once};
+use std::time::Instant;
 
 use bookkeepy_bus::Bus;
 use bookkeepy_contracts::EventEnvelope;
 use bookkeepy_core::EntityId;
-use bookkeepy_core::time::now;
 use bookkeepy_diagnostics::install_panic_hook;
 use bookkeepy_logging::{self as logging, LogGuard};
 use bookkeepy_profile::{ProfileError, ProfileMeta, ProfileRoots, Registry};
@@ -22,10 +26,23 @@ use crate::api::backup::{self, KEEP_BACKUPS};
 use crate::api::conn::Db;
 use crate::api::error::StorageError;
 use crate::api::jobs;
+use crate::api::kv;
 use crate::api::lock::{self, InstanceLock};
 use crate::api::outbox;
 use crate::api::selfcheck::{SelfCheckReport, run as self_check};
 use crate::api::tx;
+
+/// The canonical boot steps this session executes, as load-policies ids. Storage-internal
+/// sub-steps (self-check, outbox replay, auto backup, set_active) run inside
+/// `profile_open`/`jobs_resume` and are not listed here. The unit test below asserts this
+/// list is a subsequence of `data/load-policies.toml [boot_sequence]` step ids.
+pub const BOOT_STEPS: &[&str] = &[
+    "diagnostics_logging",
+    "registry",
+    "profile_open",
+    "settings",
+    "jobs_resume",
+];
 
 /// One open profile: everything the app shell holds while the profile is active.
 pub struct Session {
@@ -39,8 +56,10 @@ pub struct Session {
     pub db: Db,
     /// The in-process event bus (outbox publishes land here).
     pub bus: Bus,
-    /// Startup self-check report (integrity, audit chain, drafts, backup note).
+    /// Startup self-check report (integrity, audit chain, drafts, backup note, boot ms).
     pub report: SelfCheckReport,
+    /// Settings snapshot at boot: every SSOT key resolved (override over default).
+    pub settings: Vec<(String, String)>,
     /// Single-instance lock, held for the session lifetime.
     _lock: InstanceLock,
 }
@@ -85,6 +104,10 @@ fn ensure_panic_hook() {
 /// (BK-STORE-0004) if another instance has the profile open — the app shell then focuses
 /// the existing window (single instance, ADR-0016).
 pub fn open_session(data_dir: &Path, profile_id: EntityId) -> Result<Session, StorageError> {
+    let boot_start = Instant::now();
+    // boot step `diagnostics_logging` (panic hook is process-level and needs no profile)
+    ensure_panic_hook();
+    // boot step `registry`
     let mut registry = Registry::load(data_dir)?;
     let profile = registry
         .profiles
@@ -97,19 +120,21 @@ pub fn open_session(data_dir: &Path, profile_id: EntityId) -> Result<Session, St
             )))
         })?;
     let roots = ProfileRoots::new(data_dir.join(&profile.path));
+    // boot step `profile_open` (single-instance lock first: second launch -> BK-STORE-0004)
     let lock_guard = lock::acquire(&roots.root)?;
     let db = Db::open_profile(&roots)?;
-    // Best-effort, never blocking (RULE-UX-001): BK-LOG-0001 is warning severity.
+    // file logging needs the profile dir; best-effort, never blocking (RULE-UX-001)
     let _ = ensure_logging(&roots.logs());
-    ensure_panic_hook();
-    // Startup drivers: interrupted jobs → queued; leftover outbox rows → bus (exactly-once).
+    // boot step `settings`: resolve every SSOT key once (override over default)
+    let settings = kv::settings_snapshot(&db)?;
+    // boot step `jobs_resume`: interrupted `running` jobs -> queued
     jobs::resume_pending(&db)?;
+    // storage-internal sub-steps of profile_open/jobs_resume: self-check, outbox replay,
+    // auto local live backup + prune
     let mut report = self_check(&db, &roots.root)?;
     let bus = Bus::new();
     outbox::publish_pending(&db, &bus)?;
-    // Auto local live backup on every open (offline, WAL-safe) + prune. Failure is
-    // recorded in the report, never fatal.
-    let name = format!("auto-{}.db", now().strftime("%Y%m%d-%H%M%S"));
+    let name = backup::auto_name(&roots.root);
     match backup::backup(&db, &roots.root, &name).and_then(|p| {
         backup::prune(&roots.root, KEEP_BACKUPS)?;
         backup::verify_backup(&p)?;
@@ -118,6 +143,7 @@ pub fn open_session(data_dir: &Path, profile_id: EntityId) -> Result<Session, St
         Ok(p) => report.backup_note = Some(format!("auto backup ok: {}", p.display())),
         Err(e) => report.backup_note = Some(format!("auto backup skipped: {} ({})", e, e.code())),
     }
+    report.boot_ms = Some(boot_start.elapsed().as_millis() as u64);
     registry.set_active(data_dir, profile_id)?;
     Ok(Session {
         data_dir: data_dir.to_path_buf(),
@@ -126,6 +152,7 @@ pub fn open_session(data_dir: &Path, profile_id: EntityId) -> Result<Session, St
         db,
         bus,
         report,
+        settings,
         _lock: lock_guard,
     })
 }
@@ -136,6 +163,22 @@ mod tests {
     use bookkeepy_profile::Registry;
 
     #[test]
+    fn boot_steps_are_subsequence_of_load_policies() {
+        let canonical = bookkeepy_primary_data::load_policies::get()
+            .boot_sequence
+            .step_ids();
+        let mut it = canonical.iter();
+        for step in BOOT_STEPS {
+            assert!(
+                it.clone().any(|c| c == step),
+                "BOOT_STEPS entry {step:?} is not in load-policies boot_sequence (or out of order)"
+            );
+            // advance past the matched id
+            while it.next().is_some_and(|c| c != step) {}
+        }
+    }
+
+    #[test]
     fn open_session_wires_everything_and_lock_blocks_second_open() {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path();
@@ -143,7 +186,10 @@ mod tests {
         let meta = reg.create_profile(dir, "Personal", "#3366ff").unwrap();
         let s = open_session(dir, meta.id).unwrap();
         assert!(s.report.healthy());
+        assert!(s.report.migrations_match);
+        assert!(s.report.boot_ms.is_some());
         assert!(s.report.backup_note.is_some());
+        assert!(s.settings.iter().any(|(k, _)| k == "theme"));
         // second open on the same profile must fail with the lock (single instance)
         let err = open_session(dir, meta.id).unwrap_err();
         assert_eq!(err.code(), "BK-STORE-0004");

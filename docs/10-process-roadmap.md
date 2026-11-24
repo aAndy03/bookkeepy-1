@@ -382,3 +382,45 @@ Prompt: *"why 'online backup'? what else could M1 account for? make M0+M1 interc
 - Findings: `Result::unwrap_err` needs `T: Debug` (manual `Debug` for `Session`); global
   tracing subscriber can be set once per process (session guards logging with a
   `Mutex<Option<LogGuard>>` static); clippy `manual_range_contains` denies `a >= 1 && a <= n`.
+
+### M1 hardening round (2026-11-24) — edge cases + M0↔M1 interconnection gaps closed
+
+Prompt: *"what if we create a migration and want to revert it? what else could M1 improve —
+edge cases? is M0↔M1 integration complete?"* — all items below approved and implemented.
+
+**Q1 — reverting a migration/database.** Shipped data: NO down-migrations, ever
+(INV-DATA-001/ADR-0022). Revert = a **compensating forward migration** appended to
+`schema::MIGRATIONS` (append-only, one transaction each); proven by
+`tests/migrations_flow.rs` (v2 add column → v3 drop column, user data intact, and the
+older build still refuses the newer profile read-only with BK-DATA-0002). Dev-phase:
+revert = delete the disposable dev profile via **`BOOKKEEPY_CHANNEL=dev cargo xtask
+dev-reset-profile <id> --data-dir <path>`** — dev-channel-gated, path-escape-checked,
+refuses while the instance lock is held; never touches shipped profiles (doc 09).
+
+**Q2 — edge cases found by reading M1 code, now fixed/covered:**
+
+1. `restore` left stale `app.db-wal`/`-shm` → old WAL frames would replay onto the restored
+   DB. Now crash-safe: copy→temp, delete sidecars, atomic rename; `verify_backup` opens
+   backups READ-ONLY; auto-backup names are collision-free (`auto-<ts>[-n].db`).
+2. `audit::verify` was full-chain O(n) on every boot → `verify_incremental` with a `meta`
+   checkpoint (trusted only if the checkpoint row still hashes correctly; full verify
+   forced every 50 000 rows / on demand / for backups).
+3. Self-check blind spots → report now also carries `migrations_match` (DB vs code list),
+   `orphan_settings` (newer app's keys — ignored, never fatal), `wal_bytes` + warn
+   threshold (hand-copied DB hazard), `boot_ms` vs `perf-budgets.toml` cold-start budget.
+4. M0↔M1 drift → `load-policies.toml` boot steps now have machine `id`s;
+   `session::BOOT_STEPS` is unit-tested to be a subsequence of them; session also resolves
+   the full settings snapshot at boot (`kv::settings_snapshot` over the SSOT
+   `settings::default_value`s).
+5. `Bus::publish` now isolates panicking subscribers (`catch_unwind` + tracing) — one bad
+   subscriber can't break `tx::post`.
+6. Privacy on shared machines: `app.db`, backups, `profiles.toml` chmod 0600 on unix.
+
+M0↔M1 integration is now complete: registry, lock, logging, panic hook, settings SSOT,
+i18n `error_text`, bus, load-policies boot order, perf-budgets boot timing, build-info
+channel (dev tool) — all wired into `session::open_session`. Remaining M0 item by design:
+diagnostics bundle attachment on fatal errors (M2, app shell).
+
+Tests: 15 storage unit + 2 integration (`session_flow`, `migrations_flow`), bus panic
+isolation, boot-subsequence invariant, primary-data keys↔defaults sync. Full
+`cargo xtask check` green (fmt, clippy -D warnings, tests, govern ×10, deny).

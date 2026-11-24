@@ -12,19 +12,21 @@ note = "Maintained by the project; schema changes require an ADR."
 # Canonical cold-start order (round-5 item 6; doc 03 "Loading, caching, prefetch").
 # Each step is cheap; INV-LOAD-001: the user can add a transaction within budget.
 # Steps may fail non-fatally (e.g. no network for rates manifest) — boot never blocks on them.
+# `id` is the machine-readable step id — code (e.g. storage::session::BOOT_STEPS) must keep
+# its executed order a subsequence of this list; `govern data` + a unit test enforce it.
 steps = [
-  "single-instance check + focus existing window (ADR-0016)",
-  "diagnostics panic hook + local logging init (crates)",
-  "profile registry load; if no profile -> onboarding (F17), never blocked (RULE-UX-001)",
-  "profile open: schema_version check (RULE-DATA-004), migrations forward-only",
-  "settings load (defaults from data/settings-defaults.toml + user overrides)",
-  "theme tokens (data/theme/*) applied per settings.theme",
-  "locale applied per settings.language (i18n crate)",
-  "window restore from ui_state (size/position/display), else centered on primary display",
-  "accounts summary (warm tier, balances derived+ cached)",
-  "last open view + timeline scope restore",
-  "rates manifest cache (local only, no network)",
-  "resume interrupted jobs (RULE-JOB-001) + crash-recovery draft offer",
+  { id = "single_instance", label = "single-instance check + focus existing window (ADR-0016)" },
+  { id = "diagnostics_logging", label = "diagnostics panic hook + local logging init (crates)" },
+  { id = "registry", label = "profile registry load; if no profile -> onboarding (F17), never blocked (RULE-UX-001)" },
+  { id = "profile_open", label = "profile open: schema_version check (RULE-DATA-004), migrations forward-only" },
+  { id = "settings", label = "settings load (defaults from data/settings-defaults.toml + user overrides)" },
+  { id = "theme", label = "theme tokens (data/theme/*) applied per settings.theme" },
+  { id = "locale", label = "locale applied per settings.language (i18n crate)" },
+  { id = "window_restore", label = "window restore from ui_state (size/position/display), else centered on primary display" },
+  { id = "accounts_summary", label = "accounts summary (warm tier, balances derived+ cached)" },
+  { id = "last_view", label = "last open view + timeline scope restore" },
+  { id = "rates_cache", label = "rates manifest cache (local only, no network)" },
+  { id = "jobs_resume", label = "resume interrupted jobs (RULE-JOB-001) + crash-recovery draft offer" },
 ]
 
 [on_app_open]

@@ -19,7 +19,7 @@ pub use api::jobs;
 pub use api::kv;
 pub use api::lock::{InstanceLock, acquire as acquire_instance_lock};
 pub use api::outbox;
-pub use api::schema::{MAX_KNOWN, migrate};
+pub use api::schema::{MAX_KNOWN, MIGRATIONS, Migration, migrate, migrate_with};
 pub use api::selfcheck::{SelfCheckReport, run as self_check};
 pub use api::session::{Session, open_session};
 pub use api::tx;

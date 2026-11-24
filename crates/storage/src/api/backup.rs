@@ -21,6 +21,30 @@ pub const BACKUPS_DIR: &str = "backups";
 /// lexicographic order = chronological order).
 pub const KEEP_BACKUPS: usize = 10;
 
+/// A collision-free timestamped backup name for `<root>/backups/` (auto-<ts>.db,
+/// auto-<ts>-2.db, … — two opens in the same second must not overwrite each other).
+pub fn auto_name(root: &Path) -> String {
+    let base = format!(
+        "auto-{}",
+        bookkeepy_core::time::now().strftime("%Y%m%d-%H%M%S")
+    );
+    for n in 0..1000 {
+        let candidate = if n == 0 {
+            format!("{base}.db")
+        } else {
+            format!("{base}-{n}.db")
+        };
+        if !root.join(BACKUPS_DIR).join(&candidate).exists() {
+            return candidate;
+        }
+    }
+    format!("auto-{}.db", uuid_v4ish())
+}
+
+fn uuid_v4ish() -> String {
+    format!("{}", bookkeepy_core::EntityId::new())
+}
+
 fn backup_path(root: &Path, name: &str) -> PathBuf {
     root.join(BACKUPS_DIR).join(name)
 }
@@ -52,8 +76,24 @@ pub fn backup(db: &Db, root: &Path, name: &str) -> Result<PathBuf, StorageError>
             })?;
         Ok(())
     })?;
+    harden_file(&dst_path);
     Ok(dst_path)
 }
+
+/// Best-effort privacy hardening: on unix, restrict the file to the owner (0600) — the
+/// data dir may sit on a shared/multi-user machine (RULE-PRIV-001). No-op elsewhere.
+#[cfg(unix)]
+fn harden_file(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(m) = std::fs::metadata(path) {
+        let mut p = m.permissions();
+        p.set_mode(0o600);
+        let _ = std::fs::set_permissions(path, p);
+    }
+}
+
+#[cfg(not(unix))]
+fn harden_file(_path: &Path) {}
 
 /// Prune `backups/` keeping only the newest `keep` `.db` files. Returns how many were
 /// deleted. Best-effort by design: the session calls it after each auto backup.
@@ -78,12 +118,14 @@ pub fn prune(root: &Path, keep: usize) -> Result<usize, StorageError> {
     Ok(excess)
 }
 
-/// Verify a backup file: opens it, runs integrity_check and audit-chain verification.
+/// Verify a backup file: opens it READ-ONLY (verification must never create `-wal`/`-shm`
+/// next to the backup or mutate it), runs integrity_check and full audit-chain verification.
 pub fn verify_backup(path: &Path) -> Result<(), StorageError> {
-    let conn = Connection::open(path).map_err(|e| StorageError::Backup {
-        path: path.to_path_buf(),
-        message: e.to_string(),
-    })?;
+    let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|e| StorageError::Backup {
+            path: path.to_path_buf(),
+            message: e.to_string(),
+        })?;
     let ic: String = conn.query_row("PRAGMA integrity_check", [], |r| r.get(0))?;
     if ic != "ok" {
         return Err(StorageError::Integrity(format!(
@@ -98,13 +140,36 @@ pub fn verify_backup(path: &Path) -> Result<(), StorageError> {
     Ok(())
 }
 
-/// Restore: replace the DB file at `db_path` with the backup file (caller holds the lock).
+/// Restore: replace the DB file at `db_path` with the backup file (caller holds the
+/// single-instance lock; no open handle exists).
+///
+/// Crash-safe order: copy to a temp sibling → delete the stale `app.db-wal`/`app.db-shm`
+/// (otherwise the next open would replay OLD WAL frames onto the restored DB — corruption /
+/// resurrected rows) → atomically rename temp over `db_path`. A crash at any point leaves
+/// either the old DB+old WAL (consistent) or the new DB (consistent).
 pub fn restore(db_path: &Path, backup: &Path) -> Result<(), StorageError> {
     verify_backup(backup)?;
-    std::fs::copy(backup, db_path).map_err(|e| StorageError::Backup {
+    let tmp = db_path.with_extension("db.restore-tmp");
+    std::fs::copy(backup, &tmp).map_err(|e| StorageError::Backup {
+        path: tmp.clone(),
+        message: e.to_string(),
+    })?;
+    for sidecar in [
+        db_path.with_extension("db-wal"),
+        db_path.with_extension("db-shm"),
+    ] {
+        if sidecar.exists() {
+            std::fs::remove_file(&sidecar).map_err(|e| StorageError::Backup {
+                path: sidecar.clone(),
+                message: e.to_string(),
+            })?;
+        }
+    }
+    std::fs::rename(&tmp, db_path).map_err(|e| StorageError::Backup {
         path: db_path.to_path_buf(),
         message: e.to_string(),
     })?;
+    harden_file(db_path);
     Ok(())
 }
 
@@ -129,9 +194,26 @@ mod tests {
             ui_set(&db, "k", "v2").unwrap();
         } // close again — restore must happen with no open handle (caller holds the lock)
         let bak = root.join("backups/b1.db");
+        // simulate a crash leftover: a stale WAL sidecar must be removed by restore
+        std::fs::write(root.join("app.db-wal"), b"stale wal frames").unwrap();
+        std::fs::write(root.join("app.db-shm"), b"stale shm").unwrap();
         restore(&db_path, &bak).unwrap();
+        assert!(!root.join("app.db-wal").exists());
+        assert!(!root.join("app.db-shm").exists());
         let db2 = Db::open(&db_path).unwrap();
         assert_eq!(ui_get(&db2, "k").unwrap().as_deref(), Some("v1"));
+    }
+
+    #[test]
+    fn auto_name_never_collides() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        std::fs::create_dir_all(root.join(BACKUPS_DIR)).unwrap();
+        let n1 = auto_name(root);
+        std::fs::write(root.join(BACKUPS_DIR).join(&n1), b"x").unwrap();
+        let n2 = auto_name(root);
+        assert_ne!(n1, n2);
+        assert!(n2.ends_with(".db"));
     }
 
     #[test]

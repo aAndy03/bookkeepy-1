@@ -43,6 +43,12 @@ runs — never on ordinary pushes or PRs.** All routine checks run locally on th
   commit runs fmt + fast governors + clippy via `.githooks/pre-commit`.
 - **`cargo xtask doctor`** — env self-check for contributors (toolchain, hooks, deny,
   nextest, git identity); see CONTRIBUTING.md.
+- **`BOOKKEEPY_CHANNEL=dev cargo xtask dev-reset-profile <profile-id> --data-dir <path>`** —
+  the dev-phase "revert" (M1 hardening round, doc 10): deletes ONE dev profile tree and
+  removes it from the registry. There are no down-migrations by design (INV-DATA-001) —
+  in dev, reverting a database means deleting the disposable dev profile. Guard rails:
+  refuses on release-channel builds, on path escape, and while the profile is open
+  (instance lock held). Shipped profiles are never touched by tooling.
 
 **On GitHub** (`.github/workflows/`):
 

@@ -47,6 +47,8 @@ impl Db {
         // Checkpoint the WAL back into the main DB every ~1000 pages so the file never
         // grows unbounded between backups and restores stay small (doc 05 §5.4).
         conn.pragma_update(None, "wal_autocheckpoint", 1000)?;
+        // Privacy on shared/multi-user machines (RULE-PRIV-001): the DB file is owner-only.
+        harden_file(path);
         let db = Db {
             conn: Mutex::new(conn),
         };
@@ -81,6 +83,22 @@ impl Db {
         self.with_conn(|c| schema::current_version(c))
     }
 }
+
+/// Best-effort privacy hardening: on unix, restrict the file to the owner (0600). No-op
+/// elsewhere. (Same helper exists in backup.rs / the profile crate — core is no-I/O by
+/// design, so the 6-line cfg(unix) shim is intentionally duplicated.)
+#[cfg(unix)]
+fn harden_file(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(m) = std::fs::metadata(path) {
+        let mut p = m.permissions();
+        p.set_mode(0o600);
+        let _ = std::fs::set_permissions(path, p);
+    }
+}
+
+#[cfg(not(unix))]
+fn harden_file(_path: &Path) {}
 
 // rusqlite::Error is not Clone; map pragma errors into StorageError at call sites via From.
 impl From<rusqlite::Error> for StorageError {

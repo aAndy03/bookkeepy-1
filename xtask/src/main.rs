@@ -16,6 +16,8 @@
 //!   Run this before pushing/PR-ing — pushes and PRs spend zero GitHub Actions minutes
 //!   (doc 09 minutes-budget policy).
 //! - `cargo xtask hook install` / `cargo xtask hook pre-commit` — git hooks (fast subset)
+//! - `BOOKKEEPY_CHANNEL=dev cargo xtask dev-reset-profile <id> --data-dir <path>` — dev-only
+//!   profile deletion (the dev-phase "revert"; no down-migrations by design, INV-DATA-001)
 //! - `cargo xtask dev|gallery|bench` — stubs; land with M3 (UI) / benches (M0.5)
 
 mod govern;
@@ -55,6 +57,7 @@ fn main() -> ExitCode {
                 ExitCode::from(2)
             }
         },
+        Some("dev-reset-profile") => tools::dev_reset_profile(&args[1..]),
         Some("pr") => match args.get(1) {
             Some(title) => tools::pr(title),
             None => {

@@ -105,7 +105,11 @@ impl Registry {
             path: tmp.clone(),
             source,
         })?;
-        std::fs::rename(&tmp, &path).map_err(|source| ProfileError::Io { path, source })?;
+        std::fs::rename(&tmp, &path).map_err(|source| ProfileError::Io {
+            path: path.clone(),
+            source,
+        })?;
+        harden_file(&path);
         Ok(())
     }
 
@@ -194,6 +198,22 @@ impl Registry {
             .and_then(|a| self.profiles.iter().find(|p| p.id == a))
     }
 }
+
+/// Best-effort privacy hardening: on unix, restrict the registry file to the owner (0600)
+/// — it lists all profiles (RULE-PRIV-001). No-op elsewhere. (Same shim as in storage;
+/// core is no-I/O by design, so the cfg(unix) helper is intentionally duplicated.)
+#[cfg(unix)]
+fn harden_file(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(m) = std::fs::metadata(path) {
+        let mut p = m.permissions();
+        p.set_mode(0o600);
+        let _ = std::fs::set_permissions(path, p);
+    }
+}
+
+#[cfg(not(unix))]
+fn harden_file(_path: &Path) {}
 
 #[cfg(test)]
 mod tests {

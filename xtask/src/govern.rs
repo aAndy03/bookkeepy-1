@@ -326,7 +326,15 @@ fn deps() -> bool {
             "bookkeepy-diagnostics",
         ],
     );
-    allowed.insert("xtask", vec!["bookkeepy-core", "bookkeepy-primary-data"]);
+    allowed.insert(
+        "xtask",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-primary-data",
+            "bookkeepy-build-info",
+            "bookkeepy-profile",
+        ],
+    );
 
     let mut ok = true;
     let mut edges: Vec<(&str, &str)> = Vec::new();

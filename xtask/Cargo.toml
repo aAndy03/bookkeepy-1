@@ -13,6 +13,9 @@ publish.workspace = true
 [dependencies]
 bookkeepy-core.workspace = true
 bookkeepy-primary-data.workspace = true
+bookkeepy-build-info.workspace = true
+bookkeepy-profile.workspace = true
+fs2.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true

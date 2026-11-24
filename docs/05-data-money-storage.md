@@ -51,7 +51,35 @@ rounding account").
   every 1000 pages (`wal_autocheckpoint`) so the file stays small between backups.
 - `settings` overrides are validated against the SSOT key list
   (`data/settings-defaults.toml` via `primary_data::settings::keys()`); unknown keys are
-  rejected with BK-DATA-0003.
+  rejected with BK-DATA-0003. At boot `session` resolves every SSOT key once
+  (`kv::settings_snapshot`, override over `settings::default_value`); overrides written by
+  a NEWER app (orphan keys) are ignored and reported in the self-check, never fatal
+  (forward compatibility, INV-DATA-001).
+- **Crash-safe restore (M1 hardening):** `backup::restore` copies to a temp sibling, then
+  deletes the stale `app.db-wal`/`app.db-shm` (otherwise the next open would replay OLD WAL
+  frames onto the restored DB), then atomically renames. `verify_backup` opens backups
+  READ-ONLY. Auto-backup names are collision-free (`auto-<ts>.db`, `-2`, `-3`, …).
+- **Incremental audit verification (M1 hardening):** boot uses
+  `audit::verify_incremental` — a checkpoint in `meta` (`audit_verified_up_to`/`_hash`) is
+  trusted only if that row still hashes to it, then just the newer rows are verified; a
+  full chain verify is forced when the checkpoint is missing/stale or more than 50 000
+  rows accumulated, and stays available on demand (Diagnostics) and for backups. A 20-year
+  profile still boots fast (load-on-demand principle).
+- **Self-check report (M1 hardening)** additionally carries: `migrations_match`
+  (`schema_migrations` vs the code list — detects hand-copied/partial DBs),
+  `orphan_settings`, `wal_bytes` (+ `WAL_WARN_BYTES` — a large `-wal` usually means the
+  user hand-copied `app.db` while the app was open; such a copy is stale), and `boot_ms`
+  (measured by `session::open_session` against the `cold_start_to_add_transaction` budget in
+  `data/perf-budgets.toml`, INV-LOAD-001).
+- **Boot order is single-sourced:** `session::BOOT_STEPS` (load-policies step ids) is unit-
+  tested to be a subsequence of `data/load-policies.toml [boot_sequence]` ids, so code and
+  primary data cannot drift (RULE-SYS-001).
+- **Privacy on shared machines:** `app.db`, backups and `profiles.toml` are chmod 0600 on
+  unix (cfg-gated shim, best-effort; Windows ACLs documented in packaging).
+- **Dev-phase revert:** no down-migrations, ever (INV-DATA-001). Reverting shipped data =
+  a compensating forward migration (proven by `tests/migrations_flow.rs`); reverting a dev
+  database = `BOOKKEEPY_CHANNEL=dev cargo xtask dev-reset-profile <id> --data-dir <path>`
+  (dev-channel only, lock-checked, single profile; doc 09).
 
 ### Seamless, long-lived data (points 14–15, INV-DATA-001)
 

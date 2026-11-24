@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! `cargo xtask doctor` / `new-adr` / `licenses` (round-4 items 17, and B7/B8).
+//! `cargo xtask doctor` / `new-adr` / `licenses` / `dev-reset-profile`.
 
 use std::path::PathBuf;
 use std::process::{Command, ExitCode};
@@ -232,4 +232,100 @@ pub fn licenses() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// `cargo xtask dev-reset-profile <profile-id> --data-dir <path>` — dev-channel-only
+/// "revert" for development (doc 10, M1 hardening round): deletes ONE dev profile tree and
+/// removes it from the registry. There are no down-migrations by design (INV-DATA-001);
+/// in dev, reverting a database = deleting the disposable dev profile. Guard rails:
+/// refuses on a release-channel build, on path escape, and while the profile is open
+/// (instance lock held). Never touches other profiles or app-level files.
+pub fn dev_reset_profile(args: &[String]) -> ExitCode {
+    use bookkeepy_core::EntityId;
+    use bookkeepy_profile::Registry;
+    use std::str::FromStr;
+
+    if !bookkeepy_build_info::is_dev() {
+        eprintln!("dev-reset-profile: REFUSED — this is not a dev-channel build.");
+        eprintln!(
+            "run with: BOOKKEEPY_CHANNEL=dev cargo xtask dev-reset-profile <profile-id> --data-dir <path>"
+        );
+        return ExitCode::from(2);
+    }
+    let mut id_arg: Option<String> = None;
+    let mut data_dir: Option<String> = None;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--data-dir" => data_dir = it.next().cloned(),
+            _ if id_arg.is_none() => id_arg = Some(a.clone()),
+            _ => {}
+        }
+    }
+    let (Some(id_s), Some(dd)) = (id_arg, data_dir) else {
+        eprintln!("usage: cargo xtask dev-reset-profile <profile-id> --data-dir <path>");
+        return ExitCode::from(2);
+    };
+    let Ok(id) = EntityId::from_str(&id_s) else {
+        eprintln!("dev-reset-profile: invalid profile id {id_s:?}");
+        return ExitCode::from(2);
+    };
+    let data_dir = PathBuf::from(dd);
+    let mut reg = match Registry::load(&data_dir) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("dev-reset-profile: cannot load registry: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let Some(pos) = reg.profiles.iter().position(|p| p.id == id) else {
+        eprintln!("dev-reset-profile: unknown profile {id}");
+        return ExitCode::FAILURE;
+    };
+    let meta = reg.profiles[pos].clone();
+    if meta.path != format!("profiles/{id}") {
+        eprintln!("dev-reset-profile: REFUSED — profile path escapes the data dir");
+        return ExitCode::from(2);
+    }
+    let root = data_dir.join(&meta.path);
+    // refuse while a running instance holds the profile lock
+    let lock_path = root.join("app.lock");
+    if lock_path.exists() {
+        use fs2::FileExt;
+        let f = match std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+        {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("dev-reset-profile: cannot open lock file: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        if f.try_lock_exclusive().is_err() {
+            eprintln!(
+                "dev-reset-profile: REFUSED — profile is open in a running Bookkeepy; close it first"
+            );
+            return ExitCode::FAILURE;
+        }
+    }
+    if let Err(e) = std::fs::remove_dir_all(&root) {
+        eprintln!("dev-reset-profile: cannot delete {}: {e}", root.display());
+        return ExitCode::FAILURE;
+    }
+    reg.profiles.remove(pos);
+    if reg.active == Some(id) {
+        reg.active = None;
+    }
+    if let Err(e) = reg.save(&data_dir) {
+        eprintln!("dev-reset-profile: deleted tree but registry save failed: {e}");
+        return ExitCode::FAILURE;
+    }
+    println!(
+        "dev-reset-profile: deleted {} (profile {:?}) and removed it from the registry",
+        root.display(),
+        meta.name
+    );
+    ExitCode::SUCCESS
 }

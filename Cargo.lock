@@ -82,6 +82,7 @@ version = "0.1.0"
 dependencies = [
  "bookkeepy-contracts",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -1574,8 +1575,11 @@ dependencies = [
 name = "xtask"
 version = "0.1.0"
 dependencies = [
+ "bookkeepy-build-info",
  "bookkeepy-core",
  "bookkeepy-primary-data",
+ "bookkeepy-profile",
+ "fs2",
  "serde",
  "serde_json",
  "toml",

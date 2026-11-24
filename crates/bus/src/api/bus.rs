@@ -31,7 +31,9 @@ impl Bus {
             .push(Arc::new(f));
     }
 
-    /// Publish an envelope to all current subscribers, in subscription order.
+    /// Publish an envelope to all current subscribers, in subscription order. A panicking
+    /// subscriber is isolated with `catch_unwind` (logged via tracing) — one bad
+    /// subscriber must never break posting for the rest (`tx::post` runs on this bus).
     pub fn publish(&self, ev: &EventEnvelope) {
         let subs = self
             .subscribers
@@ -39,7 +41,10 @@ impl Bus {
             .unwrap_or_else(|e| e.into_inner())
             .clone();
         for sub in &subs {
-            sub(ev);
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sub(ev)));
+            if r.is_err() {
+                tracing::error!("bus subscriber panicked while handling {}", ev.kind);
+            }
         }
     }
 
@@ -57,6 +62,22 @@ mod tests {
     use super::*;
     use bookkeepy_contracts::Actor;
     use std::sync::Mutex as StdMutex;
+
+    #[test]
+    fn panicking_subscriber_does_not_break_others() {
+        let bus = Bus::new();
+        bus.subscribe(|_| panic!("bad subscriber"));
+        let count = Arc::new(StdMutex::new(0usize));
+        let c2 = count.clone();
+        bus.subscribe(move |_| *c2.lock().unwrap() += 1);
+        bus.publish(&EventEnvelope::new(
+            "ledger.posted",
+            Actor::User,
+            "t",
+            serde_json::json!({}),
+        ));
+        assert_eq!(*count.lock().unwrap(), 1);
+    }
 
     #[test]
     fn subscribers_receive_in_order() {

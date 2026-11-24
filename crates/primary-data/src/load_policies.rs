@@ -32,7 +32,24 @@ pub struct LoadPolicies {
 #[derive(Debug, Clone, Deserialize)]
 pub struct BootSequence {
     /// Ordered boot steps.
-    pub steps: Vec<String>,
+    pub steps: Vec<BootStep>,
+}
+
+/// One canonical boot step: machine-readable `id` + human label.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BootStep {
+    /// Machine id (e.g. `profile_open`); code keeps its executed order a subsequence of
+    /// these ids.
+    pub id: String,
+    /// Human-readable description.
+    pub label: String,
+}
+
+impl BootSequence {
+    /// The ordered machine ids of all boot steps.
+    pub fn step_ids(&self) -> Vec<&str> {
+        self.steps.iter().map(|s| s.id.as_str()).collect()
+    }
 }
 
 /// A named policy section.
@@ -82,6 +99,15 @@ pub(crate) fn validate_structure() -> Result<(), PrimaryDataError> {
         return Err(PrimaryDataError::Invalid(
             "boot_sequence must list the canonical cold-start steps".into(),
         ));
+    }
+    let mut ids = std::collections::HashSet::new();
+    for s in &p.boot_sequence.steps {
+        if s.id.is_empty() || s.label.is_empty() || !ids.insert(s.id.clone()) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "boot_sequence step id {:?} is empty, duplicated, or missing a label",
+                s.id
+            )));
+        }
     }
     if p.on_app_open.never.is_none() {
         return Err(PrimaryDataError::Invalid(

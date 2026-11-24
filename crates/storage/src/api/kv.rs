@@ -66,6 +66,36 @@ pub fn settings_resolve(db: &Db, key: &str, default: &str) -> Result<String, Sto
     Ok(settings_get(db, key)?.unwrap_or_else(|| default.to_string()))
 }
 
+/// Settings overrides stored in the DB whose key is NOT in the SSOT list
+/// (`data/settings-defaults.toml`) — e.g. written by a newer app. Callers ignore these,
+/// never crash (forward compatibility, INV-DATA-001); surfaced in the self-check report.
+pub fn orphan_settings(db: &Db) -> Result<Vec<String>, StorageError> {
+    db.with_conn(|c| {
+        let mut stmt = c.prepare("SELECT key FROM settings ORDER BY key")?;
+        let keys = bookkeepy_primary_data::settings::keys();
+        Ok(stmt
+            .query_map([], |r| r.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|k| !keys.contains(&k.as_str()))
+            .collect())
+    })
+}
+
+/// Resolve every SSOT setting key once (user override over primary-data default) — the
+/// snapshot the app shell reads at boot (boot step `settings` in load-policies.toml).
+pub fn settings_snapshot(db: &Db) -> Result<Vec<(String, String)>, StorageError> {
+    let mut out = Vec::new();
+    for key in bookkeepy_primary_data::settings::keys() {
+        let default = bookkeepy_primary_data::settings::default_value(key).unwrap_or_default();
+        out.push((
+            (*key).to_string(),
+            settings_get(db, key)?.unwrap_or(default),
+        ));
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -16,11 +16,23 @@ use crate::api::error::StorageError;
 /// Highest schema version this build knows.
 pub const MAX_KNOWN: i64 = 1;
 
-/// Ordered migrations: (version, name, SQL). Append-only — never edit existing entries.
-const MIGRATIONS: &[(i64, &str, &str)] = &[(
-    1,
-    "v1_core_tables",
-    r#"
+/// One migration. Append-only — never edit existing entries; "reverts" are compensating
+/// forward migrations (INV-DATA-001), proven by tests/migrations_flow.rs.
+#[derive(Debug, Clone, Copy)]
+pub struct Migration {
+    /// Schema version this migration produces.
+    pub version: i64,
+    /// Short name (recorded in `schema_migrations`).
+    pub name: &'static str,
+    /// SQL batch, run inside the migration transaction.
+    pub sql: &'static str,
+}
+
+/// Ordered migrations. Append-only — never edit existing entries.
+pub const MIGRATIONS: &[Migration] = &[Migration {
+    version: 1,
+    name: "v1_core_tables",
+    sql: r#"
     CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -68,7 +80,7 @@ const MIGRATIONS: &[(i64, &str, &str)] = &[(
         updated_at TEXT NOT NULL
     );
     "#,
-)];
+}];
 
 /// Read the current schema version (0 if the meta table doesn't exist yet).
 pub fn current_version(conn: &Connection) -> Result<i64, StorageError> {
@@ -92,35 +104,45 @@ pub fn current_version(conn: &Connection) -> Result<i64, StorageError> {
 
 /// Apply pending migrations. Refuses too-new profiles first (RULE-DATA-004).
 pub fn migrate(db: &Db) -> Result<(), StorageError> {
-    db.with_conn(|conn| {
-        let found = current_version(conn)?;
-        if found > MAX_KNOWN {
-            return Err(StorageError::SchemaTooNew {
-                found,
-                max: MAX_KNOWN,
-            });
+    db.with_conn(|conn| migrate_with(conn, MIGRATIONS, MAX_KNOWN))
+}
+
+/// Apply `migrations` newer than the profile's current version, in one transaction.
+/// Public so tests can prove compensating (revert) migrations preserve data
+/// (tests/migrations_flow.rs). Production code passes [`MIGRATIONS`]/[`MAX_KNOWN`].
+pub fn migrate_with(
+    conn: &mut Connection,
+    migrations: &[Migration],
+    max_known: i64,
+) -> Result<(), StorageError> {
+    let found = current_version(conn)?;
+    if found > max_known {
+        return Err(StorageError::SchemaTooNew {
+            found,
+            max: max_known,
+        });
+    }
+    let tx = conn.transaction()?;
+    let applied = current_version_tx(&tx)?;
+    for m in migrations {
+        if m.version <= applied {
+            continue;
         }
-        let tx = conn.transaction()?;
-        let applied = current_version_tx(&tx)?;
-        for (version, name, sql) in MIGRATIONS {
-            if *version <= applied {
-                continue;
-            }
-            tx.execute_batch(sql).map_err(|source| StorageError::Migrate {
-                name: name.to_string(),
+        tx.execute_batch(m.sql)
+            .map_err(|source| StorageError::Migrate {
+                name: m.name.to_string(),
                 source,
             })?;
-            tx.execute(
-                "INSERT INTO schema_migrations (version, name, applied_at) VALUES (?1, ?2, ?3)",
-                rusqlite::params![version, name, jiff_now()],
-            )?;
-            tx.execute("INSERT INTO meta (key, value) VALUES ('schema_version', ?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value", rusqlite::params![version.to_string()])?;
-        }
-        // audit immutability guards ship with the schema (RULE-AUD-001)
-        crate::api::audit::install_guard_triggers(&tx)?;
-        tx.commit()?;
-        Ok(())
-    })
+        tx.execute(
+            "INSERT INTO schema_migrations (version, name, applied_at) VALUES (?1, ?2, ?3)",
+            rusqlite::params![m.version, m.name, jiff_now()],
+        )?;
+        tx.execute("INSERT INTO meta (key, value) VALUES ('schema_version', ?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value", rusqlite::params![m.version.to_string()])?;
+    }
+    // audit immutability guards ship with the schema (RULE-AUD-001)
+    crate::api::audit::install_guard_triggers(&tx)?;
+    tx.commit()?;
+    Ok(())
 }
 
 fn current_version_tx(tx: &Transaction) -> Result<i64, StorageError> {

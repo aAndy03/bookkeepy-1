@@ -75,6 +75,24 @@ pub fn keys() -> &'static [&'static str] {
     ]
 }
 
+/// The default of `key` as a string (for `settings_snapshot` in storage), or None if the
+/// key is not in the SSOT list. Must stay in sync with [`keys`] (tested below).
+pub fn default_value(key: &str) -> Option<String> {
+    let s = get();
+    Some(match key {
+        "theme" => s.theme.clone(),
+        "language" => s.language.clone(),
+        "date_format" => s.date_format.clone(),
+        "number_format" => s.number_format.clone(),
+        "first_day_of_week" => s.first_day_of_week.clone(),
+        "timezone" => s.timezone.clone(),
+        "default_currency" => s.default_currency.clone(),
+        "rates_source_priority" => s.rates_source_priority.join(","),
+        "show_currency_code" => s.show_currency_code.to_string(),
+        _ => return None,
+    })
+}
+
 /// Structural + referential validation (RULE-DATA-002).
 pub fn validate_structure() -> Result<(), PrimaryDataError> {
     let s = get();
@@ -139,5 +157,16 @@ mod tests {
         super::validate_structure().unwrap();
         assert_eq!(super::get().language, "en");
         assert_eq!(super::get().default_currency, "RON");
+    }
+
+    #[test]
+    fn keys_and_default_values_stay_in_sync() {
+        for k in super::keys() {
+            assert!(
+                super::default_value(k).is_some(),
+                "SSOT key {k} has no default_value mapping"
+            );
+        }
+        assert!(super::default_value("no_such_key").is_none());
     }
 }
