@@ -21,7 +21,7 @@
 | M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
 | M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
 | M5 | Search | tantivy engine + query DSL, write-through + rebuild. |
-| M6 | Budgets & reports | envelopes, reports, golden tests, PDF/print. |
+| M6 | Budgets, reports & managers | envelopes, reports, golden tests, PDF/print; centralized **managers** (categories, tags, payees, debts & loans, documents, subscriptions) + context menu; recurrence schedules (ADR-0020). |
 | M7 | Multi-currency, FX & live rates | rates mirror automation (BNR first) + `engine_rates` + rates UI (doc 11). |
 | M8 | Documents, backups UI, reminders | attachments, snapshots, retention reminders, local notifications. |
 | M9 | Scale & polish | materialized aggregations, a11y/keyboard pass, multi-display window mgmt, perf budgets green. |

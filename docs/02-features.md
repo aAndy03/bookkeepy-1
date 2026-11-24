@@ -21,8 +21,10 @@ machinery (naming the shared engine it uses).
   attachments; value date vs entry date; status (pending/cleared/reconciled); recurring &
   scheduled transactions.
 - **Engine does:** user transactions compile into balanced double-entry postings (splits/fees
-  = extra movements); posted entries immutable — edits post linked reversals; scheduled
-  transactions materialize via durable resumable pipelines.
+  = extra movements); posted entries immutable — edits post linked reversals; **recurring**
+  applies to income/expense/transfer and most other actionable things — schedules are bounded,
+  lazy projections with reconciled-by-default past occurrences (ADR-0020, RULE-RECUR-001…003,
+  doc 05 §5.13).
 
 ## F3 — Import / export
 - **User sees:** import bank files (CSV, OFX/QFX, QIF) with column mapping + preview; duplicates
@@ -55,8 +57,11 @@ machinery (naming the shared engine it uses).
 
 ## F7 — Search
 - **User sees:** instant full-text search over payees, notes, categories, tags, amounts,
-  dates; saved searches.
-- **Engine does:** 100% tantivy; index = derived cache, write-through, rebuildable.
+  dates (query DSL, doc 05 §5.7); saved searches.
+- **Engine does:** 100% tantivy. The index is **persistent and incremental** (write-through on
+  every event — always fast); **rebuild happens only on detected corruption or manual user
+  request** (Diagnostics / search settings), never routinely. Index = derived cache; the DB
+  is the source of truth.
 
 ## F8 — Documents & attachments
 - **User sees:** attach receipts/invoices to transactions; view inline.
@@ -151,3 +156,16 @@ machinery (naming the shared engine it uses).
   are batch API operations executed as **one job** with progress (pause/resume/cancel,
   RULE-JOB-001), each affected item audited individually; the actions themselves are the
   shared engines (RULE-SHARED-001).
+
+## F21 — Centralized managers + context menu
+- **User sees:** a **Managers** area with centralized screens — **Category manager, Tag
+  manager, Payee manager, Debts & loans manager, Documents manager, Subscriptions manager** —
+  each showing everything tied to that scope in one place (tables, timeline-bound where
+  sensible, bulk actions, search). The same things can be done inline elsewhere in the app;
+  the manager is where they are centralized. A **context menu** (right-click / long-press /
+  keyboard menu key) on any entity lists the applicable shared actions for that entity.
+- **Engine does:** managers are views over the existing slices (catalog, ledger/debts,
+  documents, subscriptions = recurring entries) using shared engines for all actions —
+  including `merge` (merge duplicate payees/categories) and `bulk_apply`. The context menu is
+  a shared widget (`widgets/atoms/context_menu`) whose entries come from the shared action
+  registry, localized per entity kind.

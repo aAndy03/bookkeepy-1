@@ -30,7 +30,7 @@ bookkeepy-1/                     workspace root
 │   ├── import/                  pipeline_import: parse → map → validate → dedup → post → index
 │   ├── export/                  projections → CSV/JSON/PDF
 │   ├── budget/ · reporting/     envelopes; golden-tested reports
-│   ├── search/                  tantivy wrapper, write-through + rebuild (ADR-0006)
+│   ├── search/                  tantivy wrapper: persistent incremental index, write-through; rebuild only on corruption/manual (ADR-0006, doc 05 §5.7)
 │   ├── documents/               attachments
 │   ├── backup/                  snapshot / restore / verify + retention
 │   ├── loadpolicy/              engine_loadpolicy: what loads when (data/load-policies.toml) — hot/warm/cold (point 12)

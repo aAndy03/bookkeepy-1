@@ -10,6 +10,10 @@ Quoted fintech principles behind this doc: [06-fintech-principles.md](06-fintech
 or minor-unit integer, never a bare JSON number; rounding explicit, once, at boundaries, with
 an explicit **rounding account** for residuals ("Rounding breaks sums… e.g. an explicit
 rounding account").
+- **Display (RULE-FMT-001):** money is always displayed **with its ISO currency code** —
+  e.g. `1.234,56 RON`, `12.34 EUR` (symbol optional per settings, code always present) —
+  locale-aware grouping/decimal separators. The shared `format`/`parse` helpers (doc 04
+  registry) are the SSOT for this, so display and input parsing can never diverge.
 
 ## 5.2 Storage (ADR-0005)
 
@@ -118,8 +122,11 @@ are first-class "breaks", fixed by correction entries, never by overwriting.
 
 ## 5.7 Search index & query DSL (ADR-0006)
 
-Tantivy, 100% of its API; index dir next to the DB; write-through from events; rebuildable
-from the ledger — a cache, never a source of truth. The user-facing **query DSL** (small,
+Tantivy, 100% of its API; index dir next to the DB; **persistent and incremental**
+(write-through on every event, so search is always fast). **Rebuild is exceptional**: only
+when the self-check detects index corruption, or when the user explicitly requests it
+(Diagnostics / search settings) — then it runs as a job (RULE-JOB-001) fully from the ledger.
+The index is a derived cache; the DB is the source of truth. The user-facing **query DSL** (small,
 documented, versioned): field filters (`payee:…`, `category:…`, `tag:…`), amount ranges
 (`amount:100..500`), date ranges (`date:2026-01-01..2026-01-31`), boolean `AND/OR/NOT`,
 plain full-text otherwise — parsed by a dedicated parser module into a tantivy query; invalid
@@ -153,6 +160,31 @@ works in other apps" explanation (INV-APP-001).
 Settings define fiscal-year start and week start; reports/filters accept calendar or fiscal
 periods and custom date ranges; all period math is timezone-aware (jiff) and DST-safe
 (edge register, doc 10).
+
+## 5.13 Recurrence & schedules (ADR-0020, RULE-RECUR-001…003)
+
+Recurring applies to income/expense/transfer and most other actionable things (anything with a
+`schedule` field). Principles, formulated from the owner's example (a schedule added in 2026
+with a 2010 start must not make the user mark 16 years of occurrences):
+
+- **RULE-RECUR-001 — bounded, lazy expansion.** A schedule is a *rule* (frequency, interval,
+  start, end/count, exceptions), not stored rows. Occurrences are derived projections,
+  expanded only within the visible timeline scope + a small buffer, capped (e.g. ≤ 1000 per
+  expansion, then "show more"). The UI never renders occurrences until 2099.
+- **RULE-RECUR-002 — past occurrences are reconciled by default.** When a schedule starts in
+  the past, all past occurrences are assumed `reconciled` ("paid/completed in real life") —
+  no per-occurrence prompting, no mass backfill of postings. The materialization driver only
+  posts occurrences whose date is within the near window (or future, as forecast). If the user
+  explicitly wants history, they select a bounded range in the timeline → a job materializes
+  exactly that range (progress, cancel). If the user wants to mark specific past occurrences as
+  *not* completed, a bounded selection UI lets them flip those to `pending` — which posts real
+  entries for just those occurrences.
+- **RULE-RECUR-003 — occurrences become real only on materialization/confirmation.** Until
+  then they are forecast (visible in future timeline scope). Materialized occurrences are
+  ordinary transactions: editable via linked corrections, audited individually. Exceptions
+  (skip/modify one occurrence) are stored on the schedule and linked both ways.
+- The shared `recurrence` helper (doc 04 registry) owns expansion/validation; the `timeline`
+  renders the bounded window; the jobs engine materializes.
 
 ## 5.9 Loading & caching
 
