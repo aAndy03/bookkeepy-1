@@ -18,6 +18,11 @@ jiff.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 serde_json.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "money_ops"
+harness = false
 
 [lints]
 workspace = true

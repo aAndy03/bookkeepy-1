@@ -30,11 +30,14 @@ so the books always balance.
 
 ## Status
 
-**M0 done (2026-11-24):** Cargo workspace scaffold + `bookkeepy-core` (Money/CurrencyCode/
-ErrorCode/EntityId/time) + `bookkeepy-primary-data` (loads and validates `data/*.toml`) +
-`xtask` governor tree + CI. Brainstorming docs are complete under [docs/](docs/README.md);
-development follows [docs/10-process-roadmap.md](docs/10-process-roadmap.md) (next: M1
-storage, M2 ledger).
+**M0 done, M0.5 done (2026-11-24):** Cargo workspace scaffold + `bookkeepy-core`
+(Money/CurrencyCode/ErrorCode/EntityId/time) + `bookkeepy-primary-data` (loads and
+validates `data/*.toml` incl. locales) + M0.5 foundation crates (`build-info`,
+`contracts`, `bus`, `diagnostics`, `logging`, `profile`, `i18n`) + `xtask` governor tree
+(+ `new-crate` scaffolder, git hooks) + CI (fmt/clippy/test/govern/deny/audit/bench) +
+branch protection + supply-chain config. Brainstorming docs are complete under
+[docs/](docs/README.md); development follows
+[docs/10-process-roadmap.md](docs/10-process-roadmap.md) (next: M1 storage, M2 ledger).
 
 ```bash
 cargo test --workspace   # unit + property + registry tests

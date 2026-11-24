@@ -1,0 +1,22 @@
+[package]
+name = "bookkeepy-profile"
+description = "Profile registry + on-disk data-dir layout (F18 profiles; doc 05 §5.2)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bookkeepy-core.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+directories.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,0 +1,3 @@
+# Bookkeepy 1 CODEOWNERS (item 4, M0.5): every path requires review by the owner
+# (branch protection enforces required reviews on main — doc 09).
+* @aAndy03

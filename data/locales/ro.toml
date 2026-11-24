@@ -1,0 +1,27 @@
+# Bookkeepy 1 — locale catalog: Română (ro).
+# SSOT for user-facing strings (RULE-ERR-002/003, item 8 M0.5). Must keep exact key parity
+# with en.toml — enforced by `xtask govern errors`. Add new keys in en.toml FIRST.
+
+[meta]
+locale = "ro"
+name = "Română"
+
+[messages]
+"app.name" = "Bookkeepy 1"
+"common.ok" = "OK"
+"common.cancel" = "Anulează"
+"common.close" = "Închide"
+"common.copy_diagnostic" = "Copiază diagnosticul"
+"err.app.fatal" = "A apărut o eroare neașteptată. Copiază diagnosticul și raportează-o dezvoltatorilor."
+"err.log.init_failed" = "Jurnalizarea nu a putut porni; aplicația continuă fără jurnale în fișiere."
+"err.profile.io" = "Datele profilului nu au putut fi citite sau scrise."
+"err.store.open_failed" = "Fișierul de date nu poate fi deschis."
+"err.store.migrate_failed" = "Migrarea bazei de date a eșuat. Datele anterioare sunt intacte."
+"err.fx.no_rate" = "Nu există curs pentru această monedă și dată — descarcă pachetele de cursuri sau introdu un curs manual."
+"err.import.parse_failed" = "Fișierul importat nu a putut fi citit."
+"warn.rates.checksum_mismatch" = "Un pachet de cursuri nu a trecut verificarea sumei de control și a fost ignorat."
+"err.core.currency_mismatch" = "Intern: operație între monede diferite fără un curs controlat."
+"err.core.amount_overflow" = "Intern: depășire de sumă în unități minore."
+"err.core.invalid_currency_code" = "Cod de monedă invalid (se așteaptă 3 litere, ex. RON)."
+"err.core.invalid_error_code" = "Intern: cod de eroare malformat."
+"err.data.invalid_primary_data" = "Intern: un fișier de date primare a eșuat validarea."

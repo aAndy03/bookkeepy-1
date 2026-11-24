@@ -12,10 +12,11 @@
 bookkeepy-1/                     workspace root
 ├── Cargo.toml · rust-toolchain.toml (1.100.0)
 ├── crates/
-│   ├── core/                    Money, Currency (from primary data), ids, time, error-code type. No I/O.
-│   ├── primary-data/            loads data/*.toml via include_str!; typed accessors (ADR-0008)
-│   ├── contracts/               DTOs + domain events; UI- and storage-agnostic
-│   ├── bus/                     typed event bus + durable local outbox (crash-safe reactions)
+│   ├── core/                    Money, Currency (from primary data), ids, time, error-code type. No I/O. ✅ M0
+│   ├── primary-data/            loads data/*.toml via include_str!; typed accessors (ADR-0008) ✅ M0; locales/ added M0.5
+│   ├── build-info/              version/git-sha/rustc embedded via build.rs + LICENSE text ✅ M0.5
+│   ├── contracts/               DTOs + domain event envelope (`EventEnvelope`/`Actor`); UI- and storage-agnostic ✅ M0.5
+│   ├── bus/                     typed in-process event bus over the envelope ✅ M0.5; durable local outbox lands with storage (M1)
 │   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
 │   ├── reminders/               local reminders/notifications engine (F16) — dismissible, never blocking
 │   ├── shared/                  SHARED ENGINES (RULE-SHARED-001, registry in doc 04 §4.2): actions/ (rename, archive, duplicate, delete-as-reversal, move, merge, tag, attach, note, status, pin, color/icon, order, export-selection, bulk-apply…) · helpers/ (validate, parse/format, query, paginate, time, diff, selection, undo, i18n, theme, notify, export) · guards/ (ledger_balance, hash_chain, audit_immutable, money, iso_ref, schema) — implemented once, generic over entity, localized via adapters
@@ -34,8 +35,10 @@ bookkeepy-1/                     workspace root
 │   ├── documents/               attachments
 │   ├── backup/                  snapshot / restore / verify + retention
 │   ├── loadpolicy/              engine_loadpolicy: what loads when (data/load-policies.toml) — hot/warm/cold (point 12)
-│   ├── diagnostics/             local system context (displays/DPI/GPU/CPU/RAM/OS/tz/net state) — local-only (doc 08)
-│   ├── settings/ · i18n/        config, locales (EN/RO)
+│   ├── diagnostics/             ✅ M0.5: diagnostic bundles (`bookkeepy-diagnostic@1`) + panic hook. M3+: local system context (displays/DPI/GPU/CPU/RAM/OS/tz/net state) — local-only (doc 08)
+│   ├── logging/                 ✅ M0.5: local-only rotating file logs (RULE-PRIV-001)
+│   ├── profile/                 ✅ M0.5: profile registry + data-dir layout (F18, doc 05 §5.2)
+│   ├── settings/ · i18n/        config; i18n/ ✅ M0.5: locale lookup over data/locales (EN/RO, EN fallback)
 │   ├── security/                app lock, key derivation, optional at-rest encryption
 │   ├── updater/                 app updates from main repo Releases (allowed HTTP #1)
 │   ├── app-services/            composition root + brokers; the `api` the UI uses

@@ -12,6 +12,7 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 | `defaults.toml` | Fallback/default policies (rates fallback chain, deleted-manual-rates behavior, system-context defaults) | Project-maintained |
 | `load-policies.toml` | What loads when; hot/warm/cold tiers; prefetch rules; usage-tracking scope | Project-maintained |
 | `perf-budgets.toml` | Performance budgets asserted in CI by criterion benches + `xtask govern perf` | Project-maintained |
+| `locales/en.toml`, `locales/ro.toml` | Locale catalogs (flat quoted dotted keys; `[meta].locale` must match the file stem). EN is the reference/fallback locale | Project-maintained; `xtask govern errors` enforces key parity + that every `errors.toml` i18n_key exists in every locale |
 
 Planned (add when the feature lands, each with a `[source]` header): `shortcuts.toml`
 (keyboard map — SSOT, remappable, RULE-INPUT-001), `theme/*.toml` (UI variables/tokens),

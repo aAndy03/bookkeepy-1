@@ -1,0 +1,18 @@
+[package]
+name = "bookkeepy-bus"
+description = "In-process event bus over the contracts envelope; durable outbox lands with storage (M1)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bookkeepy-contracts.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

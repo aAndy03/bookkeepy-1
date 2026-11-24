@@ -1,4 +1,6 @@
-# Bookkeepy 1 CI (doc 09): fmt, clippy, tests, governors, audit — on every push/PR to main.
+# Bookkeepy 1 CI (doc 09): fmt, clippy, tests, governors, supply-chain audit, deny, bench
+# sanity — on every push/PR to main. Job `name:`s are stable: they are the required
+# status-check contexts in branch protection (set via gh api, doc 09).
 # Rust version comes from rust-toolchain.toml (1.100.0).
 name: ci
 
@@ -10,6 +12,7 @@ on:
 
 jobs:
   check:
+    name: check (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -28,9 +31,38 @@ jobs:
         run: cargo xtask govern
 
   audit:
+    name: audit (rustsec)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: rustsec/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  deny:
+    name: deny (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: cargo deny check (licenses, bans, advisories, sources)
+        run: cargo deny check
+      # cargo-vet gate: hardens from M2 once the dependency tree is reviewed crate by
+      # crate (`cargo vet certify …` per crate; until then vet runs advisory-only).
+      - name: cargo vet (advisory until M2)
+        run: cargo vet --locked --output-format human 2>/dev/null || true
+        continue-on-error: true
+
+  bench:
+    name: bench (sanity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: benches compile + run once (no measurement)
+        run: cargo bench --workspace -- --test
+      # Full measured runs + comparison against data/perf-budgets.toml land with the
+      # perf governor (item 15); budgets file itself is validated by `govern data`.

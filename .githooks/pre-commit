@@ -1,0 +1,3 @@
+#!/bin/sh
+# Bookkeepy 1 pre-commit hook (installed via `cargo xtask hook install`).
+cargo xtask hook pre-commit

@@ -45,12 +45,12 @@
 | `argon2` + `chacha20poly1305` (or `aes-gcm`) + `zeroize` | latest | optional app lock / at-rest encryption (doc 05 §5.8) |
 | `csv` + `encoding_rs` | latest | bank CSV imports incl. Windows-1250 encodings |
 | `roxmltree` | latest | OFX/QFX XML parsing (no full XML stack) |
-| `directories` | latest | OS data-dir resolution |
-| `tracing` + `tracing-subscriber` + `tracing-appender` | latest | local logs only (never shipped anywhere) |
+| `directories` | `"6"` (6.0.0, M0.5) | OS data-dir resolution (profile registry) |
+| `tracing` 0.1.44 + `tracing-subscriber` 0.3.23 (env-filter) + `tracing-appender` 0.2.5 (M0.5) | local rotating logs only — never shipped anywhere (RULE-PRIV-001) |
 | `ureq` (rustls) | latest | the one HTTP client, used **only** by the `updater`/`rates` crates (RULE-NET-001) |
 | `semver` | latest | update version comparison (updater) |
 | `printpdf` (or successor) | latest | PDF rendering for reports — must be actively maintained + GPL-compatible; final choice recorded here at implementation with rationale (RULE-DEP-002 spirit applies: best maintained option) |
 | `opener` | latest | "open data folder" via the OS (actively maintained) |
-| dev: `proptest`, `insta`, `tempfile`, `criterion` | latest | doc 09 testing menu |
+| dev: `proptest` 1.12, `tempfile` 3.27 (M0.5), `criterion` 0.8.2 (M0.5 benches), `insta` (later) | doc 09 testing menu |
 
 Everything else is added later via PR with rationale, per RULE-DEP-001.

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Bookkeepy 1 dep updates (item 3, M0.5; doc 07/09). Enable the Renovate GitHub App on aAndy03/bookkeepy-1 once; this file drives it.",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Bucharest",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "groupName": "cargo dependencies (weekly)",
+      "separateMajorMinor": true,
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": false,
+      "prBodyNotes": ["CI must be green (fmt, clippy, tests, governors, deny) before merge — see docs/09."]
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "major"],
+      "schedule": ["before 6am on the first monday of the month"]
+    }
+  ]
+}

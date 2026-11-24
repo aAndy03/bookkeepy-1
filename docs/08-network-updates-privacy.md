@@ -22,6 +22,38 @@ main repo is compared (semver) → release notes shown → on explicit approval 
 downloaded, SHA-256-verified against the published checksum, then installed. Never
 auto-installs, never runs unverified code. Releases are the only distribution channel.
 
+## Release wire format v1 (item 12, M0.5 — the updater's contract with GitHub Releases)
+
+Every release of `aAndy03/bookkeepy-1` MUST publish, attached to the GitHub Release:
+
+```
+manifest.json        # spec "bookkeepy-release-manifest@1"
+SHA256SUMS           # sha256 of every asset incl. manifest.json
+bookkeepy-1-<version>-<os>-<arch>.<ext>   # per-target asset
+```
+
+`manifest.json`:
+
+```json
+{
+  "spec": "bookkeepy-release-manifest@1",
+  "version": "1.2.3",
+  "published_at": "2026-11-24T10:00:00Z",
+  "notes_url": "https://github.com/aAndy03/bookkeepy-1/releases/tag/v1.2.3",
+  "assets": [
+    { "name": "bookkeepy-1-1.2.3-windows-x86_64.msi", "os": "windows", "arch": "x86_64",
+      "kind": "msi", "sha256": "…", "size": 12345678 }
+  ]
+}
+```
+
+Updater rules: fetch `manifest.json` from the latest release only (never arbitrary URLs);
+require `spec` match; pick the asset matching `os`/`arch`/`kind`; verify `sha256` against
+both `manifest.json` and `SHA256SUMS`; verify size; only then install. Any mismatch →
+`BK-UPDATER-…` error (registered in `data/errors.toml` + locales), nothing is executed.
+The rates mirror (`bookkeepy-1-rates`) uses the analogous `bookkeepy-rates-package@1`
+format from doc 11 — the two never mix.
+
 ## Rates sync (F14, doc 11)
 
 User clicks **Download rates** (or default-off periodic check) → fetch manifest from the

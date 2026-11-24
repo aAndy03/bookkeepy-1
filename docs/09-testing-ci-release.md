@@ -24,18 +24,30 @@ requires a property test before merge.
 - clippy: `unwrap_used/expect_used = "deny"` (outside tests), `dbg_macro`, `todo!` denied;
   `float_arithmetic` denied in `core` and money crates (INV-MONEY-001).
 
-## CI (GitHub Actions, `.github/workflows/` — added in M0)
+## CI (GitHub Actions, `.github/workflows/` — added in M0, extended in M0.5)
 
-- Matrix: Windows / macOS / Linux × stable Rust 1.100.
-- Jobs: `cargo fmt --check` · `cargo clippy --workspace -- -D warnings` · `cargo test
-  --workspace` · `cargo xtask govern` (whole governor tree: deps + net allowlist, lints,
-  docs, adr, errors registry ↔ code ↔ locales, primary-data validation + ISO referential
-  integrity, perf budgets vs criterion benches) · `cargo audit` · `cargo deny check`
-  (licenses/bans) · offline smoke test (app fully functional with networking disabled) ·
-  **upgrade-path test**: fixtures written by every previous tagged release are opened,
-  migrated and verified by the new build (INV-DATA-001, points 14–15) · build artifacts.
-- Branch protection on `main`: PRs only, required reviews + required status checks, no
-  force-push (fintecheng SDLC, doc 06 §6.7).
+- Matrix: Windows / macOS / Linux × stable Rust 1.100 (pinned by `rust-toolchain.toml`).
+- Jobs (stable `name:`s — these are the required status-check contexts on `main`):
+  `check (ubuntu-latest)` / `check (windows-latest)` / `check (macos-latest)` =
+  `cargo fmt --check` · `cargo clippy --workspace --all-targets -- -D warnings` ·
+  `cargo test --workspace` · `cargo xtask govern` (whole governor tree: deps + net
+  allowlist, lints, docs, adr, errors registry ↔ code ↔ **locales**, primary-data
+  validation + ISO referential integrity) · `audit (rustsec)` · `deny (cargo-deny)` —
+  licenses allow-list (GPL-3.0-or-later compatible), AGPL/SSPL banned, duplicates and
+  wildcards denied, advisories/yanked denied, crates.io-only sources (`deny.toml`);
+  `cargo vet` advisory until M2 · `bench (sanity)` = `cargo bench --workspace -- --test`
+  (benches compile + run once; measured budget comparison lands with the perf governor).
+  Later milestones add: offline smoke test (app fully functional with networking
+  disabled) · **upgrade-path test**: fixtures in `tests/fixtures/versions/` written by
+  every previous tagged release are opened, migrated and verified by the new build
+  (INV-DATA-001, points 14–15) · build artifacts.
+- Branch protection on `main` (set via `gh api`, M0.5): PRs only, required reviews (1)
+  + required status checks = the CI job names above, no force-push, no deletions
+  (fintecheng SDLC, doc 06 §6.7). CODEOWNERS + PR/issue templates in `.github/`.
+- Dependency updates: Renovate (`.github/renovate.json`, cargo weekly / major monthly);
+  every dep PR must pass the full CI incl. `deny`.
+- Pre-commit locally: `cargo xtask hook install` once, then `.githooks/pre-commit` runs
+  fmt + fast governors + clippy on every commit.
 
 ## Release & packaging
 

@@ -1,0 +1,29 @@
+# Bookkeepy 1 — locale catalog: English (en), the reference locale.
+# SSOT for user-facing strings (RULE-ERR-002/003, item 8 M0.5). Keys are dotted and quoted so
+# they stay flat. `xtask govern errors` fails CI if a key is missing here or in another
+# locale, or if an error registry i18n_key has no message. Add new keys here FIRST, then
+# translate in the other locales.
+
+[meta]
+locale = "en"
+name = "English"
+
+[messages]
+"app.name" = "Bookkeepy 1"
+"common.ok" = "OK"
+"common.cancel" = "Cancel"
+"common.close" = "Close"
+"common.copy_diagnostic" = "Copy diagnostic"
+"err.app.fatal" = "An unexpected error occurred. Copy the diagnostic and report it to the developers."
+"err.log.init_failed" = "Logging could not start; the app continues without file logs."
+"err.profile.io" = "Profile data could not be read or written."
+"err.store.open_failed" = "The data file cannot be opened."
+"err.store.migrate_failed" = "The database migration failed. Your previous data is untouched."
+"err.fx.no_rate" = "No rate for this currency and date — download the rates packages or enter a manual rate."
+"err.import.parse_failed" = "The imported file could not be parsed."
+"warn.rates.checksum_mismatch" = "A rates package failed checksum verification and was skipped."
+"err.core.currency_mismatch" = "Internal: cross-currency operation without a controlled rate."
+"err.core.amount_overflow" = "Internal: amount overflow in minor units."
+"err.core.invalid_currency_code" = "Not a valid currency code (expected 3 letters, e.g. RON)."
+"err.core.invalid_error_code" = "Internal: malformed error code."
+"err.data.invalid_primary_data" = "Internal: a primary data file failed validation."

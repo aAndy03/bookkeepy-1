@@ -1,0 +1,15 @@
+[package]
+name = "bookkeepy-i18n"
+description = "Locale lookup with EN fallback over the primary-data locale catalogs (item 8, M0.5)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bookkeepy-primary-data.workspace = true

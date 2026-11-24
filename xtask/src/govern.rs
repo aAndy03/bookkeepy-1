@@ -38,8 +38,29 @@ pub fn run(sub: Option<&str>) -> ExitCode {
                 true
             }
             "perf" => {
-                println!("govern perf: PASS (no benches yet; budgets validated by govern data)");
-                true
+                // budgets file is validated by `govern data`; here we assert the bench
+                // harness exists (benches/ dir in at least one crate) so the CI `bench`
+                // job has something to run. Measured budget comparison lands with M9.
+                let crates = root().join("crates");
+                let mut benches = 0usize;
+                if let Ok(entries) = std::fs::read_dir(&crates) {
+                    for c in entries.filter_map(|e| e.ok()) {
+                        if c.path().join("benches").is_dir() {
+                            benches += 1;
+                        }
+                    }
+                }
+                if benches > 0 {
+                    println!(
+                        "govern perf: PASS ({benches} crate(s) with benches/; budgets in data/perf-budgets.toml validated by govern data)"
+                    );
+                    true
+                } else {
+                    eprintln!(
+                        "govern perf: FAIL: no crates/ benches/ found (criterion harness expected since M0.5)"
+                    );
+                    false
+                }
             }
             "ui" => {
                 println!("govern ui: PASS (no UI crates yet; activates from M3)");
@@ -275,9 +296,30 @@ fn deps() -> bool {
     const HTTP_CRATES: &[&str] = &["ureq", "reqwest", "hyper", "isahc", "attohttpc"];
     let http_allowed_pkgs = ["bookkeepy-updater", "bookkeepy-rates"];
 
-    // Allowed workspace-internal edges for now (doc 03 direction; grows as crates land).
+    // Allowed workspace-internal edges (doc 03 dependency direction, RULE-ARCH-001;
+    // `xtask new-crate` reminds to extend this map).
     let mut allowed: std::collections::HashMap<&str, Vec<&str>> = std::collections::HashMap::new();
     allowed.insert("bookkeepy-core", vec![]);
+    allowed.insert("bookkeepy-build-info", vec![]);
+    allowed.insert("bookkeepy-contracts", vec!["bookkeepy-core"]);
+    allowed.insert(
+        "bookkeepy-bus",
+        vec!["bookkeepy-core", "bookkeepy-contracts"],
+    );
+    allowed.insert(
+        "bookkeepy-diagnostics",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-build-info",
+            "bookkeepy-contracts",
+        ],
+    );
+    allowed.insert("bookkeepy-logging", vec![]);
+    allowed.insert("bookkeepy-profile", vec!["bookkeepy-core"]);
+    allowed.insert(
+        "bookkeepy-i18n",
+        vec!["bookkeepy-core", "bookkeepy-primary-data"],
+    );
     allowed.insert("bookkeepy-primary-data", vec!["bookkeepy-core"]);
     allowed.insert("xtask", vec!["bookkeepy-core", "bookkeepy-primary-data"]);
 
@@ -399,6 +441,11 @@ fn net() -> bool {
                         let t = line.trim_start();
                         if t.starts_with("//") {
                             continue; // comments may reference docs URLs
+                        }
+                        // the canonical repo URL is allowed anywhere: it is a label
+                        // (About screen, bug-report links), never a network request
+                        if t.contains("https://github.com/aAndy03/bookkeepy-1") {
+                            continue;
                         }
                         if t.contains("://") {
                             eprintln!(

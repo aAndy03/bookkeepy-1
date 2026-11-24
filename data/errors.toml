@@ -80,3 +80,24 @@ area = "data"
 severity = "fatal"
 i18n_key = "err.data.invalid_primary_data"
 summary = "Internal: a primary data file failed validation"
+
+[[error]]
+code = "BK-APP-0001"
+area = "app"
+severity = "fatal"
+i18n_key = "err.app.fatal"
+summary = "Unexpected fatal error (panic/crash) — copy the diagnostic and report it"
+
+[[error]]
+code = "BK-LOG-0001"
+area = "log"
+severity = "warning"
+i18n_key = "err.log.init_failed"
+summary = "Logging could not start; continuing without file logs"
+
+[[error]]
+code = "BK-PROFILE-0001"
+area = "profile"
+severity = "error"
+i18n_key = "err.profile.io"
+summary = "Profile registry or profile directory could not be read/written"

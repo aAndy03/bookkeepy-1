@@ -3,6 +3,13 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/build-info",
+    "crates/i18n",
+    "crates/profile",
+    "crates/logging",
+    "crates/diagnostics",
+    "crates/bus",
+    "crates/contracts",
     "crates/core",
     "crates/primary-data",
     "xtask",
@@ -26,6 +33,11 @@ authors = ["Andy <andymarin860@gmail.com>"]
 # Workspace-internal crates (path deps; direction rules enforced by `xtask govern deps`).
 bookkeepy-core = { path = "crates/core" }
 bookkeepy-primary-data = { path = "crates/primary-data" }
+bookkeepy-build-info = { path = "crates/build-info" }
+bookkeepy-contracts = { path = "crates/contracts" }
+# Declared on first use (cargo 1.100 warns on unused workspace deps): bookkeepy-bus,
+# bookkeepy-diagnostics, bookkeepy-logging, bookkeepy-profile, bookkeepy-i18n get their
+# path entries here when the first crate depends on them (M1+).
 # Foundation (in use now)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -33,16 +45,23 @@ toml = "1"
 thiserror = "2"
 uuid = { version = "1", features = ["v7", "serde"] }
 jiff = { version = "1", features = ["serde"] }  # civil dates/times + IANA tzdb (primary data as a dependency)
-# Testing (doc 09)
+# First used in M0.5 (profile registry + logging + diagnostics + benches)
+directories = "6"
+tempfile = "3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+# Testing / benches (doc 09)
 proptest = "1"
+criterion = "0.8"
 
 # Declared on first use (full policy set with rationale: docs/07-dependencies.md):
 #   gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }   (M3, ADR-0007)
 #   rusqlite = { version = "0.43", features = ["bundled","blob","backup"] }  (M1, ADR-0005)
 #   tantivy = "0.27"                                                (M5, ADR-0006)
-#   anyhow, sha2, hex, directories, tracing(+subscriber/appender), csv, encoding_rs,
-#   roxmltree, semver, iana-time-zone, sysinfo, os_info, opener, printpdf, insta, tempfile,
-#   criterion — see doc 07 for versions/rationale
+#   anyhow, sha2, hex, csv, encoding_rs,
+#   roxmltree, semver, iana-time-zone, sysinfo, os_info, opener, printpdf, insta
+#   — see doc 07 for versions/rationale
 #   ureq = { version = "3", default-features = false, features = ["rustls","gzip"] }
 #     ONLY for the updater/rates crates (RULE-NET-001, ADR-0011; enforced by `govern net`)
 
