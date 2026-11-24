@@ -59,6 +59,8 @@ diagnostics that could contain amounts/payees are opt-in and local-only.
   "also delete my data" checkbox is unchecked by default and preceded by a full-export offer.
 - Erasure: delete the data folder/file; inside the app, PII (payees, notes, attachments) is
   separable and deletable without rewriting the immutable ledger (doc 06 GDPR adaptation).
+- Profiles (F18, ADR-0018) share nothing: the app-level dir holds only the profile registry
+  (id/name/path), never financial data; each profile's data root is independent.
 
 ## Threat model (documented; mitigations = current posture + parked features)
 

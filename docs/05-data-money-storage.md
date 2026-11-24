@@ -13,8 +13,13 @@ rounding account").
 
 ## 5.2 Storage (ADR-0005)
 
-- One SQLite file per user book via `rusqlite` (`bundled`), WAL, foreign keys ON, background
-  thread (RULE-ASYNC-001). User-chosen folder; never locked exclusively.
+- **Profile = isolated data root (ADR-0018):** `<app data dir>/profiles/<profile-id>/` holds
+  everything of that profile — `book.db`, `attachments/`, `rates/packages/`, `settings`,
+  `ui_state`, `jobs`, `backups/`. Profiles share **no data and no database**. The app-level
+  dir keeps only a tiny registry (profile id, name, path, last-opened) — app metadata, not
+  user data. One SQLite file per profile via `rusqlite` (`bundled`), WAL, foreign keys ON,
+  background thread (RULE-ASYNC-001); never locked exclusively; single open profile per
+  process (RULE-APP-001).
 - Migrations: numbered SQL files, applied in a transaction, recorded in `user_version` +
   `schema_migrations`. Every migration tested up *and* down on fixtures.
 - Backups: `VACUUM INTO` snapshots + restore verification (`quick_check` + hash chain).
@@ -133,11 +138,15 @@ immutable journal.
 
 Full export = one folder/zip `bookkeepy-export-v1/`: `manifest.json` (book id, exported_at,
 app version, file list + SHA-256 each), `book.db` (SQLite copy), `attachments/`,
-`settings.json`, `rates/` (installed packages). CSV/JSON per-report exports carry their own
-versioned schema docs. The spec is the SSOT here; the app imports its own exports back
-(round-trip tested, doc 09). Offered in-app (backup/export UI) and in the uninstaller with the
-"data stays on this device; reinstalling finds it unaltered; this export works in other apps"
-explanation (INV-APP-001).
+`settings.json`, `rates/` (installed packages). **Scoped exports** (for moving *certain
+things* between profiles, F18): the manifest gains a `scope` (accounts / date range /
+categories / explicit selection); the export contains only those rows. Import into another
+profile runs through the import pipeline, assigns **fresh ids** (no collision with the source
+profile), records origin, and is idempotent per target profile. CSV/JSON per-report exports
+carry their own versioned schema docs. The spec is the SSOT here; the app imports its own
+exports back (round-trip tested, doc 09). Offered in-app (backup/export UI) and in the
+uninstaller with the "data stays on this device; reinstalling finds it unaltered; this export
+works in other apps" explanation (INV-APP-001).
 
 ## 5.12 Periods & fiscal calendar
 

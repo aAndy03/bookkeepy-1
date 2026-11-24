@@ -1,15 +1,20 @@
 # 02 — Feature inventory (user-facing)
 
-Features are grouped by domain. Each domain maps to one crate/**slice** composed of many
-engines — and an engine is itself composed of parts that can be engines (shared or
-localized; doc 04 §4.2). "User sees" = surface; "Engine does" = hidden machinery.
+Features are grouped by domain. Each feature = one **horizontal slice** (a crate) composed
+of recursive engines (an engine is itself composed of parts that can be engines). Crucially,
+**generic actions are shared engines, implemented once**: rename, archive/restore, duplicate,
+delete-as-reversal, tag, attach, note, change-status, bulk-apply… live in the shared crate
+and are *localized* per feature through thin variant adapters — never re-implemented per
+feature (RULE-SHARED-001, doc 04 §4.2). "User sees" = surface; "Engine does" = hidden
+machinery (naming the shared engine it uses).
 
 ## F1 — Accounts
 - **User sees:** accounts (cash, bank, card, wallet, loan…): name, type (asset/liability),
   currency, opening balance, current balance, color/icon; create/rename/archive (never
   hard-delete an account with history).
 - **Engine does:** account types drive debit/credit normal balance; balances derived from
-  postings, never stored; archiving keeps history.
+  postings, never stored; rename/archive go through the **shared action engines**
+  (`shared::actions::rename` / `archive`), localized here (RULE-SHARED-001).
 
 ## F2 — Transactions
 - **User sees:** add/edit income, expense, transfer; splits; categories, tags, payee, note,
@@ -113,3 +118,36 @@ localized; doc 04 §4.2). "User sees" = surface; "Engine does" = hidden machiner
 - **User sees:** welcome → create or open a book → first account → optional import; optional
   sample book; privacy disclosure at setup (doc 08); every empty view has a clear next step.
 - **Engine does:** single-instance app lifecycle (ADR-0016), `ui_state` for continuity.
+
+## F18 — Profiles (fully isolated)
+- **User sees:** create/rename/delete profiles, switch at any time from the app shell; each
+  profile has all features (F1–F20); profiles share **no data and no database** — the only
+  bridge is export (whole book or a scoped selection) → import into the other profile.
+- **Engine does:** a profile is an isolated data root (`profiles/<id>/{book.db, attachments/,
+  rates/packages/, settings, ui_state, jobs, backups/}`); the app keeps only a tiny registry
+  of profile id/name/path (app-level metadata, not user data); switching closes the current
+  profile (jobs pause/resume per profile DB); import into another profile assigns fresh ids
+  via the import pipeline (ADR-0018).
+
+## F19 — Timeline & centralized filters (the temporal spine)
+- **User sees:** the **timeline** is the main component tying every screen together: views by
+  day / week / month / trimester / year (+ custom range); navigate past ↔ present ↔ future;
+  focus a day or a period; timeline-level filters (accounts, categories, tags, parties,
+  text); **compare mode** (day vs period, period vs period). Every timeline-bound component
+  on enabled screens shows data for the focused scope. Past = backdated entries; future =
+  scheduled/recurring forecast entries (toggleable).
+- **Engine does:** `engine_timeline` is the **single source of truth for time scope**
+  (RULE-TL-001, ADR-0019): one `TimeScope` state (view, focus range, compare scope, filters,
+  include-future), persisted in `ui_state`, broadcast as an event; presenters subscribe and
+  parameterize queries — no component owns its own period state (that's what prevents the
+  "one stuck at 60 days, another at 30" drift). Compare mode exposes a `compare` capability
+  trait: components render comparison variants and run queries twice (diff) when it's on.
+
+## F20 — Bulk selection & bulk actions
+- **User sees:** in tables (the default data presentation): checkbox column, select-all,
+  shift-range selection; a bulk action bar appears with applicable shared actions (categorize,
+  tag, move account, change status, archive, delete-as-reversal, export selection…).
+- **Engine does:** selection state lives in `ui_state` (non-audited, clearable); bulk actions
+  are batch API operations executed as **one job** with progress (pause/resume/cancel,
+  RULE-JOB-001), each affected item audited individually; the actions themselves are the
+  shared engines (RULE-SHARED-001).

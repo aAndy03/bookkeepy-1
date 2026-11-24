@@ -17,7 +17,8 @@
 | M0 | Repo & foundations | workspace, `core` (Money/Currency), `primary-data`, CI skeleton, governors. **Current.** |
 | M1 | Storage skeleton | `storage`: connection, migrations, WAL, backup/restore/verify, single-instance lock, crash-recovery self-check. |
 | M2 | Ledger engine | double-entry postings, derived balances, reversals, hash chain, audit log; property tests. |
-| M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`). |
+| M3 | Accounts & transactions UI | gpui-kit shell, **component gallery** (all styled components + versioned variants), first screens, ui-state, onboarding/empty states, EN/RO, keyboard map (`data/shortcuts.toml`), **timeline spine (F19)**. |
+| M3b | Profiles | profile registry + switcher, isolated data roots, scoped export → import between profiles (F18, ADR-0018). |
 | M4 | Import/export | CSV/OFX/QIF pipeline, dedup, reconciliation breaks; export package format v1. |
 | M5 | Search | tantivy engine + query DSL, write-through + rebuild. |
 | M6 | Budgets & reports | envelopes, reports, golden tests, PDF/print. |
@@ -66,10 +67,11 @@
 
 ## Parked feature ideas (owner will specify later; logic patterns only for now)
 
-Auto-categorization rules on import · command palette + global quick-add · multi-book
-switcher · user-defined report templates · **app lock / at-rest encryption** ·
-**voice control via AI** (when un-parked it must run on-device — a cloud model would need an
-ADR amending ADR-0011; input modalities now: mouse + trackpad + keyboard, RULE-INPUT-001).
+Auto-categorization rules on import · command palette + global quick-add · user-defined
+report templates · **app lock / at-rest encryption** · **voice control via AI** (when
+un-parked it must run on-device — a cloud model would need an ADR amending ADR-0011; input
+modalities now: mouse + trackpad + keyboard, RULE-INPUT-001). (Multi-book was specified by
+the owner as **Profiles** — F18, ADR-0018 — no longer parked.)
 
 ## Edge-case & variant register (classes to enumerate per domain)
 

@@ -58,8 +58,17 @@ crates/<domain>/
 
 - **Engine roles:** domain engines, helper engines (`helper_*`, e.g. validation), guard
   engines (`guard_*`), brokers (`broker_*` — the only engine↔engine path), pipelines
-  (`pipeline_*`, staged + resumable). Shared engines live in shared crates; localized ones
-  inside the domain crate.
+  (`pipeline_*`, staged + resumable).
+- **Shared engines (RULE-SHARED-001):** generic actions are implemented **once** in the
+  shared crate (`crates/shared/`, e.g. `shared::actions`) and *localized* per feature via
+  thin variant/adapter files in the feature crate — never re-implemented per feature.
+  Before writing any action in a feature, check the shared registry below; a new generic
+  action goes into `crates/shared/` (generic over entity kind), and `govern meta` fails if
+  a feature re-implements a registered shared action. Initial registry: `rename`,
+  `archive`/`restore`, `duplicate`, `delete` (as reversal for posted entities, hard delete
+  only for non-audited ones), `move`, `add_tag`/`remove_tag`, `attach`, `set_note`,
+  `change_status`, `bulk_apply`. Each is generic over the entity via a trait, so the same
+  engine serves accounts, transactions, categories, profiles-metadata, etc.
 - `api/` is the contract; internal refactors never change it without an ADR.
 
 ## 4.3 Validation (RULE-VAL-001)
@@ -116,35 +125,49 @@ with pause / resume / cancel**; a startup driver resumes interrupted jobs (full
 resumability). Job types are persisted pipelines (exact resume). UI: one non-modal Jobs
 drawer (RULE-UX-001).
 
-## 4.9 UI system — Atomic Design + gallery + capability traits (RULE-UI-001…007, ADR-0017)
+## 4.9 UI system — gallery-first, Atomic Design, capability traits (RULE-UI-001…009, ADR-0017)
 
 - gpui-kit styled components, catalog-first (ADR-0007), per the vendored `skills/`.
-- **Atomic Design (Brad Frost) governs the interface structure (RULE-UI-006):** atoms =
-  our wrappers over gpui-kit styled components (`ui/src/widgets/atoms/<component>/`);
-  molecules = composed controls (`widgets/molecules/`); organisms = feature blocks
-  (`widgets/organisms/`); templates = layouts; pages = views (`ui/src/views/<feature>/<screen>/`).
-  Shared, reusable parts build ever more complex interfaces — the modularity principle.
+- **Gallery-first workflow (RULE-UI-006):** every interface component is built and reviewed
+  **in the `gallery` first**; when approved there, it is used in the app. There is **one set
+  of components only** — the gallery is a harness/viewer over the same `ui` widgets crate,
+  never a second copy. The gallery showcases **all** gpui-kit styled components by default,
+  arranged by atomic layers, with our variants/edge cases alongside.
+- **Gallery versioning (RULE-UI-008):** every widget folder carries a `meta.toml`
+  (component id, **version**, capability traits, variants, edge cases, changelog). The
+  gallery renders the version history; any change to a component/variant/trait bumps its
+  version and appends to its changelog. `govern meta` cross-checks `meta.toml` against the
+  code (traits actually enabled, variants actually linked) — the same registry governors
+  track (4.11).
+- **Atomic Design (Brad Frost) governs the interface structure:** atoms = our wrappers over
+  gpui-kit styled components (`ui/src/widgets/atoms/<component>/`); molecules = composed
+  controls (`widgets/molecules/`); organisms = feature blocks (`widgets/organisms/`);
+  templates = layouts; pages = views (`ui/src/views/<feature>/<screen>/`). Shared, reusable
+  parts build ever more complex interfaces.
 - **Figma model:** variables = theme tokens as primary data (`data/theme/*.toml`); components
   = source + props + variants **linked to the SSOT source** — a variant (e.g. a mini calendar)
-  is created on demand as `variant_mini.rs` extending the source, never a copy.
-- **Capability traits (RULE-UI-007):** a component's capabilities (traits) are registered
-  once in `ui/src/capabilities/` (SSOT registry). **Variants are built only by enabling /
-  disabling registered traits on the source component — never by divergent ad-hoc code.**
-  Example: the Input atom has the `algebra` capability (accepts and evaluates `+ − × ÷`);
-  amount fields enable it, plain text fields don't. Same input, different trait set — no
-  drift, because governors track every trait in use (4.11).
+  is `variant_mini.rs` extending the source, never a copy.
+- **Capability traits (RULE-UI-007):** capabilities are registered once in
+  `ui/src/capabilities/` (SSOT registry). **Variants are built only by enabling/disabling
+  registered traits on the source component.** Examples: Input's `algebra` capability
+  (`+ − × ÷` evaluation) — enabled on amount fields, not on text fields; Table's
+  `selectable` capability — enables the checkbox column + bulk bar (F20); Timeline-bound
+  components carry the `timeline` trait — they render according to the global time scope
+  (RULE-TL-001) and switch to a comparison variant when the `compare` trait is on (F19).
 - **Placeholders (RULE-UI-005):** every input and every interface element has a localized
-  placeholder (plus label / helper / error text) so the user always knows what to enter.
-  `xtask govern ui` fails on any input without a placeholder i18n key.
+  placeholder (plus label / helper / error text). `xtask govern ui` fails on any input
+  without a placeholder i18n key.
 - **Input modalities (RULE-INPUT-001):** (a) mouse, (b) trackpad/touchpad gestures,
   (c) keyboard shortcuts — all usable **in combination at the same time**. Shortcuts are
-  primary data (`data/shortcuts.toml`: SSOT, remappable, localized action names), bound via
-  gpui actions/keybindings. (d) **Voice control via an AI model is parked** (doc 10); when
-  un-parked it must run **on-device** to preserve offline-first — a cloud model would need
-  an ADR amending ADR-0011.
-- **Gallery (RULE-UI-006):** the workspace ships a `gallery` binary showcasing **all**
-  gpui-kit styled components by default, arranged by atomic layers, with our variants and
-  edge cases alongside — the living catalog where a new variant is tried before use.
+  primary data (`data/shortcuts.toml`: SSOT, remappable, localized), bound via gpui
+  actions/keybindings. (d) **Voice control via AI is parked** (doc 10); when un-parked it
+  must run **on-device** (a cloud model would need an ADR amending ADR-0011).
+- **Presentation defaults (RULE-UI-008):** data is shown **as tables (rows/columns) by
+  default** — the Table atom is the standard data presentation; cards, kanban, charts are
+  variants enabled per context via traits.
+- **Visual language (RULE-UI-009):** the interface is rich and interactive — charts,
+  interactive graphics, the timeline — designed to invite mouse interaction; not just cards
+  with numbers. Use gpui-kit's chart/graphic components + custom canvas drawing where needed.
 - `ui` depends only on `app-services::api` + `contracts` (RULE-UI-004); presenters are the
   SSOT for view models; session state per RULE-STATE-001 (persisted in `ui_state`, intuitively
   clearable, never touching posted data).
