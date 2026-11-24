@@ -30,7 +30,8 @@ pub fn account_balance(
             ),
             None => (base.to_string(), vec![account_id.to_string()]),
         };
-        let mut stmt = c.prepare(&sql)?;
+        // hot path (dashboard renders every balance) — cached statement
+        let mut stmt = c.prepare_cached(&sql)?;
         let refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
         Ok(stmt.query_row(rusqlite::params_from_iter(refs), |r| r.get(0))?)
     })?;
@@ -42,16 +43,39 @@ pub fn account_balance(
     Ok(Money::new(balance, acc.currency))
 }
 
-/// All account balances at `as_of`.
+/// All account balances at `as_of`. ONE grouped query (not one per account — the
+/// dashboard calls this on every render; N+1 here was the biggest read hotspot,
+/// ADR-0025 optimization audit). Sign is applied per account type in Rust.
 pub fn account_balances(
     db: &Db,
     as_of: Option<Timestamp>,
 ) -> Result<Vec<(EntityId, Money)>, LedgerError> {
-    let mut out = Vec::new();
-    for a in accounts::list(db, true)? {
-        out.push((a.id, account_balance(db, a.id, as_of)?));
-    }
-    Ok(out)
+    let accs = accounts::list(db, true)?;
+    let signed: std::collections::HashMap<String, i64> = db.with_conn(|c| {
+        let base = "SELECT p.account_id, COALESCE(SUM(CASE WHEN p.side='debit' THEN p.amount_minor ELSE -p.amount_minor END),0)
+                    FROM postings p JOIN journal_entries e ON e.id = p.entry_id";
+        let (sql, params): (String, Vec<String>) = match &as_of {
+            Some(ts) => (
+                format!("{base} WHERE e.value_ts <= ?1 GROUP BY p.account_id"),
+                vec![ts.to_string()],
+            ),
+            None => (format!("{base} GROUP BY p.account_id"), vec![]),
+        };
+        let mut stmt = c.prepare_cached(&sql)?;
+        let refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+        let rows = stmt.query_map(rusqlite::params_from_iter(refs), |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        Ok(rows.collect::<Result<_, _>>()?)
+    })?;
+    Ok(accs
+        .into_iter()
+        .map(|a| {
+            let s = signed.get(&a.id.to_string()).copied().unwrap_or(0);
+            let v = if a.ty.normal_debit() { s } else { -s };
+            (a.id, Money::new(v, a.currency))
+        })
+        .collect())
 }
 
 /// Trial balance at `as_of`: per currency, debits minus credits across ALL postings
@@ -71,7 +95,7 @@ pub fn trial_balance(
             ),
             None => (format!("{base} GROUP BY p.currency"), vec![]),
         };
-        let mut stmt = c.prepare(&sql)?;
+        let mut stmt = c.prepare_cached(&sql)?;
         let refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
         let rows = stmt.query_map(rusqlite::params_from_iter(refs), |r| {
             Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))

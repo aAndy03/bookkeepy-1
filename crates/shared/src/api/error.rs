@@ -38,12 +38,30 @@ impl SharedError {
 }
 
 /// Map into the storage error type (for running `_in_tx` variants inside
-/// `storage::tx::post_with`, whose closure is storage-typed). Semantic action errors are
-/// pre-checked before the transaction, so this only fires for genuine SQL failures.
+/// `storage::tx::post_with`, whose closure is storage-typed). Semantic errors travel as
+/// `StorageError::Foreign` so their BK-code survives the boundary — recover with
+/// [`from_storage`]. (ADR-0025: this used to map to `Integrity`/BK-STORE-0003 and lost
+/// BK-ACTION-0001 — fixed.)
 pub fn into_storage(e: SharedError) -> bookkeepy_storage::StorageError {
     match e {
         SharedError::Store(s) => s,
         SharedError::Sql(s) => s.into(),
-        other => bookkeepy_storage::StorageError::Integrity(other.to_string()),
+        other => bookkeepy_storage::StorageError::Foreign(Box::new(other)),
+    }
+}
+
+/// Recover a shared error from a storage error that crossed a closure boundary
+/// (downcasts `SharedError` so its BK-code survives; RULE-SSOT seam rule S2).
+pub fn from_storage(e: bookkeepy_storage::StorageError) -> SharedError {
+    match e {
+        bookkeepy_storage::StorageError::Foreign(b) => {
+            if b.is::<SharedError>() {
+                *b.downcast::<SharedError>()
+                    .unwrap_or_else(|_| unreachable!())
+            } else {
+                SharedError::Store(bookkeepy_storage::StorageError::Foreign(b))
+            }
+        }
+        other => SharedError::Store(other),
     }
 }

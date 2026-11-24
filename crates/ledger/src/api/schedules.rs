@@ -157,7 +157,7 @@ pub fn create(
         )?;
         let _ = rule_json;
         Ok(())
-    })?;
+    }).map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 
@@ -265,24 +265,34 @@ pub fn expand_window(
     let s = get(db, schedule_id)?
         .ok_or_else(|| LedgerError::InvalidSchedule(format!("schedule {schedule_id}")))?;
     let exp = recurrence::expand(&s.rule, from, to).map_err(LedgerError::InvalidSchedule)?;
+    // ONE query for the whole window (not one per occurrence — the timeline calls this
+    // per schedule per render; ADR-0025 optimization audit). Live (non-voided) rows only:
+    // an edited occurrence's replacement carries the link after the original was voided
+    // (schema v4 partial index).
+    let materialized: std::collections::HashMap<String, EntityId> = db.with_conn(|c| {
+        let mut stmt = c.prepare_cached(
+            "SELECT occurrence_date, id FROM transactions
+             WHERE schedule_id=?1 AND status<>'voided'
+               AND occurrence_date BETWEEN ?2 AND ?3
+             ORDER BY occurrence_date, created_at",
+        )?;
+        let rows = stmt.query_map(
+            rusqlite::params![schedule_id.to_string(), from.to_string(), to.to_string()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        )?;
+        Ok(rows
+            .filter_map(|row| row.ok())
+            .filter_map(|(d, id)| parse_id(id).map(|i| (d, i)))
+            .collect())
+    })?;
     let mut out = Vec::new();
     for o in exp.occurrences {
-        // the LIVE (non-voided) materialization — an edited occurrence's replacement
-        // carries the link after the original was voided (schema v4 partial index)
-        let mat: Option<String> = db.with_conn(|c| {
-            Ok(c.query_row(
-                "SELECT id FROM transactions WHERE schedule_id=?1 AND occurrence_date=?2
-                     AND status<>'voided' ORDER BY created_at DESC LIMIT 1",
-                rusqlite::params![schedule_id.to_string(), o.date.to_string()],
-                |r| r.get(0),
-            )
-            .optional()?)
-        })?;
+        let mat = materialized.get(&o.date.to_string()).copied();
         let assumed = o.date < today && mat.is_none();
         out.push(ProjectedOccurrence {
             date: o.date,
             exception: o.exception,
-            materialized_tx: mat.and_then(parse_id),
+            materialized_tx: mat,
             assumed_reconciled: assumed,
         });
     }
@@ -414,6 +424,20 @@ pub fn materialize_due(db: &Db, bus: &Bus, today: Date) -> Result<Vec<EntityId>,
     let mut out = Vec::new();
     for s in list(db)? {
         let exp = recurrence::expand(&s.rule, from, today).map_err(LedgerError::InvalidSchedule)?;
+        // ONE query per schedule for the already-materialized dates in the window
+        // (not one per occurrence — ADR-0025 optimization audit)
+        let done: std::collections::HashSet<String> = db.with_conn(|c| {
+            let mut stmt = c.prepare_cached(
+                "SELECT occurrence_date FROM transactions
+                 WHERE schedule_id=?1 AND status<>'voided'
+                   AND occurrence_date BETWEEN ?2 AND ?3",
+            )?;
+            let rows = stmt.query_map(
+                rusqlite::params![s.id.to_string(), from.to_string(), today.to_string()],
+                |r| r.get::<_, String>(0),
+            )?;
+            Ok(rows.collect::<Result<std::collections::HashSet<_>, _>>()?)
+        })?;
         for o in exp.occurrences {
             if o.exception
                 .as_ref()
@@ -421,7 +445,7 @@ pub fn materialize_due(db: &Db, bus: &Bus, today: Date) -> Result<Vec<EntityId>,
             {
                 continue;
             }
-            if is_materialized(db, s.id, o.date)? {
+            if done.contains(&o.date.to_string()) {
                 continue;
             }
             let tx = materialize_one(db, bus, s.id, o.date, "schedule due")?;

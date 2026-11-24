@@ -119,6 +119,16 @@ criterion benches; `xtask govern perf` + CI compare measurements against budgets
 of the backend drifts unoptimized. Budgets are contextualized by `diagnostics` (this machine's
 CPU/RAM/GPU/display) where relevant.
 
+**Applied optimization set (M2-hardening audit, ADR-0026)** — findable via schema migrations +
+benches + budgets: WAL/`synchronous=NORMAL`/`busy_timeout`/`wal_autocheckpoint`/0600 (M1,
+`conn.rs`); covering indexes (schema v5: `journal_entries.value_ts`, `outbox.published`,
+`jobs(state,not_before)`, `tx_tags(tag_id)`, `transactions.status`); batched reads
+(`account_balances` = one grouped query, `expand_window`/`materialize_due` = one query per
+window/schedule — no N+1); `prepare_cached` on hot paths; benches next to the crate
+(`core/benches`, `ledger/benches/post_and_balances.rs`) with budgets in
+`data/perf-budgets.toml` (`ledger_read_all_balances`, `ledger_trial_balance`,
+`schedule_expand_window`).
+
 ## Jobs orchestration (RULE-JOB-001, ADR-0015)
 
 All async long-running work (import, rates sync, backup, exports, index rebuild, migrations)

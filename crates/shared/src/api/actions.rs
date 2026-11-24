@@ -100,7 +100,8 @@ fn public(db: &Db, bus: &Bus, actor: &Actor, act: &Act) -> Result<(), SharedErro
     tx::post_with(db, bus, &ev, |tx| {
         run_in_tx(tx, act).map_err(super::error::into_storage)?;
         Ok(())
-    })?;
+    })
+    .map_err(super::error::from_storage)?;
     tracing::info!(
         kind = act.kind,
         table = act.entity.table(),

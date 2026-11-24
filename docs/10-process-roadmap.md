@@ -538,3 +538,37 @@ interconnected with m1 and m0?"* — all 10 approved items implemented:
   `cargo xtask check` green — 19 gates (added `govern events`).
 - Docs: ADR-0025, doc 04 §4.6/§4.8, doc 05 §5.2/§5.13, doc 03 tree, data/README,
   code-map, changelog.
+
+## Seam governor + M0/M1/M2 optimization audit (2026-11-24, ADR-0026)
+
+Prompt: *"do something about the seams long term — like the governors… another batch of
+findings for m0/m1/m2… did you consider optimizations? are any applied? findable? consistent?"*
+
+**Long-term seam solution — `govern seams` (RULE-SEAM-001), 4 static rules + contract tests:**
+S1 risky deps only in allowed crates (rusqlite → storage/ledger/shared; fs2 → storage;
+sha2/hex → storage/ledger); S2 every `tx::post`/`post_with` in ledger/shared must map errors
+through `from_storage`; S3 literal SQL only touches the crate's own tables; S4 only storage
+constructs connections. Plus `crates/ledger/tests/seams.rs` (boundary contract tests).
+**Systemic bug this caught and fixed:** 8 of 11 `post_with` sites dropped engine BK-codes at
+the `StorageError::Foreign` boundary (→ BK-STORE-0001); `shared::into_storage` mapped action
+errors to BK-STORE-0003. All fixed; codes now survive (contract-tested: BK-LEDGER-0006,
+BK-ACTION-0001, BK-RECUR-0003 round-trip).
+
+**Second findings batch (M0/M1/M2):** bugs/gaps fixed — the seam bug above; missing covering
+indexes (v5); N+1 reads in `account_balances`/`expand_window`/`materialize_due` (batched);
+uncached statements on hot paths (`prepare_cached`). Open/parked (need later milestones):
+i18n lookup has no consumer yet (M3 UI); drafts dir is read by self-check but nothing writes
+drafts yet (M3); outbox replay marks rows one-by-one (kept — crash-safety first);
+`AfterCount` counts skipped occurrences as slots (documented semantics). No M0/M1/M2
+interconnection regressions found: session composition, boot-step sync test, error/locale
+parity, events registry, deps direction all govern-checked.
+
+**Optimization consistency answer:** optimizations live in exactly three findable places —
+schema migrations (indexes/pragmas), `data/perf-budgets.toml` + per-crate criterion benches
+(`govern perf`), and code hot paths (`prepare_cached`, batched queries). New budgets:
+`ledger_read_all_balances`, `ledger_trial_balance`, `schedule_expand_window`; new bench
+`ledger/benches/post_and_balances.rs`. `cargo xtask check` green — 20 gates (added
+`govern seams`).
+
+- Docs: ADR-0026, doc 04 §4.11 (RULE-SEAM-001), doc 03 optimization section, doc 10,
+  data/README, perf-budgets, code-map, changelog.

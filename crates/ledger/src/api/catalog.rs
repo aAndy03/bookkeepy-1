@@ -150,7 +150,8 @@ pub fn create_category(
             ],
         )?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 
@@ -218,7 +219,8 @@ pub fn create_tag(
             rusqlite::params![id.to_string(), name, now().to_string()],
         )?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 
@@ -243,7 +245,8 @@ pub fn create_party(
             rusqlite::params![id.to_string(), name, now().to_string()],
         )?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 

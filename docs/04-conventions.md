@@ -230,9 +230,17 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
 - `deps` — dependency direction (RULE-ARCH-001); `net` — HTTP only in `updater`/`rates`,
   host allowlist (RULE-NET-001); `lints`; `adr` — numbering/status; `perf` —
   `data/perf-budgets.toml` vs criterion benches; `errors` — registry ↔ code ↔ locales;
+  `events` — event-kind consts ↔ `data/events.toml`, no stray literals (RULE-EVT-001);
   `data` — primary data validates, ISO integrity (RULE-DATA-002/003); `ui` — every input has
   a placeholder key, every widget/variant declares only registered capability traits,
-  variants link to their source (RULE-UI-005/007); `docs` — see below; `meta` — see below.
+  variants link to their source (RULE-UI-005/007); `docs` — see below; `meta` — see below;
+  **`seams` — RULE-SEAM-001 (ADR-0026): cross-layer seams are guarded statically** —
+  S1 risky deps (rusqlite/fs2/sha2/hex only in their allowed crates), S2 every
+  `tx::post`/`tx::post_with` in ledger/shared maps errors through `from_storage` (BK-codes
+  survive the `StorageError::Foreign` boundary), S3 literal SQL touches only the crate's
+  own tables (storage: its tables + CREATE TRIGGER/INDEX guards; ledger: its 9; shared:
+  none — dynamic via the `Actionable` allowlist), S4 only storage constructs connections.
+  Paired with boundary contract tests (`crates/ledger/tests/seams.rs`).
 
 - **Metadata registries (RULE-GOV-001):** governors track, per engine/widget/crate — via
   code annotations (e.g. a `#[bookkeepy(meta…)]`-style attribute or per-crate manifest) —

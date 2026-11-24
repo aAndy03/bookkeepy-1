@@ -14,7 +14,7 @@ use crate::api::conn::Db;
 use crate::api::error::StorageError;
 
 /// Highest schema version this build knows.
-pub const MAX_KNOWN: i64 = 4;
+pub const MAX_KNOWN: i64 = 5;
 
 /// One migration. Append-only — never edit existing entries; "reverts" are compensating
 /// forward migrations (INV-DATA-001), proven by tests/migrations_flow.rs.
@@ -226,12 +226,31 @@ pub const MIGRATION_V4_HARDENING: Migration = Migration {
     "#,
 };
 
+/// M2-hardening optimizations — covering indexes for the hot query shapes
+/// (ADR-0025 audit): balances/`as_of` filter on `journal_entries.value_ts`, the outbox
+/// replay scans `published=0`, the job worker filters `state='queued' AND not_before`,
+/// tag pickers look up `tx_tags(tag_id)`, status filters on `transactions(status)`.
+/// Existing `postings_entry`/`postings_account`/`journal_entries_tx`/`journal_entries_reversal`
+/// already cover the join paths.
+pub const MIGRATION_V5_INDEXES: Migration = Migration {
+    version: 5,
+    name: "v5_indexes",
+    sql: r#"
+    CREATE INDEX IF NOT EXISTS journal_entries_value_ts ON journal_entries(value_ts);
+    CREATE INDEX IF NOT EXISTS outbox_published ON outbox(published);
+    CREATE INDEX IF NOT EXISTS jobs_state_notbefore ON jobs(state, not_before);
+    CREATE INDEX IF NOT EXISTS tx_tags_tag ON tx_tags(tag_id);
+    CREATE INDEX IF NOT EXISTS transactions_status ON transactions(status);
+    "#,
+};
+
 /// Ordered migrations. Append-only — never edit existing entries.
 pub const MIGRATIONS: &[Migration] = &[
     MIGRATION_V1,
     MIGRATION_V2_LEDGER,
     MIGRATION_V3_SCHEDULES,
     MIGRATION_V4_HARDENING,
+    MIGRATION_V5_INDEXES,
 ];
 
 /// Read the current schema version (0 if the meta table doesn't exist yet).

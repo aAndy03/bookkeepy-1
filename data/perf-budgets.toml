@@ -29,6 +29,27 @@ max = 20
 description = "validate + post a double-entry transaction in one SQLite transaction + events"
 
 [[budget]]
+id = "ledger_read_all_balances"
+unit = "ms"
+target = 5
+max = 15
+description = "one grouped query for ALL account balances (batched account_balances, ADR-0025) over a warm book"
+
+[[budget]]
+id = "ledger_trial_balance"
+unit = "ms"
+target = 5
+max = 15
+description = "per-currency trial balance over all postings (warm)"
+
+[[budget]]
+id = "schedule_expand_window"
+unit = "ms"
+target = 5
+max = 15
+description = "expand one schedule over a timeline window + join materialized txs in ONE query (ADR-0025)"
+
+[[budget]]
 id = "search_query"
 unit = "ms"
 target = 20

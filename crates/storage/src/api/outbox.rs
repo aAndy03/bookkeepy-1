@@ -61,7 +61,7 @@ fn row_to_envelope(row: &rusqlite::Row) -> rusqlite::Result<EventEnvelope> {
 /// Returns how many were published.
 pub fn publish_pending(db: &Db, bus: &Bus) -> Result<usize, StorageError> {
     db.with_conn(|c| {
-        let mut stmt = c.prepare(
+        let mut stmt = c.prepare_cached(
             "SELECT id, kind, occurred_at, actor, reason, payload FROM outbox WHERE published=0 ORDER BY rowid",
         )?;
         let rows = stmt.query_map([], row_to_envelope)?.collect::<Result<Vec<_>, _>>()?;

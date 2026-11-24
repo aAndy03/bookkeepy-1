@@ -260,7 +260,8 @@ pub fn post(
     tx::post_with(db, bus, &ev, |tx| {
         insert_in_tx(tx, id2, "entry", &new, None).map_err(crate::api::error::into_storage)?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 
@@ -351,7 +352,8 @@ pub fn reverse(
         insert_in_tx(tx, id2, "reversal", &new, Some(entry_id))
             .map_err(crate::api::error::into_storage)?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 

@@ -15,6 +15,7 @@ fn root() -> PathBuf {
 /// All governors, in tree order.
 const ALL: &[&str] = &[
     "data", "errors", "events", "adr", "docs", "deps", "net", "lints", "perf", "ui", "meta",
+    "seams",
 ];
 
 /// Run one governor, or all when `sub` is None. Non-zero exit if any fails.
@@ -66,6 +67,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
                 true
             }
             "meta" => meta(),
+            "seams" => seams(),
             other => {
                 eprintln!("govern {other}: unknown governor");
                 false
@@ -211,6 +213,243 @@ fn events() -> bool {
         println!(
             "govern events: PASS ({} kinds, registry == consts, no stray literals)",
             reg.len()
+        );
+    }
+    ok
+}
+
+/// Lines of a file with `#[cfg(test)]` modules elided (brace-counting state machine), so
+/// seam rules apply to shipped code only.
+fn non_test_lines(content: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut skipping = false;
+    let mut depth = 0i64;
+    let mut seen_open = false;
+    for line in content.lines() {
+        if skipping {
+            let opens = line.matches('{').count() as i64;
+            let closes = line.matches('}').count() as i64;
+            depth += opens - closes;
+            if opens > 0 {
+                seen_open = true;
+            }
+            if seen_open && depth <= 0 {
+                skipping = false;
+            }
+            continue;
+        }
+        if line.trim() == "#[cfg(test)]" {
+            skipping = true;
+            depth = 0;
+            seen_open = false;
+            continue;
+        }
+        out.push(line);
+    }
+    out
+}
+
+/// `govern seams` — RULE-SEAM-001 (ADR-0025): the cross-layer seams are guarded
+/// mechanically, so the bug classes found in the M2-hardening audit cannot recur:
+/// - **S1 risky deps**: `rusqlite` only in storage/ledger/shared; `fs2` only in storage;
+///   `sha2`/`hex` only in storage/ledger. No other crate may touch the DB driver.
+/// - **S2 boundary error mapping**: in ledger/shared, every `tx::post`/`tx::post_with`
+///   statement must route its error through `from_storage`, so engine BK-codes survive
+///   the `StorageError::Foreign` closure boundary.
+/// - **S3 table ownership**: a crate may only write/read its OWN tables in literal SQL.
+///   storage owns meta/schema_migrations/settings/ui_state/audit_log/outbox/jobs (plus
+///   CREATE TRIGGER/INDEX guard lines referencing ledger tables); ledger owns
+///   accounts/categories/tags/parties/tx_tags/journal_entries/postings/transactions/
+///   schedules; shared owns NONE (it acts through the `Actionable` allowlist, dynamic).
+/// - **S4 connection construction**: only storage may open connections (`Db::open`,
+///   `Connection::open`) outside test modules.
+fn seams() -> bool {
+    let crates = root().join("crates");
+    let mut files: Vec<PathBuf> = Vec::new();
+    collect_rs(&crates, &mut files);
+    let mut ok = true;
+
+    // S1 — risky external deps per crate (from Cargo.toml [dependencies])
+    let risky: &[(&str, &[&str])] = &[
+        (
+            "rusqlite",
+            &["bookkeepy-storage", "bookkeepy-ledger", "bookkeepy-shared"],
+        ),
+        ("fs2", &["bookkeepy-storage"]),
+        ("sha2", &["bookkeepy-storage", "bookkeepy-ledger"]),
+        ("hex", &["bookkeepy-storage", "bookkeepy-ledger"]),
+    ];
+    if let Ok(entries) = std::fs::read_dir(&crates) {
+        for c in entries.filter_map(|e| e.ok()) {
+            let manifest = c.path().join("Cargo.toml");
+            let Ok(content) = std::fs::read_to_string(&manifest) else {
+                continue;
+            };
+            let pkg = content
+                .lines()
+                .find_map(|l| {
+                    l.strip_prefix("name = ")
+                        .map(|s| s.trim_matches('"').to_string())
+                })
+                .unwrap_or_default();
+            for (dep, allowed) in risky {
+                // a risky dep must not be listed at all (any section) in a non-allowed crate
+                let used = content.lines().any(|l| {
+                    let t = l.trim();
+                    t.starts_with(&format!("{dep}.workspace")) || t.starts_with(&format!("{dep} ="))
+                });
+                if used && !allowed.contains(&pkg.as_str()) {
+                    eprintln!(
+                        "govern seams: FAIL (S1): {pkg} depends on {dep} but is not in the allowed set {allowed:?}"
+                    );
+                    ok = false;
+                }
+            }
+        }
+    }
+
+    // ownership table for S3
+    let mut owned: std::collections::HashMap<String, Vec<&str>> = std::collections::HashMap::new();
+    owned.insert(
+        "bookkeepy-storage".into(),
+        vec![
+            "meta",
+            "schema_migrations",
+            "settings",
+            "ui_state",
+            "audit_log",
+            "outbox",
+            "jobs",
+            "sqlite_master",
+        ],
+    );
+    owned.insert(
+        "bookkeepy-ledger".into(),
+        vec![
+            "accounts",
+            "categories",
+            "tags",
+            "parties",
+            "tx_tags",
+            "journal_entries",
+            "postings",
+            "transactions",
+            "schedules",
+        ],
+    );
+    owned.insert("bookkeepy-shared".into(), vec![]);
+
+    let sql_kw = [
+        "INSERT INTO ",
+        "IGNORE INTO ",
+        "UPDATE ",
+        "DELETE FROM ",
+        " FROM ",
+        " JOIN ",
+    ];
+    for f in &files {
+        // integration tests (tests/) and benches (benches/) are not shipped code
+        if f.components()
+            .any(|c| c.as_os_str() == "tests" || c.as_os_str() == "benches")
+        {
+            continue;
+        }
+        let Ok(content) = std::fs::read_to_string(f) else {
+            continue;
+        };
+        // crate package name: walk up from the file until a Cargo.toml is found
+        let mut dir = f.parent();
+        let pkg = loop {
+            match dir {
+                Some(d) if d.join("Cargo.toml").is_file() => {
+                    break std::fs::read_to_string(d.join("Cargo.toml"))
+                        .ok()
+                        .and_then(|c| {
+                            c.lines().find_map(|l| {
+                                l.strip_prefix("name = ")
+                                    .map(|s| s.trim_matches('"').to_string())
+                            })
+                        })
+                        .unwrap_or_default();
+                }
+                Some(d) => dir = d.parent(),
+                None => break String::new(),
+            }
+        };
+        let lines = non_test_lines(&content);
+        let joined = lines.join("\n");
+        // S2 — boundary error mapping in ledger/shared
+        if pkg == "bookkeepy-ledger" || pkg == "bookkeepy-shared" {
+            let mut rest = joined.as_str();
+            while let Some(idx) = rest
+                .find("tx::post_with(")
+                .or_else(|| rest.find("tx::post("))
+            {
+                let after = &rest[idx..];
+                // closure ends at the first 4-space-indented `})`
+                let end = after
+                    .find("\n    })")
+                    .map(|e| e + 80)
+                    .unwrap_or(after.len().min(4000));
+                let stmt = &after[..end.min(after.len())];
+                if !stmt.contains("from_storage") {
+                    eprintln!(
+                        "govern seams: FAIL (S2): {} calls tx::post(_with) without from_storage error mapping",
+                        f.display()
+                    );
+                    ok = false;
+                }
+                rest = &after[1..];
+            }
+        }
+        // S3 — table ownership (skip trigger/index/raise lines and dynamic format! SQL)
+        if let Some(allowed) = owned.get(&pkg) {
+            for line in &lines {
+                let t = line.trim_start();
+                if t.starts_with("//")
+                    || line.contains("CREATE TRIGGER")
+                    || line.contains("CREATE INDEX")
+                    || line.contains("CREATE UNIQUE")
+                    || line.contains("RAISE")
+                    || line.contains("format!")
+                {
+                    continue;
+                }
+                let mut rest: &str = line;
+                while let Some(kw) = sql_kw.iter().find_map(|k| rest.find(k).map(|i| (i, *k))) {
+                    let (i, k) = kw;
+                    let after = &rest[i + k.len()..];
+                    let ident: String = after
+                        .chars()
+                        .take_while(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == '_')
+                        .collect();
+                    if !ident.is_empty() && !allowed.contains(&ident.as_str()) {
+                        eprintln!(
+                            "govern seams: FAIL (S3): {} touches table '{ident}' but owns only {allowed:?}",
+                            f.display()
+                        );
+                        ok = false;
+                    }
+                    rest = after;
+                }
+            }
+        }
+        // S4 — only storage constructs connections (outside tests)
+        if pkg != "bookkeepy-storage" && pkg != "xtask" {
+            for line in &lines {
+                if line.contains("Connection::open(") || line.contains("Db::open(") {
+                    eprintln!(
+                        "govern seams: FAIL (S4): {} constructs a DB connection; only bookkeepy-storage may",
+                        f.display()
+                    );
+                    ok = false;
+                }
+            }
+        }
+    }
+    if ok {
+        println!(
+            "govern seams: PASS (S1 risky deps, S2 boundary from_storage, S3 table ownership, S4 connection construction)"
         );
     }
     ok

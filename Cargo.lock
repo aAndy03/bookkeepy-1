@@ -136,6 +136,7 @@ dependencies = [
  "bookkeepy-primary-data",
  "bookkeepy-shared",
  "bookkeepy-storage",
+ "criterion",
  "hex",
  "jiff",
  "proptest",

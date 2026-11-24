@@ -91,7 +91,7 @@ id = "xtask"
 path = "xtask"
 kind = "tool"
 status = "active"
-summary = "Governors, new-crate/new-adr scaffolders, hooks, doctor, check, licenses. Dev tool (allow unwrap/expect)."
+summary = "Governors (data, errors, events, adr, docs, deps, net, lints, perf, ui, meta, seams — RULE-GOV-001/RULE-SEAM-001), new-crate/new-adr scaffolders, hooks, doctor, check, licenses. Dev tool (allow unwrap/expect)."
 adr = []
 
 # Planned engines are registered when their crate is scaffolded (storage M1, ledger M2, …).

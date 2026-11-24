@@ -170,7 +170,8 @@ pub fn create(
         insert_in_tx(tx, id, name, ty, &cur, false, false)
             .map_err(crate::api::error::into_storage)?;
         Ok(())
-    })?;
+    })
+    .map_err(crate::api::error::from_storage)?;
     Ok(id)
 }
 
