@@ -241,6 +241,11 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
   own tables (storage: its tables + CREATE TRIGGER/INDEX guards; ledger: its 9; shared:
   none — dynamic via the `Actionable` allowlist), S4 only storage constructs connections.
   Paired with boundary contract tests (`crates/ledger/tests/seams.rs`).
+  `regressions` — **RULE-TEST-001**: every completed milestone/hardening/audit section in
+  doc 10 must name the tests that guard what it introduced (bugs, edge cases, seams,
+  optimizations, features). The rule of the repo: **nothing lands without a guard test that
+  fails without the change** — unit, integration, property, seam-contract, or bench; doc 09
+  lists the menu. `govern regressions` enforces the doc side mechanically.
 
 - **Metadata registries (RULE-GOV-001):** governors track, per engine/widget/crate — via
   code annotations (e.g. a `#[bookkeepy(meta…)]`-style attribute or per-crate manifest) —

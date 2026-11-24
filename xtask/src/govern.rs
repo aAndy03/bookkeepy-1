@@ -14,8 +14,19 @@ fn root() -> PathBuf {
 
 /// All governors, in tree order.
 const ALL: &[&str] = &[
-    "data", "errors", "events", "adr", "docs", "deps", "net", "lints", "perf", "ui", "meta",
+    "data",
+    "errors",
+    "events",
+    "adr",
+    "docs",
+    "deps",
+    "net",
+    "lints",
+    "perf",
+    "ui",
+    "meta",
     "seams",
+    "regressions",
 ];
 
 /// Run one governor, or all when `sub` is None. Non-zero exit if any fails.
@@ -68,6 +79,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
             }
             "meta" => meta(),
             "seams" => seams(),
+            "regressions" => regressions(),
             other => {
                 eprintln!("govern {other}: unknown governor");
                 false
@@ -450,6 +462,56 @@ fn seams() -> bool {
     if ok {
         println!(
             "govern seams: PASS (S1 risky deps, S2 boundary from_storage, S3 table ownership, S4 connection construction)"
+        );
+    }
+    ok
+}
+
+/// `govern regressions` — RULE-TEST-001 (ADR-0026): every completed milestone / hardening /
+/// audit section in `docs/10-process-roadmap.md` must name the tests guarding what it
+/// introduced (bugs, edge cases, seams, optimizations, features). New sections without a
+/// "test" mention fail the gate.
+fn regressions() -> bool {
+    let path = root().join("docs/10-process-roadmap.md");
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        eprintln!("govern regressions: FAIL: cannot read {}", path.display());
+        return false;
+    };
+    let mut sections: Vec<(String, String)> = Vec::new();
+    let mut cur_head = String::new();
+    let mut cur_body = String::new();
+    for line in content.lines() {
+        if let Some(h) = line.strip_prefix("## ") {
+            if !cur_head.is_empty() {
+                sections.push((cur_head.clone(), cur_body.clone()));
+            }
+            cur_head = h.to_string();
+            cur_body = String::new();
+        } else {
+            cur_body.push_str(line);
+            cur_body.push('\n');
+        }
+    }
+    if !cur_head.is_empty() {
+        sections.push((cur_head, cur_body));
+    }
+    let mut ok = true;
+    let mut counted = 0usize;
+    for (head, body) in &sections {
+        let hl = head.to_lowercase();
+        if hl.contains("completed") || hl.contains("hardening") || hl.contains("audit") {
+            counted += 1;
+            if !body.to_lowercase().contains("test") {
+                eprintln!(
+                    "govern regressions: FAIL: doc 10 section \"{head}\" introduces work without naming its guard tests (RULE-TEST-001)"
+                );
+                ok = false;
+            }
+        }
+    }
+    if ok {
+        println!(
+            "govern regressions: PASS ({counted} completed/hardening/audit sections in doc 10 all name guard tests)"
         );
     }
     ok

@@ -19,6 +19,16 @@
 Levels: unit (per crate) → integration (`tests/`) → golden → property. Money-touching code
 requires a property test before merge.
 
+## Regression guard (RULE-TEST-001, ADR-0026)
+
+Every bug fix, edge case, gap/seam, introduced optimization, and feature **must land with a
+test that would fail without the change** (unit / integration / property / seam-contract /
+bench — pick per doc menu above). The test's name should say what it guards (e.g.
+`double_materialization_is_rejected`, `engine_error_code_survives_boundary`). Milestone
+sections in doc 10 list their guard tests; `cargo xtask govern regressions` fails CI if a
+completed section doesn't. Rationale: bugs and seams are permanent residents of any system —
+the only durable defense is a guard that fires automatically.
+
 ## Lints (workspace `Cargo.toml`)
 
 - `unsafe_code = "forbid"`; `missing_docs = "warn"` (CI escalates to deny).
