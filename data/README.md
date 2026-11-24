@@ -13,8 +13,9 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 | `load-policies.toml` | What loads when; hot/warm/cold tiers; prefetch rules; usage-tracking scope | Project-maintained |
 | `perf-budgets.toml` | Performance budgets asserted in CI by criterion benches + `xtask govern perf` | Project-maintained |
 
-Planned (add when the feature lands, each with a `[source]` header): `theme/*.toml` (UI
-variables), `countries.toml` (ISO 3166), `languages.toml` (ISO 639), `category-presets.toml`,
+Planned (add when the feature lands, each with a `[source]` header): `shortcuts.toml`
+(keyboard map — SSOT, remappable, RULE-INPUT-001), `theme/*.toml` (UI variables/tokens),
+`countries.toml` (ISO 3166), `languages.toml` (ISO 639), `category-presets.toml`,
 `default-accounts.toml`.
 
 Rules: regenerate external data only from official sources; never hand-edit codes/minor

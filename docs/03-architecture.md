@@ -39,6 +39,7 @@ bookkeepy-1/                     workspace root
 │   ├── app-services/            composition root + brokers; the `api` the UI uses
 │   └── ui/                      gpui-kit views, widgets (Figma-model), presenters, theme
 ├── app/                         thin binary: window, DI, run; **single instance + focus IPC** (RULE-APP-001, ADR-0016)
+├── gallery/                     component gallery binary (RULE-UI-006): ALL gpui-kit styled components + our variants, atomic-design arranged
 ├── xtask/                       governor tree (doc 04 §4.9)
 ├── data/                        primary data (currencies, errors, defaults, load-policies, perf-budgets, theme…)
 ├── tests/                       integration + old-version fixtures (upgrade-path CI)
@@ -126,11 +127,14 @@ Interface state (window geometry per display, last view, filters, drafts…) per
 `ui_state` table via one `ui-state` module, with intuitive per-view and global clearing.
 Never blocks, never touches posted/audited data. Details: doc 04 §4.9.
 
-## UI stack (ADR-0007)
+## UI stack (ADR-0007, ADR-0017)
 
 `gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }` — the single UI dependency;
-all styled components catalog-first; our widgets follow the Figma model (components +
-variables + variants linked to SSOT, doc 04 §4.8) on top of gpui-kit's styled components.
+all styled components catalog-first. Our interface is structured by **Atomic Design**
+(atoms→molecules→organisms→templates→pages) with the Figma model on top (variables = theme
+tokens in `data/theme/`, variants = capability-trait toggles linked to the SSOT component),
+a localized placeholder on every input, and a `gallery` binary showcasing everything. Full
+spec: doc 04 §4.9.
 
 ## Search & storage (ADR-0005/0006)
 

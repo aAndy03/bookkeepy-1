@@ -1,7 +1,8 @@
 # 02 — Feature inventory (user-facing)
 
-Features are grouped by domain. Each domain maps to one crate/slice and one "engine" under
-doc 04 conventions. "User sees" = surface; "Engine does" = hidden machinery.
+Features are grouped by domain. Each domain maps to one crate/**slice** composed of many
+engines — and an engine is itself composed of parts that can be engines (shared or
+localized; doc 04 §4.2). "User sees" = surface; "Engine does" = hidden machinery.
 
 ## F1 — Accounts
 - **User sees:** accounts (cash, bank, card, wallet, loan…): name, type (asset/liability),
