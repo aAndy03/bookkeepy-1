@@ -18,7 +18,7 @@ bookkeepy-1/                     workspace root
 │   ├── bus/                     typed event bus + durable local outbox (crash-safe reactions)
 │   ├── jobs/                    engine_jobs + broker_jobs: durable job state machines, auto-retry, pause/resume/cancel (RULE-JOB-001, ADR-0015)
 │   ├── reminders/               local reminders/notifications engine (F16) — dismissible, never blocking
-│   ├── shared/                  SHARED ENGINES (RULE-SHARED-001): rename/archive/duplicate/delete-as-reversal/move/tag/attach/note/status/bulk-apply — implemented once, generic over entity, localized per feature via adapters
+│   ├── shared/                  SHARED ENGINES (RULE-SHARED-001, registry in doc 04 §4.2): actions/ (rename, archive, duplicate, delete-as-reversal, move, merge, tag, attach, note, status, pin, color/icon, order, export-selection, bulk-apply…) · helpers/ (validate, parse/format, query, paginate, time, diff, selection, undo, i18n, theme, notify, export) · guards/ (ledger_balance, hash_chain, audit_immutable, money, iso_ref, schema) — implemented once, generic over entity, localized via adapters
 │   ├── timeline/                engine_timeline: the single source of truth for the global time scope + filters + compare mode (RULE-TL-001, ADR-0019)
 │   ├── storage/                 rusqlite: connection (background thread), migrations, repositories, hash-chained journal
 │   ├── audit/                   append-only audit log + hash-chain verification

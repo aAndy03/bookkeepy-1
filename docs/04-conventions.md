@@ -59,17 +59,30 @@ crates/<domain>/
 - **Engine roles:** domain engines, helper engines (`helper_*`, e.g. validation), guard
   engines (`guard_*`), brokers (`broker_*` — the only engine↔engine path), pipelines
   (`pipeline_*`, staged + resumable).
-- **Shared engines (RULE-SHARED-001):** generic actions are implemented **once** in the
-  shared crate (`crates/shared/`, e.g. `shared::actions`) and *localized* per feature via
-  thin variant/adapter files in the feature crate — never re-implemented per feature.
-  Before writing any action in a feature, check the shared registry below; a new generic
-  action goes into `crates/shared/` (generic over entity kind), and `govern meta` fails if
-  a feature re-implements a registered shared action. Initial registry: `rename`,
-  `archive`/`restore`, `duplicate`, `delete` (as reversal for posted entities, hard delete
-  only for non-audited ones), `move`, `add_tag`/`remove_tag`, `attach`, `set_note`,
-  `change_status`, `bulk_apply`. Each is generic over the entity via a trait, so the same
-  engine serves accounts, transactions, categories, profiles-metadata, etc.
+- **Shared engines (RULE-SHARED-001):** anything generic is implemented **once** in the
+  shared crate `crates/shared/` and *localized* per feature via thin adapter/variant files in
+  the feature crate — never re-implemented per feature. Before writing anything in a feature,
+  check the shared registry below; a new generic capability goes into `crates/shared/`
+  (generic over entity kind via an `ActionableEntity`-style trait). `govern meta` fails if a
+  feature re-implements a registered shared engine without an adapter marker. Localization
+  means: the shared engine owns the *rule* (audit, undo-scope, validation pipeline, job
+  wrapping); the feature adapter owns only the *entity-specific constraint* (e.g. "account
+  names must be unique in this profile") and the localized strings.
 - `api/` is the contract; internal refactors never change it without an ADR.
+
+### Shared engine registry (SSOT — doc 04 §4.2; grow it, never duplicate it)
+
+`crates/shared/` is organized as `actions/`, `helpers/`, `guards/`:
+
+| Category | Shared engines | Why shared |
+|---|---|---|
+| **actions/** (generic over entity; audited; job-wrapped for bulk) | `rename` · `archive`/`restore` · `duplicate` · `delete` (reversal for posted/audited entities, hard delete only for non-audited) · `move` (to another parent/container) · `merge` (e.g. merge two payees/categories — re-points all references, audited) · `add_tag`/`remove_tag` · `attach`/`detach` · `set_note` · `change_status` · `pin`/`unpin` · `set_color_icon` · `set_order` (reorder within a list) · `export_selection` · `link`/`unlink` (e.g. reversal links) · `bulk_apply` (any of the above over a selection, one job) | identical semantics for every entity kind; one audit/undo/job behavior; SSOT |
+| **helpers/** | `validate` (format validators: text, algebra-number, date, currency code vs primary data, color, id) · `parse`/`format` (locale-aware pair — the SSOT for how money/dates are read and displayed) · `query` (generic filter/sort over any list; feeds tables + the timeline filters; built on the search DSL) · `paginate` (page/virtualize per `data/load-policies.toml`) · `time` (scope math: day/week/month/trimester/year/custom, DST-safe via jiff; feeds the timeline) · `diff` (compare two datasets/scopes — timeline compare mode) · `selection` (bulk-selection state in `ui_state`) · `undo` (non-audited state only, RULE-UNDO-001) · `i18n` (locale catalogs, EN fallback, message/placeholder lookup) · `theme` (tokens from `data/theme/*.toml`) · `notify` (severity routing → toast / dialog / fatal + copy-diagnostic, RULE-ERR) · `export` (versioned serialization, doc 05 §5.11) | one behavior everywhere; prevents per-feature drift of formatting, filtering, parsing |
+| **guards/** | `ledger_balance` (debits = credits) · `hash_chain` (tamper evidence) · `audit_immutable` (no UPDATE/DELETE paths) · `money` (no floats, minor units, ISO codes) · `iso_ref` (primary-data referential integrity, RULE-DATA-002) · `schema` (migrations applied) | invariants enforced in one place, reused by every crate's `guard.rs` |
+
+Example of localization: renaming an account is `shared::actions::rename` + an adapter
+supplying the uniqueness check; renaming a profile's display name is the *same* engine + a
+different adapter. The engine owns the rule; the adapter owns the constraint and strings.
 
 ## 4.3 Validation (RULE-VAL-001)
 
