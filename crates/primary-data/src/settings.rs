@@ -58,6 +58,23 @@ pub fn get() -> &'static Settings {
     &file().settings
 }
 
+/// All known setting keys — the SSOT list (RULE-SSOT-001). The profile `settings` table
+/// may only store overrides for these keys; `bookkeepy-storage` validates against this
+/// (BK-DATA-0003 on an unknown key).
+pub fn keys() -> &'static [&'static str] {
+    &[
+        "theme",
+        "language",
+        "date_format",
+        "number_format",
+        "first_day_of_week",
+        "timezone",
+        "default_currency",
+        "rates_source_priority",
+        "show_currency_code",
+    ]
+}
+
 /// Structural + referential validation (RULE-DATA-002).
 pub fn validate_structure() -> Result<(), PrimaryDataError> {
     let s = get();

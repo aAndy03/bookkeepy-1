@@ -26,6 +26,9 @@ pub struct SelfCheckReport {
     pub outbox_pending: i64,
     /// Draft files found in `<root>/drafts/` (crash recovery candidates).
     pub drafts: Vec<String>,
+    /// Note about the startup auto backup (None if it was not attempted/failed silently —
+    /// set by `session::open_session`; backup failure never blocks startup, RULE-UX-001).
+    pub backup_note: Option<String>,
 }
 
 impl SelfCheckReport {
@@ -58,6 +61,7 @@ pub fn run(db: &Db, root: &Path) -> Result<SelfCheckReport, StorageError> {
         audit_broken_at,
         outbox_pending,
         drafts,
+        backup_note: None,
     })
 }
 

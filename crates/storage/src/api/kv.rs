@@ -43,9 +43,15 @@ pub fn settings_get(db: &Db, key: &str) -> Result<Option<String>, StorageError> 
     })
 }
 
-/// Write a settings override (upsert; key must exist in `data/settings-defaults.toml` —
-/// enforced by the caller in M3; the governor validates the defaults file itself).
+/// Write a settings override (upsert). The key must exist in the SSOT list
+/// `data/settings-defaults.toml` (`primary_data::settings::keys()`); an unknown key is
+/// rejected with BK-DATA-0003 so the defaults file stays the single source of truth.
 pub fn settings_set(db: &Db, key: &str, value: &str) -> Result<(), StorageError> {
+    if !bookkeepy_primary_data::settings::keys().contains(&key) {
+        return Err(StorageError::UnknownSetting {
+            key: key.to_string(),
+        });
+    }
     db.with_conn(|c| {
         c.execute(
             "INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -77,5 +83,8 @@ mod tests {
         assert_eq!(settings_resolve(&db, "theme", "system").unwrap(), "system");
         settings_set(&db, "theme", "dark").unwrap();
         assert_eq!(settings_resolve(&db, "theme", "system").unwrap(), "dark");
+        // unknown keys are rejected against the SSOT (BK-DATA-0003)
+        let err = settings_set(&db, "no_such_key", "x").unwrap_err();
+        assert_eq!(err.code(), "BK-DATA-0003");
     }
 }

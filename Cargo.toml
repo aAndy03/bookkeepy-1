@@ -41,8 +41,10 @@ bookkeepy-build-info = { path = "crates/build-info" }
 bookkeepy-contracts = { path = "crates/contracts" }
 bookkeepy-bus = { path = "crates/bus" }
 bookkeepy-profile = { path = "crates/profile" }
-# Declared on first use (cargo 1.100 warns on unused workspace deps): bookkeepy-diagnostics,
-# bookkeepy-logging, bookkeepy-i18n get their path entries here when first depended on.
+bookkeepy-logging = { path = "crates/logging" }
+bookkeepy-diagnostics = { path = "crates/diagnostics" }
+# bookkeepy-i18n gets its path entry here on first use by another crate (cargo 1.100 warns
+# on unused workspace deps).
 # Foundation (in use now)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

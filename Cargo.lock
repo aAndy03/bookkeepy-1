@@ -121,6 +121,7 @@ dependencies = [
 name = "bookkeepy-i18n"
 version = "0.1.0"
 dependencies = [
+ "bookkeepy-core",
  "bookkeepy-primary-data",
 ]
 
@@ -165,6 +166,9 @@ dependencies = [
  "bookkeepy-bus",
  "bookkeepy-contracts",
  "bookkeepy-core",
+ "bookkeepy-diagnostics",
+ "bookkeepy-logging",
+ "bookkeepy-primary-data",
  "bookkeepy-profile",
  "fs2",
  "hex",

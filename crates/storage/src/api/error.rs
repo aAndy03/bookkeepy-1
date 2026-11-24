@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Storage errors — every variant carries a registered BK-code (RULE-ERR-002) with a
-//! message in every locale. Codes: BK-STORE-0001..0006, BK-DATA-0002 (downgrade).
+//! message in every locale. Codes: BK-STORE-0001..0006, BK-DATA-0002 (downgrade),
+//! BK-DATA-0003 (unknown settings key), BK-PROFILE-0001 / BK-LOG-0001 (session composition).
 
 use std::path::PathBuf;
 
@@ -56,6 +57,19 @@ pub enum StorageError {
         /// Sequence where verification failed.
         seq: i64,
     },
+    /// Profile registry failure during session composition (BK-PROFILE-0001).
+    #[error("profile error: {0}")]
+    Profile(#[from] bookkeepy_profile::ProfileError),
+    /// Logging init failure during session composition (BK-LOG-0001, warning severity —
+    /// the session continues without file logs, never blocks, RULE-UX-001).
+    #[error("logging init failed: {0}")]
+    Log(#[from] bookkeepy_logging::LogError),
+    /// A settings key not present in `data/settings-defaults.toml` (BK-DATA-0003).
+    #[error("unknown settings key {key:?} (BK-DATA-0003)")]
+    UnknownSetting {
+        /// The offending key.
+        key: String,
+    },
 }
 
 impl StorageError {
@@ -69,6 +83,9 @@ impl StorageError {
             StorageError::LockHeld => "BK-STORE-0004",
             StorageError::Backup { .. } => "BK-STORE-0005",
             StorageError::AuditChainBroken { .. } => "BK-STORE-0006",
+            StorageError::Profile(_) => "BK-PROFILE-0001",
+            StorageError::Log(_) => "BK-LOG-0001",
+            StorageError::UnknownSetting { .. } => "BK-DATA-0003",
         }
     }
 }

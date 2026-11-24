@@ -109,5 +109,5 @@ id = "storage"
 path = "crates/storage"
 kind = "crate"
 status = "active"
-summary = "rusqlite storage engine: WAL conn, forward-only migrations + downgrade refusal, durable outbox->bus, audit hash chain, backup/verify/restore, single-instance lock, self-check, ui_state/settings KV (M1, ADR-0005)"
+summary = "rusqlite storage engine: WAL conn, forward-only migrations + downgrade refusal, durable outbox->bus, audit hash chain, local live backup/verify/restore/prune, single-instance lock, self-check, ui_state/settings KV, jobs state machine, atomic tx::post, session::open_session composition root (M1, ADR-0005)"
 adr = ["ADR-0005"]

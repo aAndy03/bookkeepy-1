@@ -28,8 +28,30 @@ rounding account").
   background thread (RULE-ASYNC-001); never locked exclusively; single open profile per
   process (RULE-APP-001).
 - Migrations: numbered SQL files, applied in a transaction, recorded in `user_version` +
-  `schema_migrations`. Every migration tested up *and* down on fixtures.
-- Backups: `VACUUM INTO` snapshots + restore verification (`quick_check` + hash chain).
+  `schema_migrations`. Every migration tested up *and* down on fixtures. M1 reality: the
+  migration list is append-only **in code** (`schema.rs`), one transaction per run,
+  `meta.schema_version` + `schema_migrations` table, downgrade refusal (above).
+- Backups (M1, code is source of truth): **local live backup** via rusqlite's backup API —
+  "live" means the source DB stays open and usable during the copy; it is purely local and
+  fully offline (no network ever). Snapshots land in `backups/`, are verified on creation
+  (`PRAGMA integrity_check` + audit-chain verify) and on restore; restore replaces the DB
+  file and must run with no open handle (caller holds the single-instance lock). The
+  session takes an `auto-<timestamp>.db` backup on every open and prunes to
+  `KEEP_BACKUPS = 10` (timestamped names sort chronologically).
+- Session composition (M1): `storage::session::open_session(data_dir, profile_id)` wires
+  registry → roots → lock → DB → logging/panic hook (once per process) → jobs resume →
+  self-check → outbox replay → auto backup → `registry.set_active`, and returns one
+  `Session { roots, db, bus, report, lock }`. Posting an event is atomic:
+  `tx::post(db, bus, ev)` writes outbox + audit in ONE transaction, commits, then publishes
+  to the bus (crash between commit and publish is healed by `publish_pending` on next
+  start — exactly-once).
+- Jobs (RULE-JOB-001): durable `jobs` table state machine
+  queued → running → done | failed (re-queue until `max_attempts`) | paused/cancelled;
+  startup driver `resume_pending` re-queues interrupted `running` rows. WAL is checkpointed
+  every 1000 pages (`wal_autocheckpoint`) so the file stays small between backups.
+- `settings` overrides are validated against the SSOT key list
+  (`data/settings-defaults.toml` via `primary_data::settings::keys()`); unknown keys are
+  rejected with BK-DATA-0003.
 
 ### Seamless, long-lived data (points 14–15, INV-DATA-001)
 

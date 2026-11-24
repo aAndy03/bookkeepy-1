@@ -13,4 +13,5 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+bookkeepy-core.workspace = true
 bookkeepy-primary-data.workspace = true

@@ -7,27 +7,28 @@
 use bookkeepy_bus::Bus;
 use bookkeepy_contracts::{Actor, EventEnvelope};
 use bookkeepy_core::time::Timestamp;
+use rusqlite::Connection;
 
 use crate::api::conn::Db;
 use crate::api::error::StorageError;
 
-/// Persist an envelope in the outbox (call inside the same transaction as the side effect).
-pub fn enqueue(db: &Db, ev: &EventEnvelope) -> Result<(), StorageError> {
-    db.with_conn(|c| {
-        c.execute(
-            "INSERT OR IGNORE INTO outbox (id, kind, occurred_at, actor, reason, payload, published)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0)",
-            rusqlite::params![
-                ev.id.to_string(),
-                ev.kind,
-                ev.occurred_at.to_string(),
-                serde_json::to_string(&ev.actor).unwrap_or_default(),
-                ev.reason,
-                ev.payload.to_string(),
-            ],
-        )?;
-        Ok(())
-    })
+/// Persist an envelope in the outbox. Takes the connection directly so it can run inside
+/// an explicit transaction together with the audited side effect (`tx::post`, ADR-0009);
+/// `&Transaction` derefs to `&Connection`.
+pub fn enqueue(conn: &Connection, ev: &EventEnvelope) -> Result<(), StorageError> {
+    conn.execute(
+        "INSERT OR IGNORE INTO outbox (id, kind, occurred_at, actor, reason, payload, published)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0)",
+        rusqlite::params![
+            ev.id.to_string(),
+            ev.kind,
+            ev.occurred_at.to_string(),
+            serde_json::to_string(&ev.actor).unwrap_or_default(),
+            ev.reason,
+            ev.payload.to_string(),
+        ],
+    )?;
+    Ok(())
 }
 
 fn row_to_envelope(row: &rusqlite::Row) -> rusqlite::Result<EventEnvelope> {
@@ -105,7 +106,7 @@ mod tests {
             "test",
             serde_json::json!({"x":1}),
         );
-        enqueue(&db, &ev).unwrap();
+        db.with_conn(|c| enqueue(c, &ev)).unwrap();
         assert_eq!(pending_count(&db).unwrap(), 1);
 
         assert_eq!(publish_pending(&db, &bus).unwrap(), 1);

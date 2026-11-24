@@ -328,7 +328,7 @@ README badges (license + toolchain + CI-minutes note).
   after commit (ADR-0009 split is now real).
 - `audit`: sha256 hash-chained append-only log; UPDATE/DELETE rejected by triggers; `verify`
   detects tampering (BK-STORE-0006).
-- `backup`: online backup API → `backups/`, verify (integrity_check + audit chain), restore.
+- `backup`: local live backup (rusqlite backup API; source stays usable, fully offline) → `backups/`, verify (integrity_check + audit chain), restore.
 - `lock`: single-instance `app.lock` (fs2), second launch → BK-STORE-0004 (app shell focuses window).
 - `selfcheck`: startup report (integrity, audit chain, pending outbox, drafts) — never blocks.
 - `kv`: `ui_state` + `settings` tables; settings resolve = user override over primary-data defaults.
@@ -341,3 +341,44 @@ Findings: rusqlite `Backup::new` needs `&mut` dest and `run_to_completion` takes
 callback; `Connection::transaction` needs `&mut` (so `with_conn` hands out `&mut`);
 file copies of a WAL DB must be preceded by `wal_checkpoint(TRUNCATE)`; restore must happen
 with no open handle (caller holds the lock).
+
+### M1 addendum (2026-11-24) — interconnection of M0/M1, terminology, new surfaces
+
+Prompt: *"why 'online backup'? what else could M1 account for? make M0+M1 interconnected."*
+
+- **Terminology (fintecheng/doc-05 aligned):** "online backup" was ambiguous — SQLite's
+  "online backup API" only means the source DB stays usable during the copy. Bookkeepy's
+  backups are **local live backups**: purely local, fully offline, no network (RULE-NET-001:
+  the only network uses remain app updates + rates packages). All docs/code now say
+  "local live backup".
+- **`session::open_session` (composition root):** one call wires the whole M0+M1 stack —
+  `Registry::load` → profile lookup → `ProfileRoots` → single-instance lock →
+  `Db::open_profile` (pragmas incl. `wal_autocheckpoint=1000` + migrations) → logging +
+  panic hook (once per process) → `jobs::resume_pending` → self-check → outbox replay →
+  auto local live backup + prune (`KEEP_BACKUPS=10`) → `registry.set_active`. Returns
+  `Session { data_dir, roots, profile, db, bus, report, _lock }`. Lock contention →
+  BK-STORE-0004, app shell focuses the existing window (ADR-0016). Nothing recoverable ever
+  blocks (RULE-UX-001): logging and auto-backup are best-effort, reported in
+  `SelfCheckReport.backup_note`.
+- **Atomic posting (`tx::post`):** outbox row + audit row in ONE transaction, commit, then
+  publish to the bus; `outbox::enqueue` now takes `&Connection` (a `&Transaction` derefs to
+  it) so it runs inside the posting transaction. Crash between commit and publish is healed
+  by `publish_pending` at next startup — exactly-once at app level.
+- **Durable jobs (`jobs`, RULE-JOB-001):** state machine
+  queued→running→done|failed(re-queue until `max_attempts`)|paused|cancelled, with
+  `resume_pending` crash-recovery driver; user-facing pause/resume/cancel + manual retry of
+  `failed` jobs (surfaced, never blocking).
+- **Settings SSOT enforcement:** `kv::settings_set` validates the key against
+  `primary_data::settings::keys()` (from `data/settings-defaults.toml`); unknown key →
+  new code **BK-DATA-0003** (+ en/ro locales).
+- **i18n error text:** `bookkeepy_i18n::error_text(locale, code)` maps any BK-code through
+  `data/errors.toml`'s `i18n_key` to localized text (unknown code returned as-is, copyable).
+- New edges (govern deps): storage → primary-data, logging, diagnostics. New workspace path
+  deps declared on first use: bookkeepy-logging, bookkeepy-diagnostics.
+- Tests: 12 storage unit tests + `tests/session_flow.rs` end-to-end (open → post →
+  crash-sim drop → reopen → audit verifies, outbox empty, ui_state persisted, backups
+  pruned). Full `cargo xtask check` green (fmt, clippy -D warnings, tests, govern ×10,
+  deny).
+- Findings: `Result::unwrap_err` needs `T: Debug` (manual `Debug` for `Session`); global
+  tracing subscriber can be set once per process (session guards logging with a
+  `Mutex<Option<LogGuard>>` static); clippy `manual_range_contains` denies `a >= 1 && a <= n`.

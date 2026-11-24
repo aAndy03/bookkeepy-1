@@ -8,4 +8,4 @@
 
 pub mod api;
 
-pub use api::{Locale, t, t_with};
+pub use api::{Locale, error_text, t, t_with};

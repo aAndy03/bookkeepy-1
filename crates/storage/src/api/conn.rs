@@ -44,6 +44,9 @@ impl Db {
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.pragma_update(None, "busy_timeout", 5000)?;
+        // Checkpoint the WAL back into the main DB every ~1000 pages so the file never
+        // grows unbounded between backups and restores stay small (doc 05 §5.4).
+        conn.pragma_update(None, "wal_autocheckpoint", 1000)?;
         let db = Db {
             conn: Mutex::new(conn),
         };

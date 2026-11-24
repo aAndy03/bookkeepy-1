@@ -322,6 +322,8 @@ fn deps() -> bool {
             "bookkeepy-bus",
             "bookkeepy-profile",
             "bookkeepy-primary-data",
+            "bookkeepy-logging",
+            "bookkeepy-diagnostics",
         ],
     );
     allowed.insert("xtask", vec!["bookkeepy-core", "bookkeepy-primary-data"]);
