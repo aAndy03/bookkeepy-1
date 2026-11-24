@@ -11,10 +11,10 @@
 //!    [`gpui_kit::component::Sizable`] and `rounded` APIs. Heights come from the
 //!    `data/theme/spacing.toml` grid (x5/x6/x8/x10 — the same chips), radii from
 //!    `radii.toml`: never a raw px in code.
-//! 2. **Solid functional buttons** — gpui's functional variants are soft (well + tint,
-//!    mapped by the bridge). The design's solid commits (destructive/positive confirms)
-//!    have no variant seat, so they ride the public `Styled` instance refinement, which
-//!    gpui-kit applies after its variant paints.
+//! 2. **The danger pressed fill** — gpui's functional variants render the rest states
+//!    (the calm well + tint ink, mapped by the bridge); the design's "solid red when
+//!    pressed" has no variant seat, so it rides the public `Styled` instance refinement,
+//!    which gpui-kit applies after its variant paints.
 //!
 //! No value here originates in code: every color resolves through the active theme mode's
 //! `data/theme/colors.toml` tokens; a corrupted token degrades to the component's own
@@ -114,42 +114,17 @@ fn solid_fill(
     button
 }
 
-/// The design's solid brand commit — fill `accent`, ink `on_accent`
-/// (ATOMS · 01 primary row). The theme's `primary` variant already paints this; the
-/// builder exists for mixed constructs (dropdown splits, custom layouts) that need the
-/// solid on the neutral variant's shape.
-pub fn solid_accent(button: Button, mode: Mode) -> Button {
-    let t = colors(mode);
-    solid_fill(
-        button,
-        ButtonVariant::Primary,
-        token_hsla(&t.accent),
-        token_hsla(&t.on_accent),
-    )
-}
-
-/// The design's solid destructive confirm — fill `danger`, ink `on_accent`
-/// (ATOMS · 01 destructive row). gpui's danger variant is soft (well + tint);
-/// this is the solid seat the variant API does not carry.
+/// The design's pressed danger — solid red with the white glyph (ATOMS · 01: danger is
+/// "calm until touched; subtle at rest, solid only when pressed"). gpui's `danger()`
+/// renders the calm rest state; this paints the pressed fill for pressed previews and
+/// confirm-destruct flows that must start loud.
 pub fn solid_danger(button: Button, mode: Mode) -> Button {
     let t = colors(mode);
     solid_fill(
         button,
         ButtonVariant::Danger,
         token_hsla(&t.danger),
-        token_hsla(&t.on_accent),
-    )
-}
-
-/// The design's solid positive confirm — fill `success`, ink `on_accent`.
-/// The mirror of [`solid_danger`] for complete-then-commit flows.
-pub fn solid_success(button: Button, mode: Mode) -> Button {
-    let t = colors(mode);
-    solid_fill(
-        button,
-        ButtonVariant::Success,
-        token_hsla(&t.success),
-        token_hsla(&t.on_accent),
+        token_hsla(&t.on_solid),
     )
 }
 

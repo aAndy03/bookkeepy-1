@@ -84,6 +84,14 @@ pub struct SemanticColors {
     pub bg_control_hover: String,
     /// Dropdown/menu/calendar panels (MOLECULES · 01/03).
     pub bg_popover: String,
+    /// The inverted primary control — light fill on the dark theme (ATOMS · 01).
+    pub bg_invert: String,
+    /// Hover/press of the inverted fill — the highest state is the strongest.
+    pub bg_invert_hover: String,
+    /// Ink on the inverted fill.
+    pub on_invert: String,
+    /// Ink on solid functional fills — white in both modes (ATOMS · 01 danger pressed).
+    pub on_solid: String,
     /// Modal scrim (black @ 60%).
     pub overlay: String,
     /// Default body text.
@@ -174,6 +182,10 @@ impl SemanticColors {
             ("bg_control", &self.bg_control),
             ("bg_control_hover", &self.bg_control_hover),
             ("bg_popover", &self.bg_popover),
+            ("bg_invert", &self.bg_invert),
+            ("bg_invert_hover", &self.bg_invert_hover),
+            ("on_invert", &self.on_invert),
+            ("on_solid", &self.on_solid),
             ("overlay", &self.overlay),
             ("fg", &self.fg),
             ("fg_primary", &self.fg_primary),

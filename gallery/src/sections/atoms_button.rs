@@ -9,9 +9,7 @@ use gpui_kit::component::link::Link;
 use gpui_kit::component::{Disableable as _, IconName, Selectable as _};
 use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, ParentElement as _, Window};
 
-use bookkeepy_ui::api::language::{
-    ControlSize, button_size, solid_accent, solid_danger, solid_success,
-};
+use bookkeepy_ui::api::language::{ControlSize, button_size, solid_danger};
 
 use crate::app::{Gallery, tr};
 use crate::sections::Layer;
@@ -48,16 +46,21 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.button.variants",
+                    // The design's button set (ATOMS · 01): primary inverts (light
+                    // fill, dark ink — mapped in the theme bridge), secondary is a step
+                    // lighter than its surface, outline is the bordered variant for busy
+                    // surfaces, ghost is quiet text, and danger is calm at rest.
+                    // warning/success/info are STATUS hues (alerts, badges), not buttons.
                     demo_row([
                         Button::new("b-primary")
                             .primary()
                             .label(tr(cx, "gallery.common.save"))
                             .into_any_element(),
                         Button::new("b-default")
+                            .secondary()
                             .label(tr(cx, "gallery.common.cancel"))
                             .into_any_element(),
                         Button::new("b-outline")
-                            .primary()
                             .outline()
                             .label(tr(cx, "gallery.atoms.button.outline"))
                             .into_any_element(),
@@ -69,38 +72,24 @@ impl gpui_kit::Render for Section {
                             .danger()
                             .label(tr(cx, "gallery.common.delete"))
                             .into_any_element(),
-                        Button::new("b-warning")
-                            .warning()
-                            .label(tr(cx, "gallery.atoms.button.warning"))
-                            .into_any_element(),
-                        Button::new("b-success")
-                            .success()
-                            .label(tr(cx, "gallery.atoms.button.success"))
-                            .into_any_element(),
-                        Button::new("b-info")
-                            .info()
-                            .label(tr(cx, "gallery.atoms.button.info"))
-                            .into_any_element(),
                     ])
                     .into_any_element(),
                 )
                 .into_any_element(),
                 demo_card(
                     cx,
-                    "gallery.atoms.button.solid",
-                    // The design's solid functional commits — seats gpui's variant API
-                    // doesn't carry (its Danger/Success variants are soft), built by the
-                    // ui crate's language builders from the theme tokens of the active
-                    // mode (RULE-UI-005: no color originates here).
+                    "gallery.atoms.button.danger_states",
+                    // Danger's two faces (ATOMS · 01 "calm until touched"): the calm
+                    // rest state — well fill, tint ink — and the solid red pressed fill,
+                    // which gpui's variant API does not carry and the ui crate's language
+                    // builder paints from the tokens of the active mode (RULE-UI-005).
                     demo_row([
-                        solid_accent(Button::new("b-solid-accent"), mode)
-                            .label(tr(cx, "gallery.common.save"))
-                            .into_any_element(),
-                        solid_danger(Button::new("b-solid-danger"), mode)
+                        Button::new("b-danger-rest")
+                            .danger()
                             .label(tr(cx, "gallery.common.delete"))
                             .into_any_element(),
-                        solid_success(Button::new("b-solid-success"), mode)
-                            .label(tr(cx, "gallery.atoms.button.success"))
+                        solid_danger(Button::new("b-danger-pressed"), mode)
+                            .label(tr(cx, "gallery.common.delete"))
                             .into_any_element(),
                     ])
                     .into_any_element(),
@@ -132,12 +121,17 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.button.states",
+                    // Disabled/loading ride the primary per ATOMS · 01's state grid
+                    // (loading = the inverted chip with a spinner); the icon button is
+                    // a ghost — no plate at rest, the press fills the glyph.
                     demo_row([
                         Button::new("b-disabled")
+                            .primary()
                             .disabled(true)
                             .label(tr(cx, "gallery.atoms.button.disabled"))
                             .into_any_element(),
                         Button::new("b-loading")
+                            .primary()
                             .loading(self.loading_btn)
                             .label(tr(cx, "gallery.common.save"))
                             .on_click(cx.listener(|this, _, _, cx| {
@@ -146,6 +140,7 @@ impl gpui_kit::Render for Section {
                             }))
                             .into_any_element(),
                         Button::new("b-icon")
+                            .ghost()
                             .icon(IconName::Search)
                             .into_any_element(),
                         Toggle::new("b-toggle")

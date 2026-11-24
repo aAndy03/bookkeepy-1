@@ -163,14 +163,17 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
 - **Design-language application (RULE-UI-005/007):** the visual language is applied to the
   **stock gpui-kit component APIs, never to forked copies** — in two layers. (1) The theme
   bridge (`crates/ui/src/theme.rs`) maps every `ThemeConfig` seat to its design token
-  (surfaces, `button.*` variants, popover panels, input canvas wells, flat controls —
-  `shadow = false`); the components' defaults *are* the design language, so no call site
-  styles basics. (2) `crates/ui/src/language.rs` carries what the config cannot reach:
-  the ATOMS · 01 control-size scale (20/24/32/40, radii `mini`/`item`/`control`/
-  `control_lg`) applied through `Sizable`/`rounded`, and the solid functional fills
-  (danger/success/accent + `on_accent` ink) via the public `Styled` instance refinements —
-  gpui's variant seats are soft (well + tint). New properties land in the bridge first and
-  the language builders only where the bridge cannot reach.
+  (surfaces, popover panels, input canvas wells, flat controls — `shadow = false`, and the
+  ATOMS · 01 button set: **primary inverts** — light fill/dark ink, brightest on press;
+  secondary = a step lighter than its surface, no border; ghost/links = quiet muted text
+  that rises on interaction, never the brand accent; warning/success/info are status hues,
+  not buttons; danger is calm at rest); the components' defaults *are* the design
+  language, so no call site styles basics. The brand accent is reserved for focus,
+  selection highlights and indicators. (2) `crates/ui/src/language.rs` carries what the
+  config cannot reach: the control-size scale (20/24/32/40, radii `mini`/`item`/`control`/
+  `control_lg`) applied through `Sizable`/`rounded`, and the danger pressed fill (solid
+  red, white glyph) via the public `Styled` instance refinements. New properties land in
+  the bridge first and the language builders only where the bridge cannot reach.
 - **Shipped at M3 — the gallery + `ui` crate scaffold:** `crates/ui` (`bookkeepy-ui`:
   the theme bridge from `data/theme` into gpui-kit, the capability registry
   `src/capabilities.rs`, the widget layers `src/widgets/{atoms,molecules,organisms}/`)

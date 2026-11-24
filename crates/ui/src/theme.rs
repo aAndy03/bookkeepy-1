@@ -51,15 +51,23 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.accent = hex(&t.bg_hover);
     config.colors.accent_foreground = hex(&t.fg);
     // Neutral controls (Default and Secondary buttons, selected segments): the design's
-    // flat #1c1c1c control fill with its #2a2a2a hover.
+    // flat #1c1c1c control fill with its #2a2a2a hover. Their ink is quiet — ghost and
+    // secondary sit at muted, rising on hover (ATOMS · 01 ghost/secondary specs).
     config.colors.button = hex(&t.bg_control);
     config.colors.button_hover = hex(&t.bg_control_hover);
     config.colors.button_active = hex(&t.bg_control_hover);
-    config.colors.button_foreground = hex(&t.fg);
+    config.colors.button_foreground = hex(&t.fg_muted);
     config.colors.secondary = hex(&t.bg_control);
     config.colors.secondary_hover = hex(&t.bg_control_hover);
     config.colors.secondary_active = hex(&t.bg_control_hover);
-    config.colors.secondary_foreground = hex(&t.fg);
+    config.colors.secondary_foreground = hex(&t.fg_muted);
+    // The primary button INVERTS — light fill, dark ink, brightest on press; one per
+    // surface, the only button that does (ATOMS · 01 primary row). The brand accent stays
+    // reserved for focus, selection highlights and indicators — never the primary button.
+    config.colors.button_primary = hex(&t.bg_invert);
+    config.colors.button_primary_hover = hex(&t.bg_invert_hover);
+    config.colors.button_primary_active = hex(&t.bg_invert_hover);
+    config.colors.button_primary_foreground = hex(&t.on_invert);
     config.colors.muted = hex(&t.bg_raised);
     config.colors.muted_foreground = hex(&t.fg_muted);
     // Functional hues: text on a functional surface is the design's on-accent ink.
@@ -75,6 +83,9 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.info = hex(&t.info);
     config.colors.info_hover = hex(&t.info_tint);
     config.colors.info_foreground = hex(&t.on_accent);
+    // Functional presses go solid: danger is calm at rest (well + tint ink) and turns
+    // solid red when pressed (ATOMS · 01 "calm until touched").
+    config.colors.danger_active = hex(&t.danger);
     // Soft functional buttons (Danger/Success/Warning/Info variants): the design draws
     // them on the functional wells with the tint as ink (ATOMS · 01 functional rows).
     // The hover/active seats render as overlays on the well, so they carry the raw hue.
@@ -94,10 +105,11 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.button_info_hover = hex(&t.info);
     config.colors.button_info_active = hex(&t.info);
     config.colors.button_info_foreground = hex(&t.info_tint);
-    // Links + focus follow the accent.
-    config.colors.link = hex(&t.accent);
-    config.colors.link_hover = hex(&t.accent_hover);
-    config.colors.link_active = hex(&t.accent_hover);
+    // Links are underlined muted text that rises to the foreground on hover — they are
+    // not accent-colored (ATOMS · 01 link atom).
+    config.colors.link = hex(&t.fg_muted);
+    config.colors.link_hover = hex(&t.fg);
+    config.colors.link_active = hex(&t.fg);
     // Chart palette — the design-language series.
     config.colors.chart_1 = hex(&t.chart_series_1);
     config.colors.chart_2 = hex(&t.chart_series_2);
@@ -124,8 +136,15 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.table_even = hex(&t.bg_raised);
     config.colors.table_head = hex(&t.bg_raised);
     config.colors.table_head_foreground = hex(&t.fg_muted);
+    config.colors.table_active = hex(&t.bg_selected);
+    config.colors.table_active_border = hex(&t.border_subtle);
+    config.colors.table_hover = hex(&t.bg_hover);
     config.colors.list = hex(&t.bg);
     config.colors.list_head = hex(&t.bg_raised);
+    // Selected rows are the design's chrome fill with a quiet edge — the brand accent
+    // stays out of row selection (it is focus/highlight ink only).
+    config.colors.list_active = hex(&t.bg_selected);
+    config.colors.list_active_border = hex(&t.border_subtle);
     config.colors.window_border = hex(&t.border);
     Rc::new(config)
 }
