@@ -202,10 +202,7 @@ fn grid_tile(cx: &App, title_key: &'static str) -> gpui_kit::AnyElement {
         .flex_col()
         .justify_center()
         .p_4()
-        .rounded_2xl()
         .bg(theme.muted)
-        .border_1()
-        .border_color(theme.border)
         .child(div().text_sm().child(tr(cx, title_key)))
         .into_any_element()
 }

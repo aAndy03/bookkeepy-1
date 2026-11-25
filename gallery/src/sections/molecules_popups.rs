@@ -169,8 +169,6 @@ impl gpui_kit::Render for Section {
             .id("menu-context-demo")
             .p_2()
             .rounded_lg()
-            .border_1()
-            .border_color(theme.border)
             .text_sm()
             .child(tr(cx, "gallery.molecules.popups.menu.context_hint"))
             .context_menu(move |menu, _window, cx| {
