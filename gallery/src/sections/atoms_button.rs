@@ -78,10 +78,12 @@ impl AtomsButton {
         variant_key: &str,
         variant: ButtonVariant,
         outline: bool,
+        caret: bool,
         glyph: Option<atoms::ButtonGlyph>,
         label: SharedString,
         focus: Option<&FocusHandle>,
     ) -> gpui_kit::Div {
+        let mode = cx.global::<Prefs>().mode;
         let cells = kit::STATE_KEYS.iter().enumerate().map(|(i, key)| {
             let id = format!("{variant_key}-cell-{i}");
             // loading swaps the glyph for the spinner (the sheet's loading state)
@@ -95,8 +97,24 @@ impl AtomsButton {
             if outline {
                 b = b.outline();
             }
+            if caret {
+                b = b.dropdown_caret(true); // the sheet's Filter master carries a caret
+            }
             let mut b = b.on_click(cx.listener(Self::on_click));
             match i {
+                // hover/pressed have no state flag in gpui (live-only), so the specimens
+                // paint the state via the same theme seats — pixel-identical to the real
+                // interaction, which still wins on the live cells through state layering
+                1 => {
+                    b = bookkeepy_ui::api::language::actions::forced_interaction(
+                        b, variant, false, mode,
+                    )
+                }
+                2 => {
+                    b = bookkeepy_ui::api::language::actions::forced_interaction(
+                        b, variant, true, mode,
+                    )
+                }
                 3 => {
                     if let Some(fh) = focus {
                         b = b.track_focus(fh); // focus cell: really focused on load
@@ -104,9 +122,8 @@ impl AtomsButton {
                 }
                 4 => b = b.selected(true),                      // selected
                 5 => b = b.selected(true).dropdown_caret(true), // open (menu showing)
-                6 => b = b.loading(true),                       // loading
                 7 => b = b.disabled(true),                      // disabled
-                _ => {}                                         // rest/hover/pressed: live
+                _ => {}
             }
             kit::cell(cx, key, b)
         });
@@ -140,16 +157,20 @@ impl gpui_kit::Render for AtomsButton {
         let l_export = tr(cx, "gallery.atoms.demo.export");
         let l_cancel = tr(cx, "gallery.atoms.demo.cancel");
         let l_delete = tr(cx, "gallery.atoms.demo.delete");
-        let rows: [(
-            &str,
+        // (variant key, variant, outline, caret, glyph, label)
+        type VariantRow = (
+            &'static str,
             ButtonVariant,
+            bool,
             bool,
             Option<atoms::ButtonGlyph>,
             SharedString,
-        ); 5] = [
+        );
+        let rows: [VariantRow; 5] = [
             (
                 "gallery.atoms.variant.primary",
                 ButtonVariant::Primary,
+                false,
                 false,
                 Some(atoms::ButtonGlyph::Icon(IconName::Plus)),
                 l_add.clone(),
@@ -158,6 +179,7 @@ impl gpui_kit::Render for AtomsButton {
                 "gallery.atoms.variant.secondary",
                 ButtonVariant::Secondary,
                 false,
+                true, // the sheet's Filter master carries a caret
                 Some(atoms::ButtonGlyph::Icon(IconName::Funnel)),
                 l_filter.clone(),
             ),
@@ -165,12 +187,14 @@ impl gpui_kit::Render for AtomsButton {
                 "gallery.atoms.variant.outline",
                 ButtonVariant::Default,
                 true,
+                false,
                 Some(atoms::ButtonGlyph::Icon(IconName::Upload)),
                 l_export.clone(),
             ), // upload → phosphor export
             (
                 "gallery.atoms.variant.ghost",
                 ButtonVariant::Ghost,
+                false,
                 false,
                 None,
                 l_cancel.clone(),
@@ -179,12 +203,13 @@ impl gpui_kit::Render for AtomsButton {
                 "gallery.atoms.variant.danger",
                 ButtonVariant::Danger,
                 false,
+                false,
                 Some(atoms::ButtonGlyph::Icon(IconName::X)),
                 l_delete.clone(),
             ),
         ];
         let matrix = v_flex().gap_6().children(rows.iter().enumerate().map(
-            |(r, (key, variant, outline, glyph, label))| {
+            |(r, (key, variant, outline, caret, glyph, label))| {
                 let focus = if r == 0 {
                     self.focus_demo.clone()
                 } else {
@@ -195,6 +220,7 @@ impl gpui_kit::Render for AtomsButton {
                     key,
                     *variant,
                     *outline,
+                    *caret,
                     *glyph,
                     label.clone(),
                     focus.as_ref(),
@@ -243,18 +269,38 @@ impl gpui_kit::Render for AtomsButton {
                 Some(atoms::ButtonGlyph::Icon(IconName::Funnel)),
                 l_filter.clone(),
             ))
-            .child(sizes_row(cx, ButtonVariant::Ghost, None, l_cancel.clone()))
             .child(
-                h_flex().gap_4().child(
-                    atoms::button(
-                        "compact",
-                        ButtonVariant::Secondary,
-                        None,
-                        tr(cx, "gallery.atoms.demo.compact"),
+                // ghost row + the compact chip inline at the end, as drawn
+                h_flex().gap_4().children(
+                    [
+                        ControlSize::XSmall,
                         ControlSize::Small,
-                    )
-                    .compact()
-                    .on_click(cx.listener(Self::on_click)),
+                        ControlSize::Medium,
+                        ControlSize::Large,
+                    ]
+                    .iter()
+                    .enumerate()
+                    .map(|(i, size)| {
+                        atoms::button(
+                            format!("size-g-{i}"),
+                            ButtonVariant::Ghost,
+                            None,
+                            l_cancel.clone(),
+                            *size,
+                        )
+                        .on_click(cx.listener(Self::on_click))
+                    })
+                    .chain(std::iter::once(
+                        atoms::button(
+                            "compact",
+                            ButtonVariant::Ghost,
+                            None,
+                            tr(cx, "gallery.atoms.demo.compact"),
+                            ControlSize::Small,
+                        )
+                        .compact()
+                        .on_click(cx.listener(Self::on_click)),
+                    )),
                 ),
             );
         let sizes_group = kit::group(
@@ -265,7 +311,7 @@ impl gpui_kit::Render for AtomsButton {
         );
 
         // ── anatomy ──────────────────────────────────────────────────────────
-        let l_save = tr(cx, "gallery.atoms.demo.save");
+        // The sheet's anatomy cells are self-describing (each button IS its label).
         let anatomy = kit::row([
             kit::cell(
                 cx,
@@ -274,7 +320,7 @@ impl gpui_kit::Render for AtomsButton {
                     "anat-label",
                     ButtonVariant::Secondary,
                     None,
-                    l_save.clone(),
+                    tr(cx, "gallery.atoms.anatomy.label_only"),
                     ControlSize::Medium,
                 )
                 .on_click(cx.listener(Self::on_click)),
@@ -286,7 +332,7 @@ impl gpui_kit::Render for AtomsButton {
                     "anat-icon-label",
                     ButtonVariant::Secondary,
                     Some(atoms::ButtonGlyph::Icon(IconName::Plus)),
-                    l_add.clone(),
+                    tr(cx, "gallery.atoms.anatomy.icon_label"),
                     ControlSize::Medium,
                 )
                 .on_click(cx.listener(Self::on_click)),
@@ -324,7 +370,7 @@ impl gpui_kit::Render for AtomsButton {
                     "anat-full",
                     ButtonVariant::Secondary,
                     None,
-                    l_save.clone(),
+                    tr(cx, "gallery.atoms.anatomy.rounded_full"),
                     ControlSize::Small,
                 )
                 .rounded(gpui_kit::component::button::ButtonRounded::Size(px(999.)))
@@ -335,16 +381,13 @@ impl gpui_kit::Render for AtomsButton {
             cx,
             "gallery.atoms.anatomy.segmented",
             ButtonGroup::new("anat-segmented")
-                .child(
-                    atoms::button(
-                        "seg-day",
-                        ButtonVariant::Ghost,
-                        None,
-                        tr(cx, "gallery.atoms.demo.day"),
-                        ControlSize::Small,
-                    )
-                    .selected(true),
-                )
+                .child(atoms::button(
+                    "seg-day",
+                    ButtonVariant::Ghost,
+                    None,
+                    tr(cx, "gallery.atoms.demo.day"),
+                    ControlSize::Small,
+                ))
                 .child(atoms::button(
                     "seg-week",
                     ButtonVariant::Ghost,
@@ -352,13 +395,16 @@ impl gpui_kit::Render for AtomsButton {
                     tr(cx, "gallery.atoms.demo.week"),
                     ControlSize::Small,
                 ))
-                .child(atoms::button(
-                    "seg-month",
-                    ButtonVariant::Ghost,
-                    None,
-                    tr(cx, "gallery.atoms.demo.month"),
-                    ControlSize::Small,
-                ))
+                .child(
+                    atoms::button(
+                        "seg-month",
+                        ButtonVariant::Ghost,
+                        None,
+                        tr(cx, "gallery.atoms.demo.month"),
+                        ControlSize::Small,
+                    )
+                    .selected(true),
+                )
                 .child(atoms::button(
                     "seg-year",
                     ButtonVariant::Ghost,

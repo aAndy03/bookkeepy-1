@@ -680,6 +680,52 @@ pub mod actions {
             role_hsla(mode, "on-solid"),
         )
     }
+
+    /// Paint a button as a FORCED interaction specimen (the gallery matrix's hover /
+    /// pressed columns, which are otherwise live-only and read as "rest" in a static
+    /// view). bg/fg come from the same roles the theme seats map to, so the forced
+    /// cell is pixel-identical to the real state.
+    pub fn forced_interaction(
+        button: Button,
+        variant: ButtonVariant,
+        pressed: bool,
+        mode: Mode,
+    ) -> Button {
+        let (bg, fg) = match variant {
+            ButtonVariant::Primary => {
+                if pressed {
+                    ("primary-active", "primary-foreground")
+                } else {
+                    ("primary-hover", "primary-foreground")
+                }
+            }
+            ButtonVariant::Danger => ("danger", "on-solid"),
+            // outline is a ghost plate with a border (ATOMS · 01: hover/pressed are
+            // white-alpha washes, not the solid control fill)
+            ButtonVariant::Default => {
+                if pressed {
+                    ("ghost-active", "icon-hover")
+                } else {
+                    ("ghost-hover", "icon-hover")
+                }
+            }
+            ButtonVariant::Ghost => {
+                if pressed {
+                    ("ghost-active", "icon-hover")
+                } else {
+                    ("ghost-hover", "icon-hover")
+                }
+            }
+            _ => {
+                if pressed {
+                    ("control-active", "icon")
+                } else {
+                    ("control-hover", "icon-hover")
+                }
+            }
+        };
+        solid_fill(button, variant, role_hsla(mode, bg), role_hsla(mode, fg))
+    }
 }
 
 /// Feedback presets — alert banners are the design's hue WELL fills (900) with NO border
