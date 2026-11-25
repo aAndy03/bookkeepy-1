@@ -15,7 +15,7 @@ use gpui_kit::component::table::{
     TableHead, TableHeader, TableRow, TableState,
 };
 use gpui_kit::component::tree::{TreeItem, TreeState, tree};
-use gpui_kit::component::{VirtualListScrollHandle, v_virtual_list};
+use gpui_kit::component::{ActiveTheme as _, VirtualListScrollHandle, v_virtual_list};
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, IntoElement, ParentElement as _, Pixels, Size,
     Styled as _, Window, div, px, size,
@@ -214,11 +214,20 @@ impl gpui_kit::Render for Section {
                                     let label = tr(cx, "gallery.organisms.table.virtual_list.item");
                                     visible_range
                                         .map(|ix| {
+                                            // ORG·01 virtual list: alternating #171717/#1c1c1c
+                                            // stripes, header row on the control fill.
+                                            let striped = ix % 2 == 0;
                                             div()
                                                 .h(px(28.))
                                                 .w_full()
                                                 .flex()
                                                 .items_center()
+                                                .px_2()
+                                                .bg(if striped {
+                                                    cx.theme().muted
+                                                } else {
+                                                    cx.theme().group_box
+                                                })
                                                 .child(format!("{} {}", label, ix + 1))
                                         })
                                         .collect::<Vec<_>>()

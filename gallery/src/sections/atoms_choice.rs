@@ -8,7 +8,8 @@ use gpui_kit::component::checkbox::Checkbox;
 use gpui_kit::component::radio::RadioGroup;
 use gpui_kit::component::slider::{Slider, SliderState};
 use gpui_kit::component::switch::Switch;
-use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, Window};
+use gpui_kit::component::{ActiveTheme as _, Disableable as _, Sizable as _};
+use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, Styled as _, Window};
 
 use crate::app::{Gallery, tr};
 use crate::sections::layout::{demo_card, demo_row, section_page};
@@ -20,6 +21,7 @@ pub struct Section {
     sync: bool,
     toggle: bool,
     slider: gpui_kit::Entity<SliderState>,
+    slider_accent: gpui_kit::Entity<SliderState>,
 }
 
 pub fn view(_window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
@@ -31,12 +33,20 @@ pub fn view(_window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
                 .default_value(50.)
                 .step(1.)
         });
+        let slider_accent = cx.new(|_| {
+            SliderState::new()
+                .min(0.)
+                .max(100.)
+                .default_value(72.)
+                .step(1.)
+        });
         Section {
             checkbox: false,
             delivery: 0,
             sync: true,
             toggle: true,
             slider,
+            slider_accent,
         }
     })
     .into()
@@ -56,7 +66,11 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.choice.checkbox",
-                    bookkeepy_ui::api::language::controls::checkbox(Checkbox::new("agree"), mode)
+                    demo_row([
+                        bookkeepy_ui::api::language::controls::checkbox(
+                            Checkbox::new("agree"),
+                            mode,
+                        )
                         .label(tr(cx, "gallery.atoms.choice.checkbox_label"))
                         .checked(self.checkbox)
                         .on_change(cx.listener(|this, checked: &bool, _, cx| {
@@ -64,6 +78,22 @@ impl gpui_kit::Render for Section {
                             cx.notify();
                         }))
                         .into_any_element(),
+                        bookkeepy_ui::api::language::controls::checkbox(
+                            Checkbox::new("agree-on"),
+                            mode,
+                        )
+                        .label(tr(cx, "gallery.atoms.choice.checkbox_on"))
+                        .checked(true)
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::controls::checkbox(
+                            Checkbox::new("agree-off"),
+                            mode,
+                        )
+                        .label(tr(cx, "gallery.atoms.choice.checkbox_disabled"))
+                        .disabled(true)
+                        .into_any_element(),
+                    ])
+                    .into_any_element(),
                 )
                 .into_any_element(),
                 demo_card(
@@ -86,14 +116,26 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.atoms.choice.switch",
-                        Switch::new("sync")
-                            .label(tr(cx, "gallery.atoms.choice.switch_label"))
-                            .checked(self.sync)
-                            .on_change(cx.listener(|this, checked: &bool, _, cx| {
-                                this.sync = *checked;
-                                cx.notify();
-                            }))
-                            .into_any_element(),
+                        demo_row([
+                            Switch::new("sync")
+                                .label(tr(cx, "gallery.atoms.choice.switch_label"))
+                                .checked(self.sync)
+                                .on_change(cx.listener(|this, checked: &bool, _, cx| {
+                                    this.sync = *checked;
+                                    cx.notify();
+                                }))
+                                .into_any_element(),
+                            // ATOMS · 02 small switch: 28x16 rx8.
+                            Switch::new("sync-sm")
+                                .small()
+                                .checked(self.sync)
+                                .on_change(cx.listener(|this, checked: &bool, _, cx| {
+                                    this.sync = *checked;
+                                    cx.notify();
+                                }))
+                                .into_any_element(),
+                        ])
+                        .into_any_element(),
                     )
                     .into_any_element(),
                     demo_card(
@@ -117,7 +159,15 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.choice.slider",
-                    Slider::new(&self.slider).into_any_element(),
+                    // ATOMS · 02 slider: neutral fill + accent fill variant (the fill
+                    // rides the instance bg as the bar color).
+                    demo_row([
+                        Slider::new(&self.slider).into_any_element(),
+                        Slider::new(&self.slider_accent)
+                            .bg(cx.theme().ring)
+                            .into_any_element(),
+                    ])
+                    .into_any_element(),
                 )
                 .into_any_element(),
             ],

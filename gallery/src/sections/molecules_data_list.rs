@@ -10,13 +10,14 @@ use gpui_kit::component::description_list::{DescriptionItem, DescriptionList};
 use gpui_kit::component::label::Label;
 use gpui_kit::component::list::{List, ListDelegate, ListItem, ListState};
 use gpui_kit::component::pagination::Pagination;
-use gpui_kit::component::{IndexPath, h_flex};
+use gpui_kit::component::tag::Tag;
+use gpui_kit::component::{ActiveTheme as _, Icon, IconName, IndexPath, Sizable as _, h_flex};
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, IntoElement, ParentElement as _, SharedString,
-    Styled as _, Task, Window,
+    Styled as _, Task, Window, div, px,
 };
 
-use crate::app::{Gallery, tr};
+use crate::app::{Gallery, Prefs, tr};
 use crate::sections::layout::{demo_card, demo_row, section_page};
 
 /// Delegate for the plain [`List`] demo: three ledger accounts, click to select.
@@ -90,11 +91,36 @@ impl ListDelegate for ServicesDelegate {
         &mut self,
         ix: IndexPath,
         _window: &mut Window,
-        _cx: &mut Context<ListState<Self>>,
+        cx: &mut Context<ListState<Self>>,
     ) -> Option<Self::Item> {
         self.matched.get(ix.row).map(|item| {
+            // MOL·02 list row: leading icon chip + label + trailing tag.
             ListItem::new(ix)
-                .child(item.clone())
+                .child(
+                    h_flex()
+                        .items_center()
+                        .gap_2()
+                        .child(
+                            div()
+                                .size(px(24.))
+                                .rounded(px(4.))
+                                .bg(cx.theme().accent)
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .child(Icon::new(IconName::FileText).small()),
+                        )
+                        .child(item.clone()),
+                )
+                .suffix(|_window, cx| {
+                    bookkeepy_ui::api::language::display::tag_soft(
+                        Tag::secondary(),
+                        bookkeepy_ui::api::language::display::TagTone::Neutral,
+                        cx.global::<Prefs>().mode,
+                    )
+                    .child(tr(cx, "gallery.molecules.data_list.list.row_tag"))
+                    .into_any_element()
+                })
                 .selected(self.selected_index == Some(ix))
         })
     }

@@ -13,7 +13,7 @@ use gpui_kit::component::time_field::{TimeField, TimeFieldState};
 use gpui_kit::component::{ActiveTheme as _, Icon, IconName};
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, IntoElement, ParentElement as _, Styled as _,
-    Window, px,
+    Window, div, px,
 };
 
 use bookkeepy_ui::api::language::{ControlSize, color_picker_size};
@@ -100,40 +100,49 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.molecules.data_list.attachment",
-                    AttachmentGroup::new("calendar-attachment-group")
-                        .child(
-                            Attachment::new()
-                                .media(AttachmentMedia::new().child(Icon::new(IconName::FileText)))
-                                .content(
-                                    AttachmentContent::new()
-                                        .title(AttachmentTitle::new(tr(
-                                            cx,
-                                            "gallery.molecules.data_list.attachment.file_invoice",
-                                        )))
-                                        .description(AttachmentDescription::new(tr(
-                                            cx,
-                                            "gallery.molecules.data_list.attachment.meta_invoice",
-                                        ))),
+                    // MOL·03 attachment: #222222 rx12 borderless card, 36x36 rx4 #1c1c1c
+                    // icon chip (gpui's default card carries a hard border).
+                    bookkeepy_ui::api::language::surface::popup_panel(
+                        div().p_3().child(
+                            AttachmentGroup::new("calendar-attachment-group")
+                                .child(
+                                    Attachment::new()
+                                        .media(
+                                            AttachmentMedia::new().child(Icon::new(IconName::FileText)),
+                                        )
+                                        .content(
+                                            AttachmentContent::new()
+                                                .title(AttachmentTitle::new(tr(
+                                                    cx,
+                                                    "gallery.molecules.data_list.attachment.file_invoice",
+                                                )))
+                                                .description(AttachmentDescription::new(tr(
+                                                    cx,
+                                                    "gallery.molecules.data_list.attachment.meta_invoice",
+                                                ))),
+                                        ),
+                                )
+                                .child(
+                                    Attachment::new()
+                                        .status(AttachmentStatus::Uploading)
+                                        .progress(45.)
+                                        .media(AttachmentMedia::new().child(Icon::new(IconName::File)))
+                                        .content(
+                                            AttachmentContent::new()
+                                                .title(AttachmentTitle::new(tr(
+                                                    cx,
+                                                    "gallery.molecules.data_list.attachment.file_receipt",
+                                                )))
+                                                .description(AttachmentDescription::new(tr(
+                                                    cx,
+                                                    "gallery.molecules.data_list.attachment.meta_receipt",
+                                                ))),
+                                        ),
                                 ),
-                        )
-                        .child(
-                            Attachment::new()
-                                .status(AttachmentStatus::Uploading)
-                                .progress(45.)
-                                .media(AttachmentMedia::new().child(Icon::new(IconName::File)))
-                                .content(
-                                    AttachmentContent::new()
-                                        .title(AttachmentTitle::new(tr(
-                                            cx,
-                                            "gallery.molecules.data_list.attachment.file_receipt",
-                                        )))
-                                        .description(AttachmentDescription::new(tr(
-                                            cx,
-                                            "gallery.molecules.data_list.attachment.meta_receipt",
-                                        ))),
-                                ),
-                        )
-                        .into_any_element(),
+                        ),
+                        cx.global::<crate::app::Prefs>().mode,
+                    )
+                    .into_any_element(),
                 )
                 .into_any_element(),
             ],

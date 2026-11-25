@@ -156,6 +156,18 @@ impl gpui_kit::Render for Section {
                             .id("shell-sidebar-frame")
                             .h(px(220.))
                             .max_w(px(240.))
+                            // ORG·01: the sidebar's trailing divider is the 2px
+                            // border-heavy line (same as the app shell preset).
+                            .border_r_2()
+                            .border_color(
+                                bookkeepy_ui::api::language::token_hsla(
+                                    &bookkeepy_primary_data::theme::colors(
+                                        cx.global::<crate::app::Prefs>().mode,
+                                    )
+                                    .border_heavy,
+                                )
+                                .unwrap_or(theme.border),
+                            )
                             .child(
                                 Sidebar::new("shell-sidebar")
                                     .side(Side::Left)

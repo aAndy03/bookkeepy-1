@@ -6,7 +6,10 @@
 use gpui_kit::component::FocusTrapElement as _;
 use gpui_kit::component::accordion::Accordion;
 use gpui_kit::component::alert::Alert;
-use gpui_kit::component::button::{Button, ButtonVariants as _};
+
+use gpui_kit::component::button::{
+    Button, ButtonVariants as _, DropdownButton, Toggle, ToggleGroup,
+};
 use gpui_kit::component::collapsible::Collapsible;
 use gpui_kit::component::empty::{
     Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant, EmptyTitle,
@@ -14,6 +17,7 @@ use gpui_kit::component::empty::{
 use gpui_kit::component::form::{field, v_form};
 use gpui_kit::component::group_box::{GroupBox, GroupBoxVariants as _};
 use gpui_kit::component::input::{Input, InputState};
+use gpui_kit::component::menu::PopupMenuItem;
 use gpui_kit::component::questionnaire::{
     Questionnaire, QuestionnaireActions, QuestionnaireChoice, QuestionnaireChoiceDefinition,
     QuestionnaireChoices, QuestionnaireDescription, QuestionnaireError, QuestionnaireInput,
@@ -454,6 +458,62 @@ impl gpui_kit::Render for Section {
                         )
                         .into_any_element(),
                 )
+                .into_any_element(),
+                demo_row([
+                    demo_card(
+                        cx,
+                        "gallery.molecules.structure.toggle_group",
+                        // MOL·02 toggle group: segmented #1c1c1c rx6 container, segments
+                        // white@12% rx4 when selected.
+                        bookkeepy_ui::api::language::controls::toggle_group(
+                            ToggleGroup::new("structure-toggle-group")
+                                .segmented()
+                                .child(
+                                    bookkeepy_ui::api::language::controls::toggle(
+                                        Toggle::new("tg-day"),
+                                        mode,
+                                    )
+                                    .label(tr(cx, "gallery.atoms.button.day"))
+                                    .checked(true),
+                                )
+                                .child(
+                                    bookkeepy_ui::api::language::controls::toggle(
+                                        Toggle::new("tg-week"),
+                                        mode,
+                                    )
+                                    .label(tr(cx, "gallery.atoms.button.week")),
+                                )
+                                .child(
+                                    bookkeepy_ui::api::language::controls::toggle(
+                                        Toggle::new("tg-month"),
+                                        mode,
+                                    )
+                                    .label(tr(cx, "gallery.atoms.button.month")),
+                                ),
+                            mode,
+                        )
+                        .into_any_element(),
+                    )
+                    .into_any_element(),
+                    demo_card(
+                        cx,
+                        "gallery.molecules.structure.dropdown_button",
+                        DropdownButton::new("structure-dropdown-button")
+                            .button(
+                                Button::new("structure-dd-btn")
+                                    .secondary()
+                                    .label(tr(cx, "gallery.molecules.structure.dropdown_button.action")),
+                            )
+                            .dropdown_menu(|menu, _window, _cx| {
+                                menu.item(PopupMenuItem::new(tr(
+                                    _cx,
+                                    "gallery.molecules.popups.menu.item_new",
+                                )))
+                            })
+                            .into_any_element(),
+                    )
+                    .into_any_element(),
+                ])
                 .into_any_element(),
                 ])
                 .into_any_element(),

@@ -4,10 +4,11 @@
 //! badge/tag/avatar family; Marker and Image live in the ATOMS · 04 section
 //! `atoms-media`, Rating in `atoms-media` too, choice controls in `atoms_choice`).
 
+use gpui_kit::Styled as _;
 use gpui_kit::component::avatar::{Avatar, AvatarGroup};
 use gpui_kit::component::badge::Badge;
 use gpui_kit::component::tag::Tag;
-use gpui_kit::component::{ActiveTheme as _, Icon, IconName};
+use gpui_kit::component::{ActiveTheme as _, Icon, IconName, Sizable as _};
 use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, ParentElement as _, Window};
 
 use crate::app::{Gallery, tr};
@@ -35,17 +36,32 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.display.badge",
+                    // ATOMS · 02 badge: solid-hue pills on the 6 functional hues
+                    // (count pills) + dot badges, all on the accent/semantic seats.
                     demo_row([
-                        // Count badge on the accent (ORGANISMS · 01 sidebar spec:
-                        // 22x16 rx8 #f5823a pill).
                         Badge::new()
                             .count(3)
                             .color(cx.theme().ring)
                             .child(Icon::new(IconName::Bell))
                             .into_any_element(),
                         Badge::new()
+                            .count(12)
+                            .color(cx.theme().success)
+                            .child(Icon::new(IconName::CircleCheck))
+                            .into_any_element(),
+                        Badge::new()
+                            .count(7)
+                            .color(cx.theme().danger)
+                            .child(Icon::new(IconName::TriangleAlert))
+                            .into_any_element(),
+                        Badge::new()
                             .dot()
                             .color(cx.theme().ring)
+                            .child(Icon::new(IconName::Inbox))
+                            .into_any_element(),
+                        Badge::new()
+                            .dot()
+                            .color(cx.theme().info)
                             .child(Icon::new(IconName::Inbox))
                             .into_any_element(),
                     ])
@@ -105,7 +121,19 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.display.avatar",
+                    // ATOMS · 02 avatar: size scale + borderless singles; the overlap
+                    // group keeps the #2a2a2a separator ring.
                     demo_row([
+                        bookkeepy_ui::api::language::display::avatar(
+                            Avatar::new().name(name.clone()),
+                        )
+                        .with_size(gpui_kit::component::Size::XSmall)
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::display::avatar(
+                            Avatar::new().name(name.clone()),
+                        )
+                        .with_size(gpui_kit::component::Size::Small)
+                        .into_any_element(),
                         bookkeepy_ui::api::language::display::avatar(
                             Avatar::new().name(name.clone()),
                         )
@@ -115,12 +143,26 @@ impl gpui_kit::Render for Section {
                         )
                         .into_any_element(),
                         AvatarGroup::new()
-                            .child(bookkeepy_ui::api::language::display::avatar(
-                                Avatar::new().name(name.clone()),
-                            ))
-                            .child(bookkeepy_ui::api::language::display::avatar(
-                                Avatar::new().placeholder(IconName::User),
-                            ))
+                            .child(
+                                bookkeepy_ui::api::language::display::avatar(
+                                    Avatar::new().name(name.clone()),
+                                )
+                                .border_2()
+                                .border_color(
+                                    bookkeepy_ui::api::language::token_hsla("#2a2a2a")
+                                        .unwrap_or(cx.theme().border),
+                                ),
+                            )
+                            .child(
+                                bookkeepy_ui::api::language::display::avatar(
+                                    Avatar::new().placeholder(IconName::User),
+                                )
+                                .border_2()
+                                .border_color(
+                                    bookkeepy_ui::api::language::token_hsla("#2a2a2a")
+                                        .unwrap_or(cx.theme().border),
+                                ),
+                            )
                             .into_any_element(),
                     ])
                     .into_any_element(),
