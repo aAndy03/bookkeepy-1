@@ -7,7 +7,7 @@ use gpui_kit::component::avatar::{Avatar, AvatarGroup};
 use gpui_kit::component::badge::Badge;
 use gpui_kit::component::marker::{Marker, MarkerContent, MarkerIcon};
 use gpui_kit::component::tag::Tag;
-use gpui_kit::component::{Icon, IconName};
+use gpui_kit::component::{ActiveTheme as _, Icon, IconName};
 use gpui_kit::{
     AnyView, AppContext as _, Context, InteractiveElement as _, IntoElement, ObjectFit,
     ParentElement as _, Styled as _, StyledImage as _, Window, img,
@@ -39,12 +39,16 @@ impl gpui_kit::Render for Section {
                     cx,
                     "gallery.atoms.display.badge",
                     demo_row([
+                        // Count badge on the accent (ORGANISMS · 01 sidebar spec:
+                        // 22x16 rx8 #f5823a pill).
                         Badge::new()
                             .count(3)
+                            .color(cx.theme().ring)
                             .child(Icon::new(IconName::Bell))
                             .into_any_element(),
                         Badge::new()
                             .dot()
+                            .color(cx.theme().ring)
                             .child(Icon::new(IconName::Inbox))
                             .into_any_element(),
                     ])
@@ -62,9 +66,13 @@ impl gpui_kit::Render for Section {
                         )
                         .child(tr(cx, "gallery.atoms.display.tag_primary"))
                         .into_any_element(),
-                        Tag::secondary()
-                            .child(tr(cx, "gallery.atoms.display.tag_secondary"))
-                            .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::secondary(),
+                            bookkeepy_ui::api::language::display::TagTone::Neutral,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_secondary"))
+                        .into_any_element(),
                         bookkeepy_ui::api::language::display::tag_soft(
                             Tag::success(),
                             bookkeepy_ui::api::language::display::TagTone::Success,

@@ -109,6 +109,8 @@ pub mod display {
     /// The tag tone, selecting the matching `*_well` + `*_tint` token pair (ATOMS · 02).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum TagTone {
+        /// The neutral tag: `bg_control` fill + `fg` ink on the `#1c1c1c` pill.
+        Neutral,
         /// `accent_well` + `accent_hover`.
         Accent,
         /// `success_well` + `success_tint`.
@@ -121,17 +123,19 @@ pub mod display {
         Info,
     }
 
-    /// A soft tag: tint-well fill + tint ink + rx4 (ATOMS · 02 tinted tag variants).
+    /// A soft tag: well fill + tint ink + rx4, no border (ATOMS · 02 tag variants —
+    /// the design's tags are filled pills, not outlined chips).
     pub fn tag_soft(tag: Tag, tone: TagTone, mode: Mode) -> Tag {
         let t = colors(mode);
         let (well, tint) = match tone {
+            TagTone::Neutral => (&t.bg_control, &t.fg),
             TagTone::Accent => (&t.accent_well, &t.accent_hover),
             TagTone::Success => (&t.success_well, &t.success_tint),
             TagTone::Warning => (&t.warning_well, &t.warning_tint),
             TagTone::Danger => (&t.danger_well, &t.danger_tint),
             TagTone::Info => (&t.info_well, &t.info_tint),
         };
-        let mut tag = tag.rounded(px(radii().mini as f32));
+        let mut tag = tag.rounded(px(radii().mini as f32)).border_0();
         if let Some(bg) = token_hsla(well) {
             tag = tag.bg(bg);
         }

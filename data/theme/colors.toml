@@ -60,7 +60,7 @@ well = "#3d1010"
 [palette.info]
 base = "#58cbf5"
 tint = "#92dcf8"
-well = "#121a20"
+well = "#064860"
 
 # Group/tag palette (charts, tags, category markers) with their dark wells.
 [palette.group]
@@ -116,13 +116,13 @@ success_tint = "#9be57f"
 success_well = "#173a0b"
 warning = "#e8b339"
 warning_tint = "#f1cf80"
-warning_well = "#3a1d0b"
+warning_well = "#3b2c08"
 danger = "#d74040"
 danger_tint = "#e98080"
 danger_well = "#3d1010"
 info = "#58cbf5"
 info_tint = "#92dcf8"
-info_well = "#121a20"
+info_well = "#064860"
 border = "#262626" # default border
 border_subtle = "#222222" # separators inside a surface
 border_strong = "#333333" # emphasized control border
@@ -131,11 +131,13 @@ focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
 chart_positive = "#68d740"
 chart_negative = "#d74040"
 chart_neutral = "#8fb3c9"
-chart_series_1 = "#f5823a"
-chart_series_2 = "#6944f0"
-chart_series_3 = "#58cbf5"
-chart_series_4 = "#d1f558"
-chart_series_5 = "#ff93c7"
+# Data series palette, in the CHARTS sheet's donut order (cyan, lime, pink, sand, orange);
+# money direction uses chart_positive/chart_negative instead.
+chart_series_1 = "#58cbf5" # data-1 cyan
+chart_series_2 = "#d1f558" # data-2 lime
+chart_series_3 = "#ff93c7" # data-3 pink
+chart_series_4 = "#c9a77a" # data-4 sand
+chart_series_5 = "#f5823a" # data-5 accent orange
 
 # Semantic tokens — light (same ramp inverted: 255 − channel; identical functional hues).
 [theme.light]
@@ -176,13 +178,13 @@ success_tint = "#9be57f"
 success_well = "#173a0b"
 warning = "#e8b339"
 warning_tint = "#f1cf80"
-warning_well = "#3a1d0b"
+warning_well = "#3b2c08"
 danger = "#d74040"
 danger_tint = "#e98080"
 danger_well = "#3d1010"
 info = "#58cbf5"
 info_tint = "#92dcf8"
-info_well = "#121a20"
+info_well = "#064860"
 border = "#dddddd" # default border
 border_subtle = "#e8e8e8" # separators inside a surface
 border_strong = "#cccccc" # emphasized control border
@@ -191,8 +193,9 @@ focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
 chart_positive = "#68d740"
 chart_negative = "#d74040"
 chart_neutral = "#767676"
-chart_series_1 = "#f5823a"
-chart_series_2 = "#6944f0"
-chart_series_3 = "#58cbf5"
-chart_series_4 = "#d1f558"
-chart_series_5 = "#ff93c7"
+# Light mirror of the data palette (darkened for contrast on white).
+chart_series_1 = "#0891b2" # data-1 cyan
+chart_series_2 = "#65a30d" # data-2 lime
+chart_series_3 = "#db2777" # data-3 pink
+chart_series_4 = "#a16207" # data-4 sand
+chart_series_5 = "#ea580c" # data-5 accent orange

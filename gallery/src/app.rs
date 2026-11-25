@@ -63,10 +63,18 @@ pub struct Gallery {
 }
 
 impl Gallery {
-    /// Create the gallery view; the default section is the first in the registry.
-    pub fn new(_window: &mut Window, _cx: &mut gpui_kit::Context<'_, Self>) -> Self {
+    /// Create the gallery view; the default section is the first in the registry,
+    /// or `section` when deep-linked via `--section <id>`.
+    pub fn new(
+        _window: &mut Window,
+        _cx: &mut gpui_kit::Context<'_, Self>,
+        section: Option<&str>,
+    ) -> Self {
+        let active = section
+            .and_then(|id| SECTIONS.iter().find(|s| s.id == id).map(|s| s.id))
+            .unwrap_or_else(|| SECTIONS.first().map(|s| s.id).unwrap_or_default());
         Self {
-            active: SECTIONS.first().map(|s| s.id).unwrap_or_default(),
+            active,
             hosts: HashMap::new(),
         }
     }

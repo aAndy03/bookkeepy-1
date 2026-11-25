@@ -153,12 +153,15 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.popover = hex(&t.bg_popover);
     config.colors.popover_foreground = hex(&t.fg);
     config.colors.group_box = hex(&t.bg_sheet);
-    config.colors.table = hex(&t.bg);
-    config.colors.table_even = hex(&t.bg_raised);
+    config.colors.table = hex(&t.bg_none);
+    config.colors.table_even = hex(&t.bg_none);
     // Table header row is the control fill; rows ride the white overlays (hover @4%,
-    // selected @12% — ORGANISMS · 01 data table spec).
+    // selected @12% — ORGANISMS · 01 data table spec). The footer is a plain row:
+    // no fill, no separator (the design avoids hard separators).
     config.colors.table_head = hex(&t.bg_control);
     config.colors.table_head_foreground = hex(&t.fg_muted);
+    config.colors.table_foot = hex(&t.bg_none);
+    config.colors.table_foot_foreground = hex(&t.fg_muted);
     config.colors.table_active = hex(&t.bg_row_active);
     config.colors.table_active_border = hex(&t.border_subtle);
     config.colors.table_hover = hex(&t.bg_row_hover);
@@ -179,8 +182,9 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // Switch off: #333 track + #a8a8a8 knob; on reads `primary` (inverted) automatically.
     config.colors.switch = hex(&t.border_strong);
     config.colors.switch_thumb = hex(&t.fg_muted);
-    // Slider: white @ 8% track, inverted thumb (ATOMS · 02 slider spec).
-    config.colors.slider_bar = hex(&t.bg_nav_active);
+    // Slider: the fill is the inverted neutral (solid #ededed, ATOMS · 02 slider spec);
+    // the track reads the same color at 0.2 opacity via the component's own alpha.
+    config.colors.slider_bar = hex(&t.bg_invert);
     config.colors.slider_thumb = hex(&t.bg_invert);
     // Tabs: quiet labels, active tab = white @ 4% chip (MOLECULES · 01 tabs: 209x28
     // segments, active chip #fff fo 0.0392).
@@ -202,7 +206,6 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.table_row_border = hex(&t.bg_none);
     config.colors.list_active_border = hex(&t.bg_none);
     config.colors.table_active_border = hex(&t.bg_none);
-    config.colors.table_even = hex(&t.bg_none);
     config.colors.list_even = hex(&t.bg_none);
     config.colors.accordion = hex(&t.bg);
     config.colors.window_border = hex(&t.border);

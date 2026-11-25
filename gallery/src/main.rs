@@ -50,6 +50,13 @@ fn main() {
             // Runtime prefs (locale + mode) as a gpui global; switching refreshes windows.
             cx.set_global(app::Prefs::default());
             bind_shortcuts(cx);
+            // `--section <id>` deep-links a gallery section (used by the screenshot
+            // harness in references/ tooling; unknown ids fall back to the first).
+            let section = std::env::args()
+                .skip(1)
+                .zip(std::env::args().skip(2))
+                .find(|(a, _)| a == "--section")
+                .map(|(_, v)| v);
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(gpui_kit::Bounds {
                     origin: gpui_kit::point(gpui_kit::px(160.), gpui_kit::px(120.)),
@@ -62,7 +69,7 @@ fn main() {
                 ..Default::default()
             };
             if gpui_kit::open_window(options, cx, |window, cx| {
-                cx.new(|cx| app::Gallery::new(window, cx))
+                cx.new(|cx| app::Gallery::new(window, cx, section.as_deref()))
             })
             .is_err()
             {

@@ -74,10 +74,14 @@ impl RenderOnce for Amount {
             .unwrap_or(&fonts.fonts().ui);
 
         let theme = cx.theme();
+        // CHARTS sheet: money direction is colored — in = success, out = danger; the
+        // signed variant (delta framing) colors positives too, plain amounts stay fg.
         let color = if edge_case_zero::is_zero(&self.money) {
             theme.muted_foreground
         } else if self.money.is_negative() {
             theme.danger
+        } else if self.signed {
+            theme.success
         } else {
             theme.foreground
         };

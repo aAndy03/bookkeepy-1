@@ -13,7 +13,7 @@ use gpui_kit::component::plot::scale::{Scale as _, ScaleLinear};
 use gpui_kit::component::plot::shape::{Line as PlotLine, SankeyLink};
 use gpui_kit::component::plot::{AxisText, IntoPlot, Plot, PlotAxis};
 use gpui_kit::{
-    AnyView, App, AppContext as _, Bounds, Context, Entity, IntoElement, ParentElement as _,
+    AnyView, App, AppContext as _, Bounds, Context, Entity, Hsla, IntoElement, ParentElement as _,
     Pixels, SharedString, Styled as _, TextAlign, Window, div, px, rems,
 };
 
@@ -70,6 +70,14 @@ const BAR_KEYS: [&str; 4] = [
 /// The cost values of the bar demo.
 const BAR_VALUES: [f64; 4] = [1200., 2400., 450., 900.];
 
+/// A bar of the bar demo, carrying its data-palette color (CHARTS sheet: data-1..8
+/// color categories).
+struct Bar {
+    label: SharedString,
+    value: f64,
+    color: Hsla,
+}
+
 /// The shares of the pie demo.
 const PIE_KEYS: [&str; 3] = [
     "gallery.viz.pie.income",
@@ -79,6 +87,13 @@ const PIE_KEYS: [&str; 3] = [
 
 /// The share values of the pie demo.
 const PIE_VALUES: [f64; 3] = [5200., 3300., 1900.];
+
+/// A donut slice, carrying its data-palette color (CHARTS donut legend order).
+struct Slice {
+    label: SharedString,
+    value: f64,
+    color: Hsla,
+}
 
 /// The dimensions of the radar demo.
 const RADAR_KEYS: [&str; 5] = [
@@ -132,26 +147,37 @@ fn candle_points(cx: &App) -> Vec<Candle> {
         .collect()
 }
 
-/// The bars of the bar demo.
-fn bar_points(cx: &App) -> Vec<Point> {
+/// The bars of the bar demo, colored by the data palette (one color per category).
+fn bar_points(cx: &App) -> Vec<Bar> {
+    let palette = [
+        cx.theme().chart_1,
+        cx.theme().chart_2,
+        cx.theme().chart_3,
+        cx.theme().chart_4,
+    ];
     BAR_KEYS
         .iter()
         .zip(BAR_VALUES)
-        .map(|(key, value)| Point {
+        .enumerate()
+        .map(|(i, (key, value))| Bar {
             label: tr(cx, key),
             value,
+            color: palette[i % palette.len()],
         })
         .collect()
 }
 
-/// The slices of the pie demo.
-fn pie_points(cx: &App) -> Vec<Point> {
+/// The slices of the pie demo, colored in the donut legend's data order.
+fn pie_points(cx: &App) -> Vec<Slice> {
+    let palette = [cx.theme().chart_1, cx.theme().chart_2, cx.theme().chart_3];
     PIE_KEYS
         .iter()
         .zip(PIE_VALUES)
-        .map(|(key, value)| Point {
+        .enumerate()
+        .map(|(i, (key, value))| Slice {
             label: tr(cx, key),
             value,
+            color: palette[i % palette.len()],
         })
         .collect()
 }
@@ -281,6 +307,9 @@ impl gpui_kit::Render for Section {
                                 .id("viz-line-chart")
                                 .x(|d| d.label.clone())
                                 .y(|d| d.value)
+                                // CHARTS sheet: series in data-1, gridlines solid dividers.
+                                .stroke(cx.theme().chart_1)
+                                .grid_dashed(false)
                                 .dot(),
                         ),
                     )
@@ -292,7 +321,11 @@ impl gpui_kit::Render for Section {
                             AreaChart::new(months.clone())
                                 .id("viz-area-chart")
                                 .x(|d| d.label.clone())
-                                .y(|d| d.value),
+                                .y(|d| d.value)
+                                // CHARTS sheet: data-1 stroke over a white @ 8% area fill.
+                                .stroke(cx.theme().chart_1)
+                                .fill(cx.theme().accent)
+                                .grid_dashed(false),
                         ),
                     )
                     .into_any_element(),
@@ -304,7 +337,11 @@ impl gpui_kit::Render for Section {
                                 .id("viz-bar-chart")
                                 .band(|d| d.label.clone())
                                 .value(|d| d.value)
-                                .label(|d| format!("{:.0}", d.value)),
+                                .label(|d| format!("{:.0}", d.value))
+                                // CHARTS sheet: one data color per category, 2px bar tips.
+                                .fill(|d, _, _, _| d.color)
+                                .corner_radii(px(2.))
+                                .grid_dashed(false),
                         ),
                     )
                     .into_any_element(),
@@ -316,6 +353,9 @@ impl gpui_kit::Render for Section {
                                 .id("viz-pie-chart")
                                 .value(|d| d.value as f32)
                                 .label(|d| d.label.clone())
+                                // CHARTS donut: data-palette slices with 2° gaps.
+                                .color(|d| d.color)
+                                .pad_angle(2_f32.to_radians())
                                 .inner_radius_ratio(0.55),
                         ),
                     )
@@ -331,6 +371,9 @@ impl gpui_kit::Render for Section {
                                 .id("viz-radar-chart")
                                 .label(|d| d.label.clone())
                                 .value(|d| d.value)
+                                // Single-series overview: the accent orange, softly filled.
+                                .stroke(cx.theme().chart_5)
+                                .fill(cx.theme().chart_5.opacity(0.16))
                                 .dot(),
                         ),
                     )
