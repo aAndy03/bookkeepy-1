@@ -64,7 +64,7 @@ fn main() {
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(gpui_kit::Bounds {
                     origin: gpui_kit::point(gpui_kit::px(160.), gpui_kit::px(120.)),
-                    size: gpui_kit::size(gpui_kit::px(1440.), gpui_kit::px(height)),
+                    size: gpui_kit::size(gpui_kit::px(1600.), gpui_kit::px(height)),
                 })),
                 titlebar: Some(gpui_kit::TitlebarOptions {
                     title: Some("Bookkeepy gallery".into()),

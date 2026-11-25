@@ -88,7 +88,8 @@ impl AtomsButton {
                     .pt_1()
                     .child(kit::overline(cx, tr(cx, variant_key))),
             )
-            .children(cells)
+            // equal columns: the design matrix aligns every state column across rows
+            .child(div().flex_1().grid().grid_cols(8).gap_4().children(cells))
     }
 }
 
@@ -112,18 +113,18 @@ impl gpui_kit::Render for AtomsButton {
             ("gallery.atoms.variant.primary", &|id: String| {
                 Button::new(id)
                     .primary()
-                    .icon(IconName::Plus)
+                    .icon(atoms::button_icon(IconName::Plus, ControlSize::Medium))
                     .label(l_add.clone())
             }),
             ("gallery.atoms.variant.secondary", &|id: String| {
                 Button::new(id)
-                    .icon(IconName::Funnel)
+                    .icon(atoms::button_icon(IconName::Funnel, ControlSize::Medium))
                     .label(l_filter.clone())
             }),
             ("gallery.atoms.variant.outline", &|id: String| {
                 Button::new(id)
                     .outline()
-                    .icon(IconName::Upload) // → phosphor export
+                    .icon(atoms::button_icon(IconName::Upload, ControlSize::Medium)) // → phosphor export
                     .label(l_export.clone())
             }),
             ("gallery.atoms.variant.ghost", &|id: String| {
@@ -132,7 +133,7 @@ impl gpui_kit::Render for AtomsButton {
             ("gallery.atoms.variant.danger", &|id: String| {
                 Button::new(id)
                     .danger()
-                    .icon(IconName::X)
+                    .icon(atoms::button_icon(IconName::X, ControlSize::Medium))
                     .label(l_delete.clone())
             }),
         ];
@@ -149,7 +150,8 @@ impl gpui_kit::Render for AtomsButton {
 
         // ── sizes ────────────────────────────────────────────────────────────
         // xsmall 20 · small 24 · medium 32 · large 40 (radius 6/6/6/8) + compact override.
-        let sizes_row = |cx: &mut Context<'_, Self>, make: &dyn Fn(String) -> Button| {
+        let sizes_row = |cx: &mut Context<'_, Self>,
+                         make: &dyn Fn(String, ControlSize) -> Button| {
             h_flex().gap_4().children(
                 [
                     ControlSize::XSmall,
@@ -160,25 +162,25 @@ impl gpui_kit::Render for AtomsButton {
                 .iter()
                 .enumerate()
                 .map(|(i, size)| {
-                    let b = make(format!("size-{i}")).on_click(cx.listener(Self::on_click));
+                    let b = make(format!("size-{i}"), *size).on_click(cx.listener(Self::on_click));
                     button_size(b, *size)
                 }),
             )
         };
         let sizes = v_flex()
             .gap_4()
-            .child(sizes_row(cx, &|id: String| {
+            .child(sizes_row(cx, &|id: String, size: ControlSize| {
                 Button::new(id)
                     .primary()
-                    .icon(IconName::Plus)
+                    .icon(atoms::button_icon(IconName::Plus, size))
                     .label(l_add.clone())
             }))
-            .child(sizes_row(cx, &|id: String| {
+            .child(sizes_row(cx, &|id: String, size: ControlSize| {
                 Button::new(id)
-                    .icon(IconName::Funnel)
+                    .icon(atoms::button_icon(IconName::Funnel, size))
                     .label(l_filter.clone())
             }))
-            .child(sizes_row(cx, &|id: String| {
+            .child(sizes_row(cx, &|id: String, _size: ControlSize| {
                 Button::new(id).ghost().label(l_cancel.clone())
             }))
             .child(
@@ -210,7 +212,7 @@ impl gpui_kit::Render for AtomsButton {
                 cx,
                 "gallery.atoms.anatomy.icon_label",
                 Button::new("anat-icon-label")
-                    .icon(IconName::Plus)
+                    .icon(atoms::button_icon(IconName::Plus, ControlSize::Medium))
                     .label(l_add.clone())
                     .on_click(cx.listener(Self::on_click)),
             ),
@@ -226,7 +228,7 @@ impl gpui_kit::Render for AtomsButton {
                 cx,
                 "gallery.atoms.anatomy.all_three",
                 Button::new("anat-all")
-                    .icon(IconName::Funnel)
+                    .icon(atoms::button_icon(IconName::Funnel, ControlSize::Medium))
                     .label(tr(cx, "gallery.atoms.anatomy.all_three"))
                     .dropdown_caret(true)
                     .on_click(cx.listener(Self::on_click)),
@@ -279,7 +281,7 @@ impl gpui_kit::Render for AtomsButton {
                     let cells = kit::STATE_KEYS.iter().enumerate().map(|(i, key)| {
                         let mut b = Button::new(format!("ib-{g}-{i}"))
                             .ghost()
-                            .icon(*icon)
+                            .icon(atoms::icon(*icon, 16.)) // 32px control → 16px glyph
                             .on_click(cx.listener(Self::on_click));
                         match i {
                             4 | 5 => b = b.selected(true),
@@ -289,7 +291,7 @@ impl gpui_kit::Render for AtomsButton {
                         }
                         kit::cell(cx, key, b)
                     });
-                    h_flex().gap_6().items_start().children(cells)
+                    div().grid().grid_cols(8).gap_4().children(cells)
                 }));
         let icon_buttons_group = kit::group(
             cx,
@@ -599,8 +601,8 @@ impl gpui_kit::Render for AtomsButton {
         // ── page ─────────────────────────────────────────────────────────────
         v_flex()
             .size_full()
-            .p(px(bookkeepy_ui::api::language::space("space-20") as f32))
-            .gap(px(bookkeepy_ui::api::language::space("space-12") as f32))
+            .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
+            .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
             .child(kit::overline(cx, tr(cx, "gallery.atoms.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.atoms.button.title")))
             .child(kit::caption(cx, tr(cx, "gallery.atoms.button.subtitle")))

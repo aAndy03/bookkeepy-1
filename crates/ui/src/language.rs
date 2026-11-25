@@ -246,6 +246,19 @@ pub mod controls {
                 Self::Large => radius_tier("lg") as u32,
             }
         }
+
+        /// Glyph size INSIDE a control of this size — ATOMS · 01 sizes row as drawn:
+        /// 20px control → 12px icon, 24 → 14, 32 → 14, 40 → 16 (icons stay ~44% of the
+        /// control height; gpui-kit's default icon size is too large for the small
+        /// controls, which is why the preset pins it per size).
+        pub fn icon_px(self) -> u32 {
+            match self {
+                Self::XSmall => 12,
+                Self::Small => 14,
+                Self::Medium => 14,
+                Self::Large => 16,
+            }
+        }
     }
 
     /// Size a [`Button`] on the design control-size scale — exact height and radius
@@ -493,6 +506,12 @@ pub mod atoms {
     /// ATOMS · 01 — icons never sit on a plate).
     pub fn icon(name: IconName, size_px: f32) -> Icon {
         Icon::new(name).with_size(Size::Size(px(size_px)))
+    }
+
+    /// A button glyph sized for its control (ATOMS · 01: icon ≈ 44% of control height —
+    /// 20→12, 24→14, 32→14, 40→16). Pass to `Button::icon(...)`.
+    pub fn button_icon(name: IconName, size: super::controls::ControlSize) -> Icon {
+        icon(name, size.icon_px() as f32)
     }
 
     /// The same glyph in the **duotone** weight (interaction state) — served by
