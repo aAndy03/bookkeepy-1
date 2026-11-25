@@ -231,11 +231,54 @@ impl gpui_kit::Render for AtomsChoice {
                 &label,
             ))
             .child(switch_row(cx, mode, true, true, None, &label));
+        let settings_row = |title_key: &str, desc_key: &str, on: bool, id: &'static str| {
+            h_flex()
+                .w(px(420.))
+                .items_center()
+                .justify_between()
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(div().text_size(px(12.)).child(tr(cx, title_key)))
+                        .child(kit::caption(cx, tr(cx, desc_key))),
+                )
+                .child({
+                    let mut sw = Switch::new(id).checked(on);
+                    if let Some(c) = bookkeepy_ui::api::language::role_hsla(mode, "primary") {
+                        sw = sw.color(c);
+                    }
+                    sw
+                })
+        };
+        let settings = v_flex()
+            .gap_4()
+            .child(settings_row(
+                "gallery.atoms02.demo.hide_amounts",
+                "gallery.atoms02.demo.hide_amounts_desc",
+                true,
+                "set-hide",
+            ))
+            .child(settings_row(
+                "gallery.atoms02.demo.start_today",
+                "gallery.atoms02.demo.start_today_desc",
+                true,
+                "set-today",
+            ))
+            .child(settings_row(
+                "gallery.atoms02.demo.encrypted_sync",
+                "gallery.atoms02.demo.encrypted_sync_desc",
+                false,
+                "set-sync",
+            ));
         let switch_group = kit::group(
             cx,
             "gallery.atoms02.choice.switch",
             "gallery.atoms02.choice.hint",
-            switch_matrix,
+            v_flex().gap_6().child(switch_matrix).child(kit::cell(
+                cx,
+                "gallery.atoms02.choice.settings",
+                settings,
+            )),
         );
 
         // ── toggle: off/on × ghost/outline × interaction + sizes + segmented ─
@@ -351,14 +394,10 @@ impl gpui_kit::Render for AtomsChoice {
         );
         let slider_states = kit::row(IX.iter().enumerate().map(|(i, ix)| {
             let pct = [25., 37.5, 50., 62.5, 75.][i];
-            let mut cell = v_flex()
+            let bubble = (*ix == Ix::Pressed).then(|| tr(cx, "gallery.atoms02.demo.ron620"));
+            let cell = v_flex()
                 .gap_2()
-                .child(choice::slider_track(pct, *ix, 240., mode));
-            if *ix == Ix::Pressed {
-                cell = cell.child(h_flex().w(px(240.)).justify_center().child(
-                    choice::slider_bubble(tr(cx, "gallery.atoms02.demo.ron620"), mode),
-                ));
-            }
+                .child(choice::slider_track_bubble(pct, *ix, 240., bubble, mode));
             kit::cell(cx, IX_KEYS[i], cell)
         }));
         let range = choice::slider_range(25., 70., 240., mode);
@@ -377,7 +416,25 @@ impl gpui_kit::Render for AtomsChoice {
             .child(kit::cell(cx, "gallery.atoms02.slider.live", live_slider))
             .child(slider_states)
             .child(kit::cell(cx, "gallery.atoms02.slider.range", range))
-            .child(kit::cell(cx, "gallery.atoms02.slider.marks", marks));
+            .child(kit::cell(cx, "gallery.atoms02.slider.marks", marks))
+            .child(kit::cell(
+                cx,
+                "gallery.atoms02.slider.budget",
+                v_flex()
+                    .gap_3()
+                    .child(
+                        h_flex()
+                            .w(px(272.))
+                            .justify_between()
+                            .child(kit::caption(
+                                cx,
+                                tr(cx, "gallery.atoms02.demo.budget_title"),
+                            ))
+                            .child(kit::caption(cx, tr(cx, "gallery.atoms02.demo.ron420"))),
+                    )
+                    .child(choice::slider_track(47.5, Ix::Rest, 240., mode))
+                    .child(kit::caption(cx, tr(cx, "gallery.atoms02.demo.budget_desc"))),
+            ));
         let slider_group = kit::group(
             cx,
             "gallery.atoms02.choice.slider",

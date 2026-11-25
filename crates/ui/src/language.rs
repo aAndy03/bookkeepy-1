@@ -386,13 +386,17 @@ pub mod display {
     /// Anchor a badge over a child element (bell icon, avatar…): the count sits at the
     /// top-right corner, the icon badge at the bottom-right (ATOMS · 02 anchored row).
     pub fn badge_anchored(anchor: impl IntoElement, badge: Div, top_right: bool) -> Div {
+        // self_start so the wrapper hugs the anchor in a column-flex cell — a stretched block would
+        // stretch to the cell width and fling the absolute badge to the cell corner.
+        // Offsets overlap the anchor's corner like the sheet (pill over the icon's
+        // top-right, dot over the avatar's bottom-right).
         let badge = badge.absolute();
         let badge = if top_right {
-            badge.top(px(-6.)).right(px(-8.))
+            badge.top(px(-6.)).right(px(-10.))
         } else {
-            badge.bottom(px(-4.)).right(px(-4.))
+            badge.bottom(px(-6.)).right(px(-6.))
         };
-        div().relative().child(anchor).child(badge)
+        div().relative().self_start().child(anchor).child(badge)
     }
 
     /// The avatar hue ramp — initials pick a well/tint pair deterministically from the
@@ -576,8 +580,10 @@ pub mod choice {
     /// The 20px focus ring wrapper drawn around checkbox/radio/switch (rx6, padding
     /// 1px, 1.5px border — transparent at rest, `ring` color when focused).
     fn ring_wrap(box_el: Div, ix: Ix, mode: Mode, full: bool) -> Div {
+        // hugs the control (checkbox/radio 16px box, switch 20px track) + 1px padding
+        // + 1.5px border; gpui borders sit inside, so the wrapper grows instead of
+        // clipping the control the way a fixed 20px box did for the switch track.
         let mut w = div()
-            .size(px(20.))
             .p(px(1.))
             .border(px(1.5))
             .border_color(gpui_kit::transparent_white())
@@ -819,6 +825,17 @@ pub mod choice {
     /// geometry, so the sheet-exact track is composed here; the live draggable Slider
     /// rides the same theme seats.
     pub fn slider_track(pct: f32, ix: Ix, width: f32, mode: Mode) -> Div {
+        slider_track_bubble(pct, ix, width, None, mode)
+    }
+
+    /// [`slider_track`] with a value bubble floating above the thumb (pressed state).
+    pub fn slider_track_bubble(
+        pct: f32,
+        ix: Ix,
+        width: f32,
+        bubble: Option<SharedString>,
+        mode: Mode,
+    ) -> Div {
         let pct = pct.clamp(0., 100.);
         let fill_w = width * pct / 100.;
         let halo = match ix {
@@ -864,14 +881,25 @@ pub mod choice {
         if disabled(ix) {
             thumb = thumb.opacity(0.4);
         }
-        div()
+        let mut root = div()
             .relative()
             .w(px(width))
             .h(px(20.))
             .child(track)
             .child(fill)
             .child(halo_el)
-            .child(thumb)
+            .child(thumb);
+        if let Some(text) = bubble {
+            // bubble floats above the thumb, centered on it (sheet: pressed state)
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px((fill_w - 20.).max(0.)))
+                    .top(px(-26.))
+                    .child(slider_bubble(text, mode)),
+            );
+        }
+        root
     }
 
     /// Range slider specimen: fill BETWEEN the two thumbs (p1..p2).
