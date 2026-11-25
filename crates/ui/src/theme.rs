@@ -4,18 +4,34 @@
 //! ADR-0017). Nothing in the UI hardcodes a color, radius or spacing value: this module
 //! is the ONLY place data-theme tokens meet gpui-kit's theme seam.
 //!
-//! Dark is the design language's native theme; light keeps the same accent + functional
-//! hues (validated by `primary-data::theme::validate_structure`).
+//! Token names are the TOKENS · Bookkeepy v1 sheet's semantic roles (`background`,
+//! `control`, `primary`, `ring-accent`, `data-1` …); raw primitives come from the
+//! palette aliases (`white-a8`, `cyan-900` …). Dark is the designed native theme; light
+//! mirrors the ramp with identical hues (validated by `primary-data::theme::validate_structure`).
 
 use std::rc::Rc;
 
-use bookkeepy_primary_data::theme::Mode;
+use bookkeepy_primary_data::theme::{Mode, colors, palette, radii, style};
 use gpui_kit::component::theme::{Theme, ThemeConfig, ThemeMode};
 use gpui_kit::{App, SharedString};
 
 /// Build the gpui-kit [`ThemeConfig`] for `mode` from the design tokens.
 fn config_for(mode: Mode) -> Rc<ThemeConfig> {
-    let t = bookkeepy_primary_data::theme::colors(mode);
+    let t = colors(mode);
+    // Resolve a semantic role to a config string seat.
+    let role = |name: &str| -> Option<SharedString> {
+        t.get(name).map(|s| SharedString::from(s.to_string()))
+    };
+    // Resolve a raw palette alias (white-a8, cyan-900 …).
+    let prim = |alias: &str| -> Option<SharedString> {
+        palette()
+            .get(alias)
+            .map(|s| SharedString::from(s.to_string()))
+    };
+    // The design draws no borders on inputs' sunken well except the `input` border role;
+    // fully transparent seat for the separators the design avoids.
+    let transparent = || Some(SharedString::from("#00000000"));
+
     let mut config = ThemeConfig::default();
     config.name = match mode {
         Mode::Dark => "Bookkeepy (dark)".into(),
@@ -25,191 +41,184 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
         Mode::Dark => ThemeMode::Dark,
         Mode::Light => ThemeMode::Light,
     };
-    config.radius = Some(bookkeepy_primary_data::theme::radii().control as usize);
-    // Large surfaces (dialogs, command palette, notifications) use the banner radius —
-    // ORGANISMS · 01/02 draw them rx20 #1c1c1c; calendar popovers read the same seat.
-    config.radius_lg = Some(bookkeepy_primary_data::theme::radii().banner as usize);
-    // Flat controls — the design language draws no shadows on buttons, inputs or pickers
-    // (ATOMS · 01/03, MOLECULES · 01/03 spec panels); elevation starts at popovers.
+    // Base type scale: the sheet's `body` style is the 12px root (TOKENS §03).
+    if let Some(body) = style("body") {
+        config.font_size = Some(body.size_px as f32);
+    }
+    if let Some(mono) = style("mono") {
+        config.mono_font_size = Some(mono.size_px as f32);
+    }
+    let fonts = bookkeepy_primary_data::theme::typography().fonts().clone();
+    config.font_family = Some(SharedString::from(fonts.ui));
+    config.mono_font_family = Some(SharedString::from(fonts.mono));
+    // Radii roles: control 6 / dialog 20 / card 16 (TOKENS §05 roles).
+    if let Some(r) = radii().roles.get("control") {
+        config.radius = Some(*r as usize);
+    }
+    if let Some(r) = radii().roles.get("dialog") {
+        config.radius_lg = Some(*r as usize);
+    }
+    if let Some(r) = radii().roles.get("card") {
+        config.window_radius = Some(*r as usize);
+    }
+    // The design is FLAT — cards/HUD carry no shadow; only popovers & dialogs float
+    // (TOKENS §06), so the global shadow switch stays off.
     config.shadow = Some(false);
 
-    let hex = |v: &str| Some(SharedString::from(v.to_string()));
     // Base surfaces + text.
-    config.colors.background = hex(&t.bg);
-    config.colors.foreground = hex(&t.fg);
-    config.colors.border = hex(&t.border);
-    // Inputs and picker triggers are the design's canvas wells (#0d0d0d on dark).
-    config.colors.input = hex(&t.bg_canvas);
-    config.colors.ring = hex(&t.focus_ring);
-    config.colors.selection = hex(&t.selection);
-    config.colors.overlay = hex(&t.overlay);
-    // `primary` is the INVERTED neutral, not the brand hue (ATOMS · 02/03 + TIME sheets):
-    // checkbox/radio/switch checked fills, the calendar's selected day, the neutral
-    // progress fill and the caret all read this seat — light fill + dark ink on dark,
-    // mirrored on light. The brand orange lives on `ring` (focus) and calendar
-    // today/range emphasis only.
-    config.colors.primary = hex(&t.bg_invert);
-    config.colors.primary_hover = hex(&t.bg_invert_hover);
-    config.colors.primary_active = hex(&t.bg_invert_hover);
-    config.colors.primary_foreground = hex(&t.on_invert);
-    // `accent` = the white @ 8% overlay: menu item hover/selected, list hover, sidebar
-    // active plate (MOLECULES · 01/02, ORGANISMS · 01).
-    config.colors.accent = hex(&t.bg_nav_active);
-    config.colors.accent_foreground = hex(&t.fg);
-    config.colors.caret = hex(&t.bg_invert_hover);
-    // Neutral controls (Default and Secondary buttons, selected segments): the design's
-    // flat #1c1c1c control fill with its #2a2a2a hover. Their ink is quiet — ghost and
-    // secondary sit at muted, rising on hover (ATOMS · 01 ghost/secondary specs).
-    config.colors.button = hex(&t.bg_control);
-    config.colors.button_hover = hex(&t.bg_control_hover);
-    config.colors.button_active = hex(&t.bg_control_hover);
-    config.colors.button_foreground = hex(&t.fg_muted);
-    config.colors.secondary = hex(&t.bg_control);
-    config.colors.secondary_hover = hex(&t.bg_control_hover);
-    config.colors.secondary_active = hex(&t.bg_control_hover);
-    config.colors.secondary_foreground = hex(&t.fg_muted);
+    config.colors.background = role("background");
+    config.colors.foreground = role("foreground");
+    config.colors.border = role("border");
+    // Input: sunken-well fill is applied per-control by the language presets; the `input`
+    // seat is the border role (#333 at rest), focus ring is the accent (ring 2, offset 2).
+    config.colors.input = role("input");
+    config.colors.ring = role("ring-accent");
+    config.colors.selection = role("selection");
+    config.colors.overlay = role("scrim");
+    // `primary` is the INVERTED neutral (light fill + dark ink on dark), not the brand
+    // hue (TOKENS §02: primary = neutral-100, primary-hover = neutral-0). The brand
+    // orange lives on ring-accent / indicators only.
+    config.colors.primary = role("primary");
+    config.colors.primary_hover = role("primary-hover");
+    config.colors.primary_active = role("primary-hover");
+    config.colors.primary_foreground = role("primary-foreground");
+    // `accent` = the white @ 8% overlay: menu item hover/selected, sidebar active plate.
+    config.colors.accent = role("sidebar-selected");
+    config.colors.accent_foreground = role("foreground");
+    config.colors.caret = role("primary-hover");
+    // Neutral controls: the flat `control` fill with its hover/active ladder; ink is the
+    // `icon` role (neutral-200) — quiet at rest, white on hover via the component states.
+    config.colors.button = role("control");
+    config.colors.button_hover = role("control-hover");
+    config.colors.button_active = role("control-active");
+    config.colors.button_foreground = role("icon");
+    config.colors.secondary = role("control");
+    config.colors.secondary_hover = role("control-hover");
+    config.colors.secondary_active = role("control-active");
+    config.colors.secondary_foreground = role("icon");
     // The button_secondary* seats must be set explicitly — unset, gpui falls back to the
     // shadcn light-gray secondary and secondary buttons render wrong on dark.
-    config.colors.button_secondary = hex(&t.bg_control);
-    config.colors.button_secondary_hover = hex(&t.bg_control_hover);
-    config.colors.button_secondary_active = hex(&t.bg_control_hover);
-    config.colors.button_secondary_foreground = hex(&t.fg_muted);
-    // The primary button INVERTS — light fill, dark ink, brightest on press; one per
-    // surface, the only button that does (ATOMS · 01 primary row). The brand accent stays
-    // reserved for focus, selection highlights and indicators — never the primary button.
-    config.colors.button_primary = hex(&t.bg_invert);
-    config.colors.button_primary_hover = hex(&t.bg_invert_hover);
-    config.colors.button_primary_active = hex(&t.bg_invert_hover);
-    config.colors.button_primary_foreground = hex(&t.on_invert);
-    config.colors.muted = hex(&t.bg_raised);
-    config.colors.muted_foreground = hex(&t.fg_muted);
-    // Functional hues: text on a functional surface is the design's on-accent ink.
-    config.colors.danger = hex(&t.danger);
-    config.colors.danger_hover = hex(&t.danger_tint);
-    config.colors.danger_foreground = hex(&t.on_accent);
-    config.colors.success = hex(&t.success);
-    config.colors.success_hover = hex(&t.success_tint);
-    config.colors.success_foreground = hex(&t.on_accent);
-    config.colors.warning = hex(&t.warning);
-    config.colors.warning_hover = hex(&t.warning_tint);
-    config.colors.warning_foreground = hex(&t.on_accent);
-    config.colors.info = hex(&t.info);
-    config.colors.info_hover = hex(&t.info_tint);
-    config.colors.info_foreground = hex(&t.on_accent);
-    // Functional presses go solid: danger is calm at rest (well + tint ink) and turns
-    // solid red when pressed (ATOMS · 01 "calm until touched").
-    config.colors.danger_active = hex(&t.danger);
-    // Soft functional buttons (Danger/Success/Warning/Info variants): the design draws
-    // them on the functional wells with the tint as ink (ATOMS · 01 functional rows).
-    // The hover/active seats render as overlays on the well, so they carry the raw hue.
-    config.colors.button_danger = hex(&t.danger_well);
-    config.colors.button_danger_hover = hex(&t.danger);
-    config.colors.button_danger_active = hex(&t.danger);
-    config.colors.button_danger_foreground = hex(&t.danger_tint);
-    config.colors.button_success = hex(&t.success_well);
-    config.colors.button_success_hover = hex(&t.success);
-    config.colors.button_success_active = hex(&t.success);
-    config.colors.button_success_foreground = hex(&t.success_tint);
-    config.colors.button_warning = hex(&t.warning_well);
-    config.colors.button_warning_hover = hex(&t.warning);
-    config.colors.button_warning_active = hex(&t.warning);
-    config.colors.button_warning_foreground = hex(&t.warning_tint);
-    config.colors.button_info = hex(&t.info_well);
-    config.colors.button_info_hover = hex(&t.info);
-    config.colors.button_info_active = hex(&t.info);
-    config.colors.button_info_foreground = hex(&t.info_tint);
-    // Links are underlined muted text that rises to the foreground on hover — they are
-    // not accent-colored (ATOMS · 01 link atom).
-    config.colors.link = hex(&t.fg_muted);
-    config.colors.link_hover = hex(&t.fg);
-    config.colors.link_active = hex(&t.fg);
-    // Chart palette — the design-language series.
-    config.colors.chart_1 = hex(&t.chart_series_1);
-    config.colors.chart_2 = hex(&t.chart_series_2);
-    config.colors.chart_3 = hex(&t.chart_series_3);
-    config.colors.chart_4 = hex(&t.chart_series_4);
-    config.colors.chart_5 = hex(&t.chart_series_5);
-    config.colors.chart_bullish = hex(&t.chart_positive);
-    config.colors.chart_bearish = hex(&t.chart_negative);
-    config.colors.chart_grid = hex(&t.border_subtle);
-    // Shell chrome on the design ramp (TEMPLATES · shell, ORGANISMS · 01/02): the title
-    // bar is the sheet panel with a bottom hairline; the status bar one step darker; the
-    // sidebar rides the canvas well; the active nav item is the white@8% plate, and the
-    // count badge is the accent. Window corners follow the card radius.
-    config.window_radius = Some(bookkeepy_primary_data::theme::radii().card as usize);
-    config.colors.title_bar = hex(&t.bg_sheet);
-    config.colors.title_bar_border = hex(&t.border_subtle);
-    config.colors.status_bar = hex(&t.bg);
-    config.colors.sidebar = hex(&t.bg);
-    config.colors.sidebar_foreground = hex(&t.fg_muted);
-    config.colors.sidebar_border = hex(&t.border_heavy);
-    config.colors.sidebar_accent = hex(&t.bg_nav_active);
-    config.colors.sidebar_accent_foreground = hex(&t.fg);
-    config.colors.sidebar_primary = hex(&t.bg_nav_active);
-    config.colors.sidebar_primary_foreground = hex(&t.fg);
-    // Dropdown/menu/calendar panels float on their own surface (#222222 on dark,
-    // MOLECULES · 01/03), apart from cards and dialogs.
-    config.colors.popover = hex(&t.bg_popover);
-    config.colors.popover_foreground = hex(&t.fg);
-    config.colors.group_box = hex(&t.bg_sheet);
-    config.colors.table = hex(&t.bg_none);
-    config.colors.table_even = hex(&t.bg_none);
-    // Table header row is the control fill; rows ride the white overlays (hover @4%,
-    // selected @12% — ORGANISMS · 01 data table spec). The footer is a plain row:
-    // no fill, no separator (the design avoids hard separators).
-    config.colors.table_head = hex(&t.bg_control);
-    config.colors.table_head_foreground = hex(&t.fg_muted);
-    config.colors.table_foot = hex(&t.bg_none);
-    config.colors.table_foot_foreground = hex(&t.fg_muted);
-    config.colors.table_active = hex(&t.bg_row_active);
-    config.colors.table_hover = hex(&t.bg_row_hover);
-    config.colors.table_row_border = hex(&t.border_subtle);
-    // Lists: card surface #171717, same row overlays as the table.
-    config.colors.list = hex(&t.bg_raised);
-    config.colors.list_head = hex(&t.bg_control);
-    config.colors.list_active = hex(&t.bg_row_active);
-    // Row hover is the white @ 4% overlay (menu items use the @8% accent seat).
-    config.colors.list_hover = hex(&t.bg_row_hover);
-    // Scrollbar: white @ 4% track, white @ 40% thumb (ATOMS · 03 / ORGANISMS · 02).
-    config.colors.scrollbar = hex(&t.bg_row_hover);
-    config.colors.scrollbar_thumb = hex(&t.bg_thumb);
-    config.colors.scrollbar_thumb_hover = hex(&t.bg_thumb);
-    // Skeleton shimmer blocks ride the popover surface (ATOMS · 03: #222222 on #171717).
-    config.colors.skeleton = hex(&t.bg_popover);
-    // Switch off: #333 track + #a8a8a8 knob; on reads `primary` (inverted) automatically.
-    config.colors.switch = hex(&t.border_strong);
-    config.colors.switch_thumb = hex(&t.fg_muted);
-    // Slider: the fill is the inverted neutral (solid #ededed, ATOMS · 02 slider spec);
-    // the track reads the same color at 0.2 opacity via the component's own alpha.
-    config.colors.slider_bar = hex(&t.bg_invert);
-    config.colors.slider_thumb = hex(&t.bg_invert);
-    // Tabs: quiet labels, active tab = white @ 4% chip (MOLECULES · 01 tabs: 209x28
-    // segments, active chip #fff fo 0.0392).
-    config.colors.tab = hex(&t.bg);
-    config.colors.tab_bar = hex(&t.bg);
-    config.colors.tab_bar_segmented = hex(&t.bg_control);
-    config.colors.tab_foreground = hex(&t.fg_muted);
-    config.colors.tab_active = hex(&t.bg_row_hover);
-    config.colors.tab_active_foreground = hex(&t.fg);
-    // Charts: gridlines are white @ 8% (CHARTS sheet), series keep the group palette.
-    config.colors.chart_grid = hex(&t.bg_nav_active);
-    // Drag/drop + progress: the design's drag outline is the light fg hairline
-    // (ORGANISMS · 02 resizable: #d1d1d1), the drop target keeps the accent well;
-    // the neutral progress fill is the inverted neutral.
-    config.colors.drag_border = hex(&t.fg);
-    config.colors.drop_target = hex(&t.accent_well);
-    config.colors.progress_bar = hex(&t.bg_invert);
-    // The design avoids hard separators: row borders and stripe fills go transparent,
-    // accordion is flat on the base surface. The SELECTED row keeps the 2px light
-    // indicator (ORGANISMS · 01: selected = white@12% + left accent 2px #d1d1d1).
-    config.colors.table_row_border = hex(&t.bg_none);
-    config.colors.list_active_border = hex(&t.fg);
-    config.colors.table_active_border = hex(&t.fg);
-    config.colors.list_even = hex(&t.bg_none);
-    config.colors.accordion = hex(&t.bg);
-    config.colors.window_border = hex(&t.border);
-    // Status-bar hairline is the subtle separator (ORGANISMS · 02: #222222).
-    config.colors.status_bar_border = hex(&t.border_subtle);
+    config.colors.button_secondary = role("control");
+    config.colors.button_secondary_hover = role("control-hover");
+    config.colors.button_secondary_active = role("control-active");
+    config.colors.button_secondary_foreground = role("icon");
+    // The primary button INVERTS — the only button that does (ATOMS · 01 primary row).
+    config.colors.button_primary = role("primary");
+    config.colors.button_primary_hover = role("primary-hover");
+    config.colors.button_primary_active = role("primary-hover");
+    config.colors.button_primary_foreground = role("primary-foreground");
+    config.colors.muted = role("surface-raised");
+    config.colors.muted_foreground = role("muted-foreground");
+    // Functional hues: solid fills carry `on-solid` ink (white); the soft variant buttons
+    // sit on the hue wells (900) with the light tint (300) as ink; pressed goes solid.
+    config.colors.danger = role("danger");
+    config.colors.danger_hover = role("danger-foreground");
+    config.colors.danger_active = role("danger");
+    config.colors.danger_foreground = role("on-solid");
+    config.colors.success = role("success");
+    config.colors.success_hover = role("success-foreground");
+    config.colors.success_active = role("success");
+    config.colors.success_foreground = role("on-solid");
+    config.colors.warning = role("warning");
+    config.colors.warning_hover = role("warning-foreground");
+    config.colors.warning_active = role("warning");
+    config.colors.warning_foreground = role("on-solid");
+    config.colors.info = role("info");
+    config.colors.info_hover = prim("cyan-300");
+    config.colors.info_active = role("info");
+    config.colors.info_foreground = role("on-solid");
+    config.colors.button_danger = role("danger-subtle");
+    config.colors.button_danger_hover = role("danger");
+    config.colors.button_danger_active = role("danger");
+    config.colors.button_danger_foreground = role("danger-foreground");
+    config.colors.button_success = role("success-subtle");
+    config.colors.button_success_hover = role("success");
+    config.colors.button_success_active = role("success");
+    config.colors.button_success_foreground = role("success-foreground");
+    config.colors.button_warning = prim("amber-900");
+    config.colors.button_warning_hover = role("warning");
+    config.colors.button_warning_active = role("warning");
+    config.colors.button_warning_foreground = role("warning-foreground");
+    config.colors.button_info = prim("cyan-900");
+    config.colors.button_info_hover = role("info");
+    config.colors.button_info_active = role("info");
+    config.colors.button_info_foreground = prim("cyan-300");
+    // Links are the `link` role (white on dark) — never accent-colored (TOKENS §02).
+    config.colors.link = role("link");
+    config.colors.link_hover = role("link");
+    config.colors.link_active = role("link");
+    // Chart palette — the sheet's data series (data-1..5 on the first five seats).
+    config.colors.chart_1 = role("data-1");
+    config.colors.chart_2 = role("data-2");
+    config.colors.chart_3 = role("data-3");
+    config.colors.chart_4 = role("data-4");
+    config.colors.chart_5 = role("data-5");
+    config.colors.chart_bullish = role("money-in");
+    config.colors.chart_bearish = role("money-negative");
+    config.colors.chart_grid = role("divider");
+    // Shell chrome: title bar + sidebar ride the base background; status bar too, with a
+    // hairline. Active nav = white @ 8% plate. Window corners follow the card radius.
+    config.colors.title_bar = role("background");
+    config.colors.title_bar_border = role("border-subtle");
+    config.colors.status_bar = role("background");
+    config.colors.status_bar_border = role("border-subtle");
+    config.colors.sidebar = role("sidebar");
+    config.colors.sidebar_foreground = role("sidebar-label");
+    config.colors.sidebar_border = role("border-strong");
+    config.colors.sidebar_accent = role("sidebar-selected");
+    config.colors.sidebar_accent_foreground = role("foreground");
+    config.colors.sidebar_primary = role("sidebar-selected");
+    config.colors.sidebar_primary_foreground = role("foreground");
+    // Dropdown/menu/calendar panels float on the popover surface (#222222 on dark).
+    config.colors.popover = role("popover");
+    config.colors.popover_foreground = role("foreground");
+    config.colors.group_box = role("surface");
+    config.colors.group_box_foreground = role("foreground");
+    // Tables/lists: transparent rows — the design avoids hard separators; row states are
+    // the white overlays (hover @4%, selected @12% + light indicator).
+    config.colors.table = transparent();
+    config.colors.table_even = transparent();
+    config.colors.table_head = role("control");
+    config.colors.table_head_foreground = role("muted-foreground");
+    config.colors.table_foot = transparent();
+    config.colors.table_foot_foreground = role("muted-foreground");
+    config.colors.table_active = role("control-selected");
+    config.colors.table_hover = role("ghost-hover");
+    config.colors.table_row_border = transparent();
+    config.colors.table_active_border = role("icon");
+    config.colors.list = role("surface");
+    config.colors.list_head = role("control");
+    config.colors.list_active = role("control-selected");
+    config.colors.list_hover = role("ghost-hover");
+    config.colors.list_even = transparent();
+    config.colors.list_active_border = role("icon");
+    // Scrollbar: white @ 4% track, white @ 40% thumb (ATOMS · 03).
+    config.colors.scrollbar = role("ghost-hover");
+    config.colors.scrollbar_thumb = prim("white-a40");
+    config.colors.scrollbar_thumb_hover = prim("white-a40");
+    // Skeleton blocks ride the skeleton roles (TOKENS §02 board & loading).
+    config.colors.skeleton = role("skeleton");
+    // Switch off: `input` border-role track + muted knob; on reads `primary` (inverted).
+    config.colors.switch = role("input");
+    config.colors.switch_thumb = role("secondary-foreground");
+    // Slider: the fill/thumb are the inverted neutral (TOKENS §02 progress-fill = primary).
+    config.colors.slider_bar = role("progress-fill");
+    config.colors.slider_thumb = role("progress-fill");
+    // Tabs: quiet labels, active tab = ghost-hover chip.
+    config.colors.tab = role("background");
+    config.colors.tab_bar = role("background");
+    config.colors.tab_bar_segmented = role("control");
+    config.colors.tab_foreground = role("muted-foreground");
+    config.colors.tab_active = role("ghost-hover");
+    config.colors.tab_active_foreground = role("foreground");
+    // Drag/drop + progress: drag outline is the light ink hairline; drop target keeps the
+    // accent well; neutral progress fill is the inverted neutral.
+    config.colors.drag_border = role("icon");
+    config.colors.drop_target = role("accent-subtle");
+    config.colors.progress_bar = role("progress-fill");
+    config.colors.accordion = role("background");
+    config.colors.window_border = role("border");
+    config.colors.description_list_label = role("muted-foreground");
     Rc::new(config)
 }
 
@@ -228,16 +237,24 @@ pub fn apply(mode: Mode, cx: &mut App) {
     // The raw-hue slots (icon color roles, rating stars, color-picker swatches) are
     // private in `ThemeConfig` (serde-only `base.*`); set them on the resolved theme.
     // Design hues, not tailwind's red-600/green-600/yellow-600.
-    let t = bookkeepy_primary_data::theme::colors(mode);
-    let hsla = |v: &str| gpui_kit::component::theme::try_parse_color(v).unwrap_or_default();
+    let t = colors(mode);
+    let p = palette();
+    let hsla = |v: Option<&str>| {
+        v.and_then(|v| gpui_kit::component::theme::try_parse_color(v).ok())
+            .unwrap_or_default()
+    };
     Theme::update(cx, |th| {
-        th.red = hsla(&t.danger);
-        th.red_light = hsla(&t.danger_tint);
-        th.green = hsla(&t.success);
-        th.green_light = hsla(&t.success_tint);
-        th.blue = hsla(&t.info);
-        th.blue_light = hsla(&t.info_tint);
-        th.yellow = hsla(&t.warning);
-        th.yellow_light = hsla(&t.warning_tint);
+        th.red = hsla(t.get("danger"));
+        th.red_light = hsla(t.get("danger-foreground"));
+        th.green = hsla(t.get("success"));
+        th.green_light = hsla(t.get("success-foreground"));
+        th.blue = hsla(t.get("info"));
+        th.blue_light = hsla(p.get("cyan-300").map(|s| s.as_str()));
+        th.yellow = hsla(t.get("warning"));
+        th.yellow_light = hsla(t.get("warning-foreground"));
+        th.magenta = hsla(p.get("violet-500").map(|s| s.as_str()));
+        th.magenta_light = hsla(p.get("violet-300").map(|s| s.as_str()));
+        th.cyan = hsla(p.get("cyan-500").map(|s| s.as_str()));
+        th.cyan_light = hsla(p.get("cyan-300").map(|s| s.as_str()));
     });
 }

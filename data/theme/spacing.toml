@@ -1,22 +1,66 @@
 # Bookkeepy 1 — primary data: spacing design tokens (RULE-UI-005/007, RULE-DATA-001/003).
 #
-# SSOT for every pad/gap/margin in the interface, on the design language's 4px base grid:
-# each token is a grid multiple and is referenced by name by gpui-kit styled components and
-# gallery variants — never a raw px value in code.
+# 1:1 with TOKENS · Bookkeepy v1 §04 Spacing. The scale is the sheet's px ladder on a 2px
+# base grid (step × 2 = px); gaps are named by relationship; insets are the padding a
+# container owns (h × v). Referenced by name by gpui-kit styled components and gallery
+# variants — never a raw px in code.
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
 
 [spacing]
-grid = 4 # base unit; every other token here is a multiple of it
-x1 = 4 # atom gap: icon ↔ label inside a control
-x2 = 8 # control inner padding (vertical), related-item gaps
-x3 = 12 # compact group padding, dense-list row padding
-x4 = 16 # standard card/dialog padding, form-field gaps
-x5 = 20 # generous card padding, panel padding
-x6 = 24 # section padding, dialog margins
-x8 = 32 # between groups/sections
-x10 = 40 # major section spacing, wide page gutter
-x12 = 48 # empty-state padding
-x16 = 64 # page margins / hero spacing
+grid = 2 # base unit; every scale token is a multiple of it
+
+# Scale — "space-<step>" = step × grid px (TOKENS §04 scale ladder).
+[spacing.scale]
+"space-0.5" = 2
+"space-1"   = 4
+"space-1.5" = 6
+"space-2"   = 8
+"space-2.5" = 10
+"space-3"   = 12
+"space-4"   = 16
+"space-5"   = 20
+"space-6"   = 24
+"space-8"   = 32
+"space-10"  = 40
+"space-12"  = 48
+"space-16"  = 64
+"space-20"  = 80
+
+# Gaps — by relationship (TOKENS §04 "gaps · by relationship").
+[spacing.gap]
+gap-hair    = 2  # optical correction, icon to baseline
+gap-tight   = 4  # parts of one control: icon + label, value + currency
+gap-related = 8  # closely related controls: buttons in a group, chips
+gap-group   = 12 # one content group: rows of a form, items in a card
+gap-block   = 16 # separate groups inside one section
+gap-section = 24 # separate sections of a page or panel
+gap-region  = 32 # major regions, empty-state breathing room
+gap-page    = 48 # page bands, onboarding steps
+
+# Insets — padding owned by the container, "h × v" px (TOKENS §04 insets).
+[spacing.inset.chip]
+h_px = 8
+v_px = 2
+
+[spacing.inset.control]
+h_px = 12
+v_px = 6
+
+[spacing.inset.row]
+h_px = 8
+v_px = 4
+
+[spacing.inset.hud]
+h_px = 12
+v_px = 8
+
+[spacing.inset.popover]
+h_px = 12
+v_px = 12
+
+[spacing.inset.card]
+h_px = 24
+v_px = 24

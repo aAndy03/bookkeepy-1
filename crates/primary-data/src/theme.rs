@@ -2,9 +2,12 @@
 //! `data/theme/` — the design-token directory scope (RULE-DATA-003, RULE-UI-005/007):
 //! the "variables" of the Figma model (ADR-0017). ONE file per sub-concern
 //! (`index.toml` lists them); the loader merges the whole scope and validates it.
-//! `bookkeepy-ui` bridges these tokens into the gpui-kit `Theme` — no UI value is ever
-//! hardcoded in source (RULE-DATA-001).
+//! The files are 1:1 with the design language's TOKENS sheet: color roles reference
+//! primitives as "$neutral-925" aliases, resolved here. `bookkeepy-ui` bridges these
+//! tokens into the gpui-kit `Theme` — no UI value is ever hardcoded in source
+//! (RULE-DATA-001).
 
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -35,19 +38,36 @@ const ELEVATION_RAW: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../data/theme/elevation.toml"
 ));
+const MOTION_RAW: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../data/theme/motion.toml"
+));
+const ICONS_RAW: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../data/theme/icons.toml"
+));
 const LAYOUT_RAW: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../data/theme/layout.toml"
 ));
 
 /// Theme mode. Dark is the design language's native theme; light mirrors the same ramp.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     /// The designed native theme.
     Dark,
     /// Ramp inversion with identical functional hues.
     Light,
+}
+
+impl Mode {
+    fn as_str(self) -> &'static str {
+        match self {
+            Mode::Dark => "dark",
+            Mode::Light => "light",
+        }
+    }
 }
 
 /// Scope index (`[meta]`): the shipped themes.
@@ -63,279 +83,237 @@ struct IndexMeta {
     themes: Vec<Mode>,
 }
 
-/// The semantic color tokens of one theme mode. Every UI surface resolves through these
-/// (bg/fg/border/accent + functional hues + chart series) — raw values live only in
-/// `[palette]` and are never referenced past token resolution.
-#[derive(Debug, Clone, Deserialize)]
-pub struct SemanticColors {
-    /// Base background everywhere.
-    pub bg: String,
-    /// Inset wells: inputs, code, sunken areas.
-    pub bg_canvas: String,
-    /// Hover tint on lists/rows; subtle raised surfaces.
-    pub bg_raised: String,
-    /// Cards, dialogs, panels.
-    pub bg_sheet: String,
-    /// Title bar, buttons, selected rows, controls.
-    pub bg_chrome: String,
-    /// Pointer-hover on a base surface.
-    pub bg_hover: String,
-    /// Selected row/list item.
-    pub bg_selected: String,
-    /// Flat control fill — neutral/default buttons (ATOMS · 01).
-    pub bg_control: String,
-    /// Hovered/pressed neutral control; focused menu row.
-    pub bg_control_hover: String,
-    /// Dropdown/menu/calendar panels (MOLECULES · 01/03).
-    pub bg_popover: String,
-    /// Active sidebar nav item — white/black @ 8% plate (ORGANISMS · 01); also the
-    /// menu/list hover overlay (MOLECULES · 01/02).
-    pub bg_nav_active: String,
-    /// Scrollbar thumb / strong overlay — white/black @ 40% (ATOMS · 03).
-    pub bg_thumb: String,
-    /// Row hover overlay — white/black @ 4% (ORGANISMS · 01 table/list/tree rows).
-    pub bg_row_hover: String,
-    /// Selected row overlay — white/black @ 12% + left indicator (ORGANISMS · 01).
-    pub bg_row_active: String,
-    /// Fully transparent — stripes/borders-off seats (the design avoids hard separators).
-    pub bg_none: String,
-    /// Tinted container bg for the accent (drop targets, selection strips).
-    pub accent_well: String,
-    /// The inverted primary control — light fill on the dark theme (ATOMS · 01).
-    pub bg_invert: String,
-    /// Hover/press of the inverted fill — the highest state is the strongest.
-    pub bg_invert_hover: String,
-    /// Ink on the inverted fill.
-    pub on_invert: String,
-    /// Ink on solid functional fills — white in both modes (ATOMS · 01 danger pressed).
-    pub on_solid: String,
-    /// Modal scrim (black @ 60%).
-    pub overlay: String,
-    /// Default body text.
-    pub fg: String,
-    /// Emphasized text.
-    pub fg_primary: String,
-    /// Secondary text.
-    pub fg_muted: String,
-    /// Tertiary text.
-    pub fg_subtle: String,
-    /// Input placeholders (RULE-UI-005).
-    pub fg_placeholder: String,
-    /// Disabled labels.
-    pub fg_disabled: String,
-    /// Brand accent — primary actions, focus, links.
-    pub accent: String,
-    /// Hovered accent surface.
-    pub accent_hover: String,
-    /// Quiet accent — selected indicators.
-    pub accent_subtle: String,
-    /// Text/icons on an accent surface.
-    pub on_accent: String,
-    /// Text-selection highlight.
-    pub selection: String,
-    /// Success hue.
-    pub success: String,
-    /// Success tint (hover/selected).
-    pub success_tint: String,
-    /// Success tinted well (container).
-    pub success_well: String,
-    /// Warning hue.
-    pub warning: String,
-    /// Warning tint.
-    pub warning_tint: String,
-    /// Warning well.
-    pub warning_well: String,
-    /// Danger hue.
-    pub danger: String,
-    /// Danger tint.
-    pub danger_tint: String,
-    /// Danger well.
-    pub danger_well: String,
-    /// Info hue.
-    pub info: String,
-    /// Info tint.
-    pub info_tint: String,
-    /// Info well.
-    pub info_well: String,
-    /// Default border.
-    pub border: String,
-    /// Separators inside a surface.
-    pub border_subtle: String,
-    /// Emphasized control border.
-    pub border_strong: String,
-    /// Highest-contrast border.
-    pub border_heavy: String,
-    /// Keyboard focus ring (RULE-INPUT-001).
-    pub focus_ring: String,
-    /// Charts: positive series.
-    pub chart_positive: String,
-    /// Charts: negative series.
-    pub chart_negative: String,
-    /// Charts: neutral series.
-    pub chart_neutral: String,
-    /// Charts: series 1.
-    pub chart_series_1: String,
-    /// Charts: series 2.
-    pub chart_series_2: String,
-    /// Charts: series 3.
-    pub chart_series_3: String,
-    /// Charts: series 4.
-    pub chart_series_4: String,
-    /// Charts: series 5.
-    pub chart_series_5: String,
+/// Raw `colors.toml`: primitives + per-mode role groups.
+#[derive(Debug, Deserialize)]
+struct ColorsFile {
+    palette: PaletteRaw,
+    theme: BTreeMap<Mode, BTreeMap<String, BTreeMap<String, String>>>,
 }
 
-impl SemanticColors {
-    /// (token name, raw value) for every semantic hex token — the validation projection.
-    fn pairs(&self) -> Vec<(&'static str, &str)> {
-        vec![
-            ("bg", &self.bg),
-            ("bg_canvas", &self.bg_canvas),
-            ("bg_raised", &self.bg_raised),
-            ("bg_sheet", &self.bg_sheet),
-            ("bg_chrome", &self.bg_chrome),
-            ("bg_hover", &self.bg_hover),
-            ("bg_selected", &self.bg_selected),
-            ("bg_control", &self.bg_control),
-            ("bg_control_hover", &self.bg_control_hover),
-            ("bg_popover", &self.bg_popover),
-            ("bg_nav_active", &self.bg_nav_active),
-            ("bg_thumb", &self.bg_thumb),
-            ("bg_row_hover", &self.bg_row_hover),
-            ("bg_row_active", &self.bg_row_active),
-            ("bg_none", &self.bg_none),
-            ("accent_well", &self.accent_well),
-            ("bg_invert", &self.bg_invert),
-            ("bg_invert_hover", &self.bg_invert_hover),
-            ("on_invert", &self.on_invert),
-            ("on_solid", &self.on_solid),
-            ("overlay", &self.overlay),
-            ("fg", &self.fg),
-            ("fg_primary", &self.fg_primary),
-            ("fg_muted", &self.fg_muted),
-            ("fg_subtle", &self.fg_subtle),
-            ("fg_placeholder", &self.fg_placeholder),
-            ("fg_disabled", &self.fg_disabled),
-            ("accent", &self.accent),
-            ("accent_hover", &self.accent_hover),
-            ("accent_subtle", &self.accent_subtle),
-            ("on_accent", &self.on_accent),
-            ("selection", &self.selection),
-            ("success", &self.success),
-            ("success_tint", &self.success_tint),
-            ("success_well", &self.success_well),
-            ("warning", &self.warning),
-            ("warning_tint", &self.warning_tint),
-            ("warning_well", &self.warning_well),
-            ("danger", &self.danger),
-            ("danger_tint", &self.danger_tint),
-            ("danger_well", &self.danger_well),
-            ("info", &self.info),
-            ("info_tint", &self.info_tint),
-            ("info_well", &self.info_well),
-            ("border", &self.border),
-            ("border_subtle", &self.border_subtle),
-            ("border_strong", &self.border_strong),
-            ("border_heavy", &self.border_heavy),
-            ("focus_ring", &self.focus_ring),
-            ("chart_positive", &self.chart_positive),
-            ("chart_negative", &self.chart_negative),
-            ("chart_neutral", &self.chart_neutral),
-            ("chart_series_1", &self.chart_series_1),
-            ("chart_series_2", &self.chart_series_2),
-            ("chart_series_3", &self.chart_series_3),
-            ("chart_series_4", &self.chart_series_4),
-            ("chart_series_5", &self.chart_series_5),
-        ]
+/// Raw `[palette.*]` — flattened to `<group>-<step>` / `<hue>-<step>` aliases.
+#[derive(Debug, Deserialize)]
+struct PaletteRaw {
+    neutral: BTreeMap<String, String>,
+    alpha: BTreeMap<String, String>,
+    hue: BTreeMap<String, BTreeMap<String, String>>,
+}
+
+/// The resolved color palette: alias → lowercase hex (e.g. `neutral-925` → `#111111`).
+pub type Palette = BTreeMap<String, String>;
+
+/// Semantic color roles of one theme mode, 1:1 with the TOKENS sheet §02.
+/// Values in the file are `#hex` or `$alias`; [`ThemeColors::get`] returns the resolved
+/// lowercase hex.
+#[derive(Debug)]
+pub struct ThemeColors {
+    raw: BTreeMap<String, String>,
+    resolved: OnceLock<BTreeMap<String, String>>,
+}
+
+impl ThemeColors {
+    fn parse(groups: BTreeMap<String, BTreeMap<String, String>>) -> Self {
+        let raw = groups.into_values().flatten().collect();
+        Self {
+            raw,
+            resolved: OnceLock::new(),
+        }
+    }
+
+    /// The raw (unresolved) role value — `#hex` or `$alias`.
+    pub fn raw(&self, role: &str) -> Option<&str> {
+        self.raw.get(role).map(|s| s.as_str())
+    }
+
+    /// The resolved role color as a lowercase `#rrggbb[aa]` hex; `None` if the role is
+    /// absent or its alias does not resolve (corrupted data degrades, never panics).
+    pub fn get(&self, role: &str) -> Option<&str> {
+        let palette = palette();
+        let resolved = self.resolved.get_or_init(|| {
+            self.raw
+                .iter()
+                .filter_map(|(k, v)| {
+                    let hex = resolve_color(v, palette)?;
+                    Some((k.clone(), hex))
+                })
+                .collect()
+        });
+        resolved.get(role).map(|s| s.as_str())
+    }
+
+    /// Every role name defined for this mode.
+    pub fn roles(&self) -> impl Iterator<Item = &str> {
+        self.raw.keys().map(|s| s.as_str())
     }
 }
 
-/// The two shipped theme maps (`[theme.dark]`, `[theme.light]`).
-#[derive(Debug, Deserialize)]
-struct ThemeMaps {
-    dark: SemanticColors,
-    light: SemanticColors,
+/// Resolve a color value: `#hex` (normalized lowercase) or `$alias` into the palette.
+fn resolve_color(value: &str, palette: &Palette) -> Option<String> {
+    if let Some(alias) = value.strip_prefix('$') {
+        return palette.get(alias).cloned();
+    }
+    if hex_ok(value) {
+        return Some(value.to_ascii_lowercase());
+    }
+    None
 }
 
 /// Parsed `colors.toml`.
-#[derive(Debug, Deserialize)]
-struct ColorsFile {
-    theme: ThemeMaps,
+struct ColorsParsed {
+    palette: Palette,
+    themes: BTreeMap<Mode, ThemeColors>,
 }
 
-/// Parsed `spacing.toml` (`[source]` + `[spacing]`) — multiples of the base grid.
+fn colors_parsed() -> &'static ColorsParsed {
+    static FILE: OnceLock<ColorsParsed> = OnceLock::new();
+    FILE.get_or_init(|| {
+        let file: ColorsFile = toml::from_str(COLORS_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/colors.toml failed to parse: {e}"));
+        let mut palette = Palette::new();
+        // neutral/alpha keys are already full aliases (neutral-925, white-a8, black-a60)
+        for (k, v) in file.palette.neutral.iter().chain(&file.palette.alpha) {
+            palette.insert(k.to_ascii_lowercase(), v.to_ascii_lowercase());
+        }
+        for (hue, steps) in &file.palette.hue {
+            for (step, hex) in steps {
+                palette.insert(format!("{hue}-{step}"), hex.to_ascii_lowercase());
+            }
+        }
+        let themes = file
+            .theme
+            .into_iter()
+            .map(|(mode, groups)| (mode, ThemeColors::parse(groups)))
+            .collect();
+        ColorsParsed { palette, themes }
+    })
+}
+
+/// The resolved color palette (`[palette.*]` flattened: `neutral-925`, `white-a8`,
+/// `orange-500`, …).
+pub fn palette() -> &'static Palette {
+    &colors_parsed().palette
+}
+
+/// Semantic color roles of `mode` (dark is the design language's native theme).
+pub fn colors(mode: Mode) -> &'static ThemeColors {
+    colors_parsed().themes.get(&mode).unwrap_or_else(|| {
+        panic!(
+            "primary data theme/colors.toml has no theme {:?}",
+            mode.as_str()
+        )
+    })
+}
+
+/// Parsed `spacing.toml`.
 #[derive(Debug, Deserialize)]
 struct SpacingFile {
-    spacing: Spacing,
+    spacing: SpacingRaw,
 }
 
-/// The spacing scale (`[spacing]`) — multiples of the base grid.
+#[derive(Debug, Deserialize)]
+struct SpacingRaw {
+    grid: u32,
+    #[serde(default)]
+    scale: BTreeMap<String, u32>,
+    #[serde(default)]
+    gap: BTreeMap<String, u32>,
+    #[serde(default)]
+    inset: BTreeMap<String, Inset>,
+}
+
+/// One container inset (TOKENS §04): horizontal × vertical padding, px.
 #[derive(Debug, Clone, Deserialize)]
-pub struct Spacing {
-    /// Base unit every spacing token is a multiple of.
-    pub grid: u32,
-    /// 4px — icon↔label inside a control.
-    pub x1: u32,
-    /// 8px — control inner padding (vertical), related-item gaps.
-    pub x2: u32,
-    /// 12px — compact group padding, dense-list rows.
-    pub x3: u32,
-    /// 16px — standard card/dialog padding, form-field gaps.
-    pub x4: u32,
-    /// 20px — generous card/panel padding.
-    pub x5: u32,
-    /// 24px — section padding, dialog margins.
-    pub x6: u32,
-    /// 32px — between groups/sections.
-    pub x8: u32,
-    /// 40px — major section spacing, wide page gutter.
-    pub x10: u32,
-    /// 48px — empty-state padding.
-    pub x12: u32,
-    /// 64px — page margins / hero spacing.
-    pub x16: u32,
+pub struct Inset {
+    /// Horizontal padding, px.
+    pub h_px: u32,
+    /// Vertical padding, px.
+    pub v_px: u32,
 }
 
-/// Parsed `radii.toml` (`[source]` + `[radii]`).
+/// The spacing tokens: 2px-grid scale, gap roles, container insets.
+#[derive(Debug, Clone)]
+pub struct Spacing {
+    /// Base unit every scale token is a multiple of (2px).
+    pub grid: u32,
+    /// Scale ladder (`space-0.5` = 2px … `space-20` = 80px).
+    pub scale: BTreeMap<String, u32>,
+    /// Gap roles by relationship (`gap-hair` … `gap-page`).
+    pub gap: BTreeMap<String, u32>,
+    /// Container insets (`inset-chip` … `inset-card`).
+    pub inset: BTreeMap<String, Inset>,
+}
+
+/// Spacing tokens (the scale + gap roles + insets).
+pub fn spacing() -> &'static Spacing {
+    static TOKENS: OnceLock<Spacing> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: SpacingFile = toml::from_str(SPACING_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/spacing.toml failed to parse: {e}"));
+        Spacing {
+            grid: file.spacing.grid,
+            scale: file.spacing.scale,
+            gap: file.spacing.gap,
+            inset: file.spacing.inset,
+        }
+    })
+}
+
+/// Parsed `radii.toml`.
 #[derive(Debug, Deserialize)]
 struct RadiiFile {
-    radii: Radii,
+    radii: RadiiRaw,
 }
 
-/// The radius scale (`[radii]`) — px.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Deserialize)]
+struct RadiiRaw {
+    tiers: BTreeMap<String, u32>,
+    #[serde(default)]
+    roles: BTreeMap<String, String>,
+}
+
+/// The radius tokens: named tiers (px) + roles resolved to their tier's px.
+#[derive(Debug, Clone)]
 pub struct Radii {
-    /// Fine detail edges.
-    pub micro: u32,
-    /// Tags, small badges.
-    pub chip: u32,
-    /// Checkboxes, kbd keys, small markers.
-    pub mini: u32,
-    /// List rows, dropdown/menu items.
-    pub item: u32,
-    /// Buttons, inputs, selects at the 32px scale (ATOMS · 01: rx 6).
-    pub control: u32,
-    /// Large controls (40px buttons/inputs): ATOMS · 01 size scale draws rx 8.
-    pub control_lg: u32,
-    /// Cards, menus, popovers, date pickers.
-    pub card: u32,
-    /// Dialogs, sheets, alert dialogs.
-    pub overlay: u32,
-    /// Large side panels.
-    pub banner: u32,
-    /// Floating boards/windows.
-    pub board: u32,
-    /// Circular surfaces (radius = half of the side).
-    pub circle: u32,
-    /// Pills — renderers clamp to half the shorter side.
-    pub full: u32,
+    /// Radius tiers (`xs` … `viewport`, `full`).
+    pub tiers: BTreeMap<String, u32>,
+    /// Role assignments resolved to px (`control`, `card`, `dialog`, …).
+    pub roles: BTreeMap<String, u32>,
 }
 
-/// Parsed `typography.toml` (`[font]` + `[[style]]`).
+/// Corner-radius tokens.
+pub fn radii() -> &'static Radii {
+    static TOKENS: OnceLock<Radii> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: RadiiFile = toml::from_str(RADII_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/radii.toml failed to parse: {e}"));
+        let roles = file
+            .radii
+            .roles
+            .iter()
+            .filter_map(|(role, tier)| file.radii.tiers.get(tier).map(|px| (role.clone(), *px)))
+            .collect();
+        Radii {
+            tiers: file.radii.tiers,
+            roles,
+        }
+    })
+}
+
+/// Parsed `typography.toml` (`[font]` + `[[style]]` + `[typography.*]`).
 #[derive(Debug, Deserialize)]
 pub struct TypographyFile {
     font: FontStack,
     style: Vec<TextStyle>,
+    #[serde(default)]
+    typography: TypographyAux,
+}
+
+/// `[typography.para]` + `[typography.measure]`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct TypographyAux {
+    #[serde(default)]
+    para: BTreeMap<String, u32>,
+    #[serde(default)]
+    measure: BTreeMap<String, u32>,
 }
 
 impl TypographyFile {
@@ -343,12 +321,22 @@ impl TypographyFile {
     pub fn fonts(&self) -> &FontStack {
         &self.font
     }
+
+    /// Paragraph-gap tokens (`type-body-para` …), px.
+    pub fn para_gaps(&self) -> &BTreeMap<String, u32> {
+        &self.typography.para
+    }
+
+    /// Measure tokens (max line length: `narrow`/`body`/`wide`), px.
+    pub fn measure(&self) -> &BTreeMap<String, u32> {
+        &self.typography.measure
+    }
 }
 
 /// The font stacks (`[font]`).
 #[derive(Debug, Clone, Deserialize)]
 pub struct FontStack {
-    /// UI font stack with per-OS fallbacks.
+    /// UI font stack (Inter first, as drawn).
     pub ui: String,
     /// Numeric/monospaced surface family.
     pub mono: String,
@@ -363,8 +351,8 @@ pub struct TextStyle {
     pub size_px: u32,
     /// Weight (400/500/600).
     pub weight: u32,
-    /// Unitless line-height multiplier.
-    pub line_height: f32,
+    /// Absolute line height, px (as drawn in the sheet).
+    pub line_height_px: u32,
     /// Letter spacing, px (negative = tighter).
     pub letter_spacing_px: f32,
     /// `ui` or `mono`.
@@ -372,6 +360,20 @@ pub struct TextStyle {
     /// Tabular figures (amounts) — aligned in columns.
     #[serde(default)]
     pub tabular: bool,
+}
+
+/// Typography: font stacks + named text styles.
+pub fn typography() -> &'static TypographyFile {
+    static TOKENS: OnceLock<TypographyFile> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        toml::from_str(TYPOGRAPHY_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/typography.toml failed to parse: {e}"))
+    })
+}
+
+/// Named text style by id (e.g. `body`, `amount`).
+pub fn style(id: &str) -> Option<&'static TextStyle> {
+    typography().style.iter().find(|s| s.id == id)
 }
 
 /// One shadow step from `elevation.toml`.
@@ -389,12 +391,185 @@ pub struct Shadow {
     pub opacity: f32,
 }
 
-/// The three shadow steps (`[shadow.*]`).
+/// The two drawn shadow steps (`[shadow.popover]`, `[shadow.dialog]`).
 #[derive(Debug, Deserialize)]
 struct Shadows {
-    peek: Shadow,
-    raised: Shadow,
-    overlay: Shadow,
+    popover: Shadow,
+    dialog: Shadow,
+}
+
+/// The focus-ring spec (`[focus]` in `elevation.toml`) — color resolved to hex.
+#[derive(Debug, Clone)]
+pub struct FocusRing {
+    /// Ring width, px (2 as drawn).
+    pub ring_width_px: u32,
+    /// Ring offset from the control, px (2 as drawn).
+    pub ring_offset_px: u32,
+    /// Ring color, resolved lowercase hex.
+    pub color: String,
+}
+
+/// Elevation tokens: the two shadows, the z-index layers, the focus ring.
+#[derive(Debug)]
+pub struct Elevation {
+    /// The two drawn shadows.
+    pub shadow: ShadowsPub,
+    /// Z-index layers (`flat` … `tooltip`).
+    pub z: BTreeMap<String, u32>,
+    /// Focus-ring spec.
+    pub focus: FocusRing,
+}
+
+/// Public shadow pair (popover, dialog).
+#[derive(Debug)]
+pub struct ShadowsPub {
+    /// Popover shadow: `0 8 24` black @ 60%.
+    pub popover: Shadow,
+    /// Dialog shadow: `0 16 48` black @ 60%.
+    pub dialog: Shadow,
+}
+
+/// Parsed `elevation.toml`.
+#[derive(Debug, Deserialize)]
+struct ElevationFile {
+    shadow: Shadows,
+    #[serde(default)]
+    z: BTreeMap<String, u32>,
+    focus: FocusRaw,
+}
+
+#[derive(Debug, Deserialize)]
+struct FocusRaw {
+    ring_width_px: u32,
+    ring_offset_px: u32,
+    color: String,
+}
+
+/// Elevation tokens (`data/theme/elevation.toml`).
+pub fn elevation() -> &'static Elevation {
+    static TOKENS: OnceLock<Elevation> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: ElevationFile = toml::from_str(ELEVATION_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/elevation.toml failed to parse: {e}"));
+        let color = resolve_color(&file.focus.color, palette())
+            .unwrap_or_else(|| file.focus.color.to_ascii_lowercase());
+        Elevation {
+            shadow: ShadowsPub {
+                popover: file.shadow.popover,
+                dialog: file.shadow.dialog,
+            },
+            z: file.z,
+            focus: FocusRing {
+                ring_width_px: file.focus.ring_width_px,
+                ring_offset_px: file.focus.ring_offset_px,
+                color,
+            },
+        }
+    })
+}
+
+/// Parsed `motion.toml`.
+#[derive(Debug, Deserialize)]
+struct MotionFile {
+    #[serde(default)]
+    duration: BTreeMap<String, u32>,
+    #[serde(default)]
+    easing: BTreeMap<String, EasingRaw>,
+    #[serde(default)]
+    delay: BTreeMap<String, u32>,
+    #[serde(default)]
+    skeleton: SkeletonRaw,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct SkeletonRaw {
+    #[serde(rename = "cycle-ms", default)]
+    cycle_ms: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct EasingRaw {
+    bezier: [f32; 4],
+}
+
+/// Motion tokens: durations/easings/delays (ms) + the skeleton cycle.
+#[derive(Debug, Clone)]
+pub struct Motion {
+    /// Durations, ms (`instant` … `camera`, `snap`).
+    pub duration: BTreeMap<String, u32>,
+    /// Easings as cubic-bezier `[x1, y1, x2, y2]` (`standard` … `camera`).
+    pub easing: BTreeMap<String, [f32; 4]>,
+    /// Delays, ms (`spinner`, `loading-min`, `tooltip`).
+    pub delay: BTreeMap<String, u32>,
+    /// One skeleton highlight sweep, ms.
+    pub skeleton_cycle_ms: u32,
+}
+
+/// Motion tokens (`data/theme/motion.toml`).
+pub fn motion() -> &'static Motion {
+    static TOKENS: OnceLock<Motion> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: MotionFile = toml::from_str(MOTION_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/motion.toml failed to parse: {e}"));
+        Motion {
+            duration: file.duration,
+            easing: file
+                .easing
+                .into_iter()
+                .map(|(k, v)| (k, v.bezier))
+                .collect(),
+            delay: file.delay,
+            skeleton_cycle_ms: file.skeleton.cycle_ms,
+        }
+    })
+}
+
+/// Parsed `icons.toml`.
+#[derive(Debug, Deserialize)]
+struct IconsFile {
+    icons: IconsRaw,
+}
+
+#[derive(Debug, Deserialize)]
+struct IconsRaw {
+    set: String,
+    rest: String,
+    active: String,
+    #[serde(rename = "hit-min-px")]
+    hit_min_px: u32,
+    #[serde(default)]
+    size: BTreeMap<String, u32>,
+}
+
+/// Iconography tokens: the glyph set, state weights, size ladder, hit target.
+#[derive(Debug, Clone)]
+pub struct Icons {
+    /// Glyph set (`phosphor`).
+    pub set: String,
+    /// Weight at rest (`regular`).
+    pub rest: String,
+    /// Weight for hover/pressed/selected/attention (`duotone`).
+    pub active: String,
+    /// Size ladder, px (`xs` … `xl`).
+    pub size: BTreeMap<String, u32>,
+    /// Minimum hit target, px.
+    pub hit_min_px: u32,
+}
+
+/// Iconography tokens (`data/theme/icons.toml`).
+pub fn icons() -> &'static Icons {
+    static TOKENS: OnceLock<Icons> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: IconsFile = toml::from_str(ICONS_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/icons.toml failed to parse: {e}"));
+        Icons {
+            set: file.icons.set,
+            rest: file.icons.rest,
+            active: file.icons.active,
+            size: file.icons.size,
+            hit_min_px: file.icons.hit_min_px,
+        }
+    })
 }
 
 /// Parsed `layout.toml` (`[source]` + `[layout]`) — fixed shell geometry in px.
@@ -414,101 +589,120 @@ pub struct Layout {
     pub sidebar_divider_px: u32,
 }
 
-/// Parsed `elevation.toml` (`[shadow.*]` + `[z]` layers; z-index is consumed by the layout
-/// contracts, shadows by the theme bridge).
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct ElevationFile {
-    shadow: Shadows,
-}
-
-fn index() -> &'static IndexFile {
-    static FILE: OnceLock<IndexFile> = OnceLock::new();
-    FILE.get_or_init(|| {
-        toml::from_str(INDEX_RAW)
-            .unwrap_or_else(|e| panic!("primary data theme/index.toml failed to parse: {e}"))
-    })
-}
-
-fn colors_file() -> &'static ColorsFile {
-    static FILE: OnceLock<ColorsFile> = OnceLock::new();
-    FILE.get_or_init(|| {
-        toml::from_str(COLORS_RAW)
-            .unwrap_or_else(|e| panic!("primary data theme/colors.toml failed to parse: {e}"))
-    })
-}
-
-/// Semantic color tokens of `mode` (dark is the design language's native theme).
-pub fn colors(mode: Mode) -> &'static SemanticColors {
-    static DARK: OnceLock<&SemanticColors> = OnceLock::new();
-    static LIGHT: OnceLock<&SemanticColors> = OnceLock::new();
-    match mode {
-        Mode::Dark => DARK.get_or_init(|| &colors_file().theme.dark),
-        Mode::Light => LIGHT.get_or_init(|| &colors_file().theme.light),
-    }
-}
-
-/// Spacing tokens (the base-grid scale).
-pub fn spacing() -> &'static Spacing {
-    static TOKENS: OnceLock<SpacingFile> = OnceLock::new();
-    &TOKENS
-        .get_or_init(|| {
-            toml::from_str(SPACING_RAW)
-                .unwrap_or_else(|e| panic!("primary data theme/spacing.toml failed to parse: {e}"))
-        })
-        .spacing
-}
-
-/// Corner-radius scale.
-pub fn radii() -> &'static Radii {
-    static TOKENS: OnceLock<RadiiFile> = OnceLock::new();
-    &TOKENS
-        .get_or_init(|| {
-            toml::from_str(RADII_RAW)
-                .unwrap_or_else(|e| panic!("primary data theme/radii.toml failed to parse: {e}"))
-        })
-        .radii
-}
-
-/// Typography: font stacks + named text styles.
-pub fn typography() -> &'static TypographyFile {
-    static TOKENS: OnceLock<TypographyFile> = OnceLock::new();
-    TOKENS.get_or_init(|| {
-        toml::from_str(TYPOGRAPHY_RAW)
-            .unwrap_or_else(|e| panic!("primary data theme/typography.toml failed to parse: {e}"))
-    })
-}
-
-/// Named text style by id (e.g. `body`, `amount`).
-pub fn style(id: &str) -> Option<&'static TextStyle> {
-    typography().style.iter().find(|s| s.id == id)
-}
-
-/// The three shadow steps: `(peek, raised, overlay)` — black @ 60%, doubling steps.
-pub fn shadows() -> (&'static Shadow, &'static Shadow, &'static Shadow) {
-    static TOKENS: OnceLock<ElevationFile> = OnceLock::new();
-    let file = TOKENS.get_or_init(|| {
-        toml::from_str(ELEVATION_RAW)
-            .unwrap_or_else(|e| panic!("primary data theme/elevation.toml failed to parse: {e}"))
-    });
-    (&file.shadow.peek, &file.shadow.raised, &file.shadow.overlay)
-}
-
 /// Fixed shell geometry (`data/theme/layout.toml`).
 pub fn layout() -> &'static Layout {
-    static TOKENS: OnceLock<LayoutFile> = OnceLock::new();
-    &TOKENS
-        .get_or_init(|| {
-            toml::from_str(LAYOUT_RAW)
-                .unwrap_or_else(|e| panic!("primary data theme/layout.toml failed to parse: {e}"))
-        })
-        .layout
+    static TOKENS: OnceLock<Layout> = OnceLock::new();
+    TOKENS.get_or_init(|| {
+        let file: LayoutFile = toml::from_str(LAYOUT_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/layout.toml failed to parse: {e}"));
+        file.layout
+    })
 }
 
 fn hex_ok(v: &str) -> bool {
     let h = v.strip_prefix('#').unwrap_or(v);
     (h.len() == 6 || h.len() == 8) && h.chars().all(|c| c.is_ascii_hexdigit())
 }
+
+/// Semantic roles every theme mode must define (TOKENS §02 — the sheet's full list).
+const REQUIRED_ROLES: &[&str] = &[
+    // surfaces
+    "background",
+    "surface",
+    "surface-raised",
+    "surface-sunken",
+    "surface-overlay",
+    "popover",
+    "tooltip",
+    "hud",
+    "scrim",
+    "sidebar",
+    // text
+    "foreground",
+    "secondary-foreground",
+    "muted-foreground",
+    "subtle-foreground",
+    "disabled-foreground",
+    "placeholder",
+    "sidebar-label",
+    "tooltip-foreground",
+    "primary-foreground",
+    "link",
+    "on-solid",
+    // structure
+    "border",
+    "border-subtle",
+    "border-strong",
+    "divider",
+    "input",
+    "input-hover",
+    "input-focus",
+    "ring",
+    "ring-accent",
+    "selection",
+    // interaction
+    "control",
+    "control-hover",
+    "control-active",
+    "control-selected",
+    "ghost-hover",
+    "ghost-active",
+    "sidebar-hover",
+    "sidebar-selected",
+    "primary",
+    "primary-hover",
+    // icons
+    "icon",
+    "icon-muted",
+    "icon-hover",
+    "icon-selected",
+    "icon-disabled",
+    "icon-attention",
+    // accent & status
+    "accent",
+    "accent-foreground",
+    "accent-subtle",
+    "success",
+    "success-foreground",
+    "success-subtle",
+    "danger",
+    "danger-foreground",
+    "danger-subtle",
+    "warning",
+    "warning-foreground",
+    "info",
+    // money / time / board & loading / data
+    "money-in",
+    "money-out",
+    "money-negative",
+    "money-transfer",
+    "money-pending",
+    "money-forecast",
+    "time-now",
+    "time-past",
+    "time-past-surface",
+    "time-future",
+    "time-future-surface",
+    "board-bg",
+    "board-dot",
+    "board-region",
+    "board-card",
+    "board-connector",
+    "board-note",
+    "skeleton",
+    "skeleton-highlight",
+    "progress-track",
+    "progress-fill",
+    "spinner",
+    "data-1",
+    "data-2",
+    "data-3",
+    "data-4",
+    "data-5",
+    "data-6",
+    "data-7",
+    "data-8",
+];
 
 /// Structural + semantic validation (RULE-DATA-002: scope index ↔ files agree).
 pub fn validate_structure() -> Result<(), PrimaryDataError> {
@@ -518,23 +712,31 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
             "theme/index.toml must ship themes = [\"dark\", \"light\"]".into(),
         ));
     }
-    for (mode, map) in [
-        (Mode::Dark, colors(Mode::Dark)),
-        (Mode::Light, colors(Mode::Light)),
-    ] {
-        let mode_name = match mode {
-            Mode::Dark => "dark",
-            Mode::Light => "light",
-        };
-        for (name, value) in map.pairs() {
-            if !hex_ok(value) {
-                return Err(PrimaryDataError::Invalid(format!(
-                    "theme/colors.toml theme.{mode_name}.{name} is not a #rrggbb[aa] value: {value:?}"
-                )));
+    let pal = palette();
+    for (alias, value) in pal {
+        if !hex_ok(value) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/colors.toml palette.{alias} is not a #rrggbb[aa] value: {value:?}"
+            )));
+        }
+    }
+    for mode in [Mode::Dark, Mode::Light] {
+        let map = colors(mode);
+        for role in REQUIRED_ROLES {
+            match map.get(role) {
+                Some(hex) if hex_ok(hex) => {}
+                _ => {
+                    return Err(PrimaryDataError::Invalid(format!(
+                        "theme/colors.toml theme.{}.{} must resolve to a #rrggbb[aa] value (raw {:?})",
+                        mode.as_str(),
+                        role,
+                        map.raw(role)
+                    )));
+                }
             }
         }
     }
-    if colors(Mode::Dark).accent != colors(Mode::Light).accent {
+    if colors(Mode::Dark).get("accent") != colors(Mode::Light).get("accent") {
         return Err(PrimaryDataError::Invalid(
             "theme/colors.toml the light theme must keep the dark theme's accent hue".into(),
         ));
@@ -545,22 +747,40 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
             "theme/spacing.toml grid must be > 0".into(),
         ));
     }
-    for (name, v) in [
-        ("x1", s.x1),
-        ("x2", s.x2),
-        ("x3", s.x3),
-        ("x4", s.x4),
-        ("x5", s.x5),
-        ("x6", s.x6),
-        ("x8", s.x8),
-        ("x10", s.x10),
-        ("x12", s.x12),
-        ("x16", s.x16),
-    ] {
-        if v == 0 || v % s.grid != 0 {
+    for (name, v) in s.scale.iter().chain(s.gap.iter()) {
+        if *v == 0 || v % s.grid != 0 {
             return Err(PrimaryDataError::Invalid(format!(
                 "theme/spacing.toml {name}={v} must be a positive multiple of grid {}",
                 s.grid
+            )));
+        }
+    }
+    for (name, inset) in &s.inset {
+        if inset.h_px == 0 || inset.v_px == 0 {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/spacing.toml inset.{name} h_px/v_px must be > 0"
+            )));
+        }
+    }
+    let r = radii();
+    if r.tiers.is_empty() {
+        return Err(PrimaryDataError::Invalid(
+            "theme/radii.toml must define tiers".into(),
+        ));
+    }
+    for (name, v) in &r.tiers {
+        if *v == 0 {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/radii.toml tier {name} must be > 0"
+            )));
+        }
+    }
+    for role in [
+        "control", "row", "chip", "tooltip", "hud", "popover", "card", "dialog",
+    ] {
+        if !r.roles.contains_key(role) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/radii.toml role {role} must reference a tier"
             )));
         }
     }
@@ -584,19 +804,79 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
                 st.id, st.font
             )));
         }
+        if st.size_px == 0 || st.line_height_px == 0 {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/typography.toml style {:?} size_px/line_height_px must be > 0",
+                st.id
+            )));
+        }
     }
     if style("body").is_none() {
         return Err(PrimaryDataError::Invalid(
             "theme/typography.toml must define the `body` text style".into(),
         ));
     }
-    let (peek, raised, overlay) = shadows();
-    for (name, shadow) in [("peek", peek), ("raised", raised), ("overlay", overlay)] {
+    let e = elevation();
+    for (name, shadow) in [("popover", &e.shadow.popover), ("dialog", &e.shadow.dialog)] {
         if !(0.0..=1.0).contains(&shadow.opacity) {
             return Err(PrimaryDataError::Invalid(format!(
                 "theme/elevation.toml shadow.{name} opacity must be within 0..=1"
             )));
         }
+    }
+    if !hex_ok(&e.focus.color) {
+        return Err(PrimaryDataError::Invalid(
+            "theme/elevation.toml focus.color must resolve to a #rrggbb[aa] value".into(),
+        ));
+    }
+    for layer in [
+        "flat", "raised", "hud", "popover", "dialog", "toast", "tooltip",
+    ] {
+        if !e.z.contains_key(layer) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/elevation.toml z.{layer} must be defined"
+            )));
+        }
+    }
+    let m = motion();
+    for (name, v) in m.duration.iter().chain(m.delay.iter()) {
+        if *v == 0 {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/motion.toml {name} must be > 0 ms"
+            )));
+        }
+    }
+    if m.skeleton_cycle_ms == 0 {
+        return Err(PrimaryDataError::Invalid(
+            "theme/motion.toml skeleton-cycle-ms must be > 0".into(),
+        ));
+    }
+    for name in ["instant", "fast", "base", "slow", "camera"] {
+        if !m.duration.contains_key(name) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/motion.toml duration.{name} must be defined"
+            )));
+        }
+    }
+    for name in ["standard", "enter", "exit", "camera"] {
+        if !m.easing.contains_key(name) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/motion.toml easing.{name} must be defined"
+            )));
+        }
+    }
+    let ic = icons();
+    for name in ["xs", "sm", "md", "lg", "xl"] {
+        if ic.size.get(name).is_none_or(|v| *v == 0) {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/icons.toml size.{name} must be > 0"
+            )));
+        }
+    }
+    if ic.hit_min_px == 0 {
+        return Err(PrimaryDataError::Invalid(
+            "theme/icons.toml hit-min-px must be > 0".into(),
+        ));
     }
     let l = layout();
     for (name, v) in [
@@ -618,25 +898,76 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
     Ok(())
 }
 
+fn index() -> &'static IndexFile {
+    static FILE: OnceLock<IndexFile> = OnceLock::new();
+    FILE.get_or_init(|| {
+        toml::from_str(INDEX_RAW)
+            .unwrap_or_else(|e| panic!("primary data theme/index.toml failed to parse: {e}"))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
     fn theme_validates() {
         super::validate_structure().unwrap();
         let dark = super::colors(super::Mode::Dark);
-        assert_eq!(dark.bg, "#111111");
-        assert_eq!(dark.accent, "#f5823a");
+        assert_eq!(dark.get("background"), Some("#111111"));
+        assert_eq!(dark.get("surface"), Some("#171717"));
+        assert_eq!(dark.get("popover"), Some("#222222"));
+        assert_eq!(dark.get("accent"), Some("#f5823a"));
+        assert_eq!(dark.get("ring-accent"), Some("#f5823a"));
+        assert_eq!(dark.get("primary"), Some("#ededed"));
+        assert_eq!(dark.get("data-4"), Some("#6944f0"));
+        assert_eq!(dark.get("selection"), Some("#ffffff1f"));
         let light = super::colors(super::Mode::Light);
-        assert_eq!(light.bg, "#ededed");
-        assert_eq!(dark.accent, super::colors(super::Mode::Light).accent);
-        assert_eq!(super::spacing().grid, 4);
-        assert_eq!(super::radii().control, 6);
-        assert_eq!(super::radii().control_lg, 8);
+        assert_eq!(light.get("background"), Some("#ededed"));
+        assert_eq!(dark.get("accent"), light.get("accent"));
+        assert_eq!(
+            super::palette().get("neutral-925").map(|s| s.as_str()),
+            Some("#111111")
+        );
+        assert_eq!(
+            super::palette().get("orange-500").map(|s| s.as_str()),
+            Some("#f5823a")
+        );
+        let s = super::spacing();
+        assert_eq!(s.grid, 2);
+        assert_eq!(s.scale.get("space-8"), Some(&32));
+        assert_eq!(s.gap.get("gap-block"), Some(&16));
+        assert_eq!(s.inset.get("control").map(|i| i.h_px), Some(12));
+        assert_eq!(s.inset.get("control").map(|i| i.v_px), Some(6));
+        let r = super::radii();
+        assert_eq!(r.tiers.get("md"), Some(&6));
+        assert_eq!(r.roles.get("control"), Some(&6));
+        assert_eq!(r.roles.get("card"), Some(&16));
+        assert_eq!(r.roles.get("dialog"), Some(&20));
+        assert_eq!(r.roles.get("chip"), Some(&999));
+        let body = super::style("body").unwrap();
+        assert_eq!(body.size_px, 12);
+        assert_eq!(body.line_height_px, 18);
+        let display = super::style("display").unwrap();
+        assert_eq!(display.letter_spacing_px, -1.4);
+        assert_eq!(super::typography().measure().get("body"), Some(&560));
+        assert!(super::style("nonexistent").is_none());
+        let e = super::elevation();
+        assert_eq!(e.shadow.popover.blur_px, 24);
+        assert_eq!(e.shadow.dialog.blur_px, 48);
+        assert_eq!(e.z.get("tooltip"), Some(&60));
+        assert_eq!(e.focus.ring_width_px, 2);
+        assert_eq!(e.focus.ring_offset_px, 2);
+        assert_eq!(e.focus.color, "#f5823a");
+        let m = super::motion();
+        assert_eq!(m.duration.get("base"), Some(&200));
+        assert_eq!(m.easing.get("standard"), Some(&[0.2, 0.0, 0.0, 1.0]));
+        assert_eq!(m.delay.get("tooltip"), Some(&1400));
+        assert_eq!(m.skeleton_cycle_ms, 900);
+        let ic = super::icons();
+        assert_eq!(ic.size.get("md"), Some(&16));
+        assert_eq!(ic.hit_min_px, 24);
+        assert_eq!(ic.active, "duotone");
         assert_eq!(super::layout().sidebar_expanded_px, 284);
         assert_eq!(super::layout().sidebar_collapsed_px, 72);
         assert_eq!(super::layout().sidebar_divider_px, 2);
-        let body = super::style("body").unwrap();
-        assert_eq!(body.size_px, 13);
-        assert!(super::style("nonexistent").is_none());
     }
 }

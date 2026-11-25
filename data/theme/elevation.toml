@@ -1,43 +1,41 @@
-# Bookkeepy 1 — primary data: elevation design tokens — shadows + z-index layers
-# (RULE-UI-005/007, RULE-DATA-001/003; "elevation.toml (z-index)").
+# Bookkeepy 1 — primary data: elevation tokens — shadows, z-index layers, focus ring
+# (RULE-UI-005/007, RULE-DATA-001/003).
 #
-# SSOT for depth: the exact shadows drawn in the design language (pure black at 60% opacity,
-# three scale steps) and the stacking order they imply. Referenced by name by gpui-kit styled
-# components and gallery variants — never raw blur/offset/z values in code.
+# 1:1 with TOKENS · Bookkeepy v1 §06 Elevation, borders & focus: the design is FLAT —
+# cards and HUD carry no shadow; only popovers and dialogs float (black @ 60%).
+# Referenced by name — never raw blur/offset/z in code.
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
 
-# Shadows — exactly as drawn: black flood at 60% opacity, blur + y-offset doubling per step.
-[shadow.peek]
-blur_px = 6
-offset_y_px = 4
-offset_x_px = 0
-color = "#000000"
-opacity = 0.6
-
-[shadow.raised]
-blur_px = 12
+# Shadows — the only two drawn: popover 0 8 24, dialog 0 16 48, black @ 60%.
+[shadow.popover]
+blur_px = 24
 offset_y_px = 8
 offset_x_px = 0
 color = "#000000"
 opacity = 0.6
 
-[shadow.overlay]
-blur_px = 24
+[shadow.dialog]
+blur_px = 48
 offset_y_px = 16
 offset_x_px = 0
 color = "#000000"
 opacity = 0.6
 
-# Z-index (stacking) layers — the composition order drawn on the SYSTEM · root sheet
-# (z-base 0 … z-tooltip 60, steps of 10 leave room between layers).
+# Z-index (stacking) layers — flat → raised → hud → popover → dialog → toast → tooltip.
 [z]
-base = 0 # in-flow content: board, shell, sidebar
-raised = 10 # sticky notes, dragged places
-hud = 20 # zoom control, minimap, location chip
-popover = 30 # menus, selects, hover cards, popovers
-dialog = 40 # dialogs, alert dialogs, sheets + scrim
-toast = 50 # notifications/toasts
-tooltip = 60 # tooltips, the topmost layer
+flat     = 0  # in-flow content: shell, sidebar, board
+raised   = 10 # cards on the board, sticky notes, dragged places
+hud      = 20 # zoom control, minimap, location chip
+popover  = 30 # menus, selects, hover cards, popovers
+dialog   = 40 # dialogs, alert dialogs, sheets + scrim
+toast    = 50 # notifications/toasts
+tooltip  = 60 # tooltips, the topmost layer
+
+# Focus ring — ATOMS · 03 / TOKENS §06: "input · focus (ring 2, offset 2)", accent color.
+[focus]
+ring_width_px = 2
+ring_offset_px = 2
+color = "$orange-500" # resolves to the accent hue in both modes

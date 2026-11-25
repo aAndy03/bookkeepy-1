@@ -94,7 +94,9 @@ impl RenderOnce for Amount {
             el = el
                 .text_size(px(s.size_px as f32))
                 .font_weight(FontWeight::from(s.weight as f32))
-                .line_height(DefiniteLength::Fraction(s.line_height));
+                .line_height(DefiniteLength::Fraction(
+                    s.line_height_px as f32 / s.size_px as f32,
+                ));
             // `letter_spacing_px` has no gpui seam yet (the `amount` token is 0).
             if s.tabular {
                 el = el.font_features(FontFeatures(std::sync::Arc::new(vec![("tnum".into(), 1)])));

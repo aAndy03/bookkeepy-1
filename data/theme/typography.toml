@@ -1,101 +1,149 @@
 # Bookkeepy 1 — primary data: typography design tokens (RULE-UI-005/007, RULE-DATA-001/003).
 #
-# SSOT for the type system: font stacks + one named style per text role. Text is always
-# rendered through a named style (referenced by gpui-kit styled components and gallery
-# variants) — never a raw size/weight in code. Amounts always render tabular (figures stay
-# aligned in columns — a bookkeeping invariant).
+# 1:1 with TOKENS · Bookkeepy v1 §03 Typography: the UI family is Inter (as drawn), one
+# named style per text role with the sheet's absolute line height and tracking, plus the
+# measure (max line length) and paragraph-gap tokens. Text always renders through a named
+# style — never a raw size/weight in code. Amounts render tabular (figures align in
+# columns — a bookkeeping invariant).
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
 
 [font]
-# UI family with per-OS fallbacks (first available wins; gpui resolves the stack).
-ui = "\"Segoe UI Variable Text\", \"Segoe UI\", \"SF Pro Text\", \"Inter\", system-ui, sans-serif"
+# UI family exactly as drawn in the sheets, with fallbacks (first available wins).
+ui = "Inter, system-ui, sans-serif"
 # Numeric/monospaced surfaces: code, IDs, hash chains, tabular amounts.
-mono = "\"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", \"Consolas\", monospace"
+mono = "\"JetBrains Mono\", \"Cascadia Mono\", \"SF Mono\", \"Consolas\", monospace"
 
-# Named text styles. line_height is a unitless multiplier; letter_spacing is px
-# (negative = tighter, used on display sizes as drawn in the design sheets).
+# Named text styles — size / line-height px / tracking px / weight, as drawn.
 [[style]]
 id = "display"
-size_px = 24
+size_px = 44
 weight = 600
-line_height = 1.2
-letter_spacing_px = -0.4
+line_height_px = 46
+letter_spacing_px = -1.4
 font = "ui"
+# hero statements, empty-state titles
+
+[[style]]
+id = "headline"
+size_px = 28
+weight = 600
+line_height_px = 32
+letter_spacing_px = -0.6
+font = "ui"
+# page / destination title
 
 [[style]]
 id = "title"
 size_px = 20
 weight = 600
-line_height = 1.25
-letter_spacing_px = -0.2
+line_height_px = 24
+letter_spacing_px = -0.3
 font = "ui"
+# section title, dialog title
 
 [[style]]
 id = "heading"
 size_px = 16
 weight = 600
-line_height = 1.3
+line_height_px = 21
 letter_spacing_px = -0.1
 font = "ui"
+# card heading, group heading
 
 [[style]]
-id = "subtitle"
-size_px = 15
-weight = 500
-line_height = 1.3
+id = "body-lg"
+size_px = 14
+weight = 400
+line_height_px = 22
 letter_spacing_px = 0.0
 font = "ui"
+# onboarding, explanations, long help
 
 [[style]]
 id = "body"
-size_px = 13
+size_px = 12
 weight = 400
-line_height = 1.45
+line_height_px = 18
 letter_spacing_px = 0.0
 font = "ui"
+# default reading text, table cells, descriptions
 
 [[style]]
 id = "label"
-size_px = 13
-weight = 500
-line_height = 1.45
+size_px = 12
+weight = 400
+line_height_px = 14
 letter_spacing_px = 0.0
 font = "ui"
+# nav items, buttons, inputs: one line, never wraps
 
 [[style]]
 id = "caption"
-size_px = 12
-weight = 400
-line_height = 1.35
-letter_spacing_px = 0.0
-font = "ui"
-
-[[style]]
-id = "micro"
 size_px = 11
 weight = 400
-line_height = 1.3
+line_height_px = 15
+letter_spacing_px = 0.1
+font = "ui"
+# metadata, helper text, timestamps
+
+[[style]]
+id = "overline"
+size_px = 10
+weight = 500
+line_height_px = 12
+letter_spacing_px = 0.3
+font = "ui"
+# section labels, switcher captions (lowercase)
+
+[[style]]
+id = "amount-xl"
+size_px = 44
+weight = 600
+line_height_px = 44
+letter_spacing_px = -1.6
+font = "ui"
+tabular = true
+# the one hero number on a surface
+
+[[style]]
+id = "amount"
+size_px = 20
+weight = 500
+line_height_px = 22
+letter_spacing_px = -0.4
+font = "ui"
+tabular = true
+# card values, totals
+
+[[style]]
+id = "amount-sm"
+size_px = 13
+weight = 500
+line_height_px = 16
 letter_spacing_px = 0.0
 font = "ui"
+tabular = true
+# table amounts, right-aligned
 
 [[style]]
 id = "mono"
-size_px = 13
+size_px = 12
 weight = 400
-line_height = 1.45
+line_height_px = 18
 letter_spacing_px = 0.0
 font = "mono"
 tabular = true
 
-# Money amounts in tables/totals: UI family, tabular figures, medium weight.
-[[style]]
-id = "amount"
-size_px = 13
-weight = 500
-line_height = 1.45
-letter_spacing_px = 0.0
-font = "ui"
-tabular = true
+# Rhythm — paragraph gaps (TOKENS §03 rhythm).
+[typography.para]
+body = 8    # type-body-para: paragraph spacing
+heading = 6 # type-heading-para: heading → body
+
+# Measure — max line length (TOKENS §03).
+[typography.measure]
+narrow = 280 # side panels, tooltips, popovers
+body   = 560 # reading text, dialogs, help
+wide   = 720 # onboarding, long settings pages

@@ -2,22 +2,23 @@
 #
 # SSOT entry for the `data/theme/` scope: the design tokens (the "variables" in the Figma
 # model) that gpui-kit styled components and every gallery variant reference — never
-# hardcoded in source. One file per sub-concern; split further as the scope grows
-# (e.g. `colors/` with `light.toml` + `dark.toml` when palettes diverge beyond inversion).
+# hardcoded in source. One file per sub-concern, 1:1 with the TOKENS · Bookkeepy v1 sheet.
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language, as designed on the Penpot 'draft' page (Bookkeepy 1 file); exported copies under references/designlanguage/. Maintained by the project; schema changes require an ADR."
 
 [meta]
-version = "1"
+version = "2"
 themes = ["dark", "light"]
 
 # Files in this scope — `govern data` validates the whole scope via the loader.
 [files]
-colors = "Semantic + raw color tokens; dark is the designed native theme, light mirrors the same ramp"
-spacing = "Spacing tokens — multiples of the 4px base grid"
-radii = "Corner-radius tokens"
-typography = "Font families + named text styles (size, weight, line height, letter spacing)"
-elevation = "Shadow tokens + z-index (stacking) layers"
+colors = "Primitives (neutral ramp, alpha layers, hues) + semantic roles per theme; dark is the designed native theme, light mirrors the ramp"
+spacing = "Scale ladder (2px grid), gap roles by relationship, container insets"
+radii = "Radius tiers + role assignments (control/row/chip/tooltip/hud/popover/card/dialog)"
+typography = "Font stacks + named text styles (size, weight, line height, tracking) + measure + paragraph gaps"
+elevation = "Shadow tokens (popover/dialog only — the design is flat), z-index layers, focus ring spec"
+motion = "Duration/easing/delay tokens + skeleton cycle"
+icons = "Phosphor set + size ladder + minimum hit target"
 layout = "Fixed shell geometry (sidebar widths) from ORGANISMS · 01 / TEMPLATES"
