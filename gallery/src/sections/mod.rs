@@ -14,7 +14,9 @@ use gpui_kit::{Context, Window};
 
 use crate::app::Gallery;
 
+mod atoms_badge_avatar;
 mod atoms_button;
+mod atoms_choice;
 pub(crate) mod kit;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
@@ -85,7 +87,11 @@ macro_rules! section {
 
 /// The gallery's section list — rebuilt sheet-by-sheet from the design language.
 /// Add sections here; `govern ui` validates the ids against the component inventory.
-pub const SECTIONS: &[SectionSpec] = &[section!(atoms_button, "atoms-button", Atoms)];
+pub const SECTIONS: &[SectionSpec] = &[
+    section!(atoms_button, "atoms-button", Atoms),
+    section!(atoms_badge_avatar, "atoms-badge-avatar", Atoms),
+    section!(atoms_choice, "atoms-choice", Atoms),
+];
 
 /// `Layer::sections` in registry order (sidebar groups).
 pub fn sections_by_layer() -> Vec<(Layer, Vec<&'static SectionSpec>)> {

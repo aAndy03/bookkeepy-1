@@ -108,6 +108,26 @@ line_height_px = 12
 letter_spacing_px = 0.3
 font = "ui"
 tabular = true
+
+[[style]]
+id = "badge"
+size_px = 10
+weight = 600
+line_height_px = 12
+letter_spacing_px = 0.0
+font = "ui"
+tabular = true
+# badge count digits (ATOMS · 02: pill, tone fill, dark digits, tabular)
+
+[[style]]
+id = "tag"
+size_px = 11
+weight = 500
+line_height_px = 15
+letter_spacing_px = 0.0
+font = "ui"
+# tag label (ATOMS · 02: 11px/500 lh15 in every tag size)
+
 # small money labels (row currency hints, list captions) — overline cut, tabular figures
 
 [[style]]

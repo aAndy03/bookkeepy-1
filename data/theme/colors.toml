@@ -170,7 +170,10 @@ danger-foreground  = "$red-300"
 danger-subtle      = "$red-900"
 warning            = "$amber-500"
 warning-foreground = "$amber-300"
+warning-subtle     = "$amber-900"
 info               = "$cyan-500"
+info-foreground    = "$cyan-300"
+info-subtle        = "$cyan-900"
 
 [theme.dark.money]
 money-in         = "$green-500"
@@ -284,7 +287,10 @@ danger-foreground  = "$red-300"
 danger-subtle      = "$red-900"
 warning            = "$amber-500"
 warning-foreground = "$amber-300"
+warning-subtle     = "$amber-900"
 info               = "$cyan-500"
+info-foreground    = "$cyan-300"
+info-subtle        = "$cyan-900"
 
 [theme.light.money]
 money-in         = "$green-500"

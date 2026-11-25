@@ -144,51 +144,114 @@ pub mod surface {
 /// `control`; avatars are borderless circles.
 pub mod display {
     use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use bookkeepy_primary_data::theme::style;
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::h_flex;
     use gpui_kit::component::avatar::Avatar;
     use gpui_kit::component::tag::Tag;
-    use gpui_kit::{Styled as _, px};
+    use gpui_kit::{
+        DefiniteLength, Div, FontWeight, IntoElement, ParentElement as _, SharedString,
+        Styled as _, div, px,
+    };
+
+    /// Apply a named type style (`data/theme/typography.toml`) to any styled element.
+    fn type_style<S: gpui_kit::Styled>(el: S, id: &str) -> S {
+        let mut el = el;
+        if let Some(s) = style(id) {
+            el = el
+                .text_size(px(s.size_px as f32))
+                .line_height(DefiniteLength::Fraction(
+                    s.line_height_px as f32 / s.size_px as f32,
+                ))
+                .font_weight(FontWeight::from(s.weight as f32));
+            if s.tabular {
+                el = el.font_features(gpui_kit::FontFeatures(std::sync::Arc::new(vec![(
+                    "tnum".into(),
+                    1,
+                )])));
+            }
+        }
+        el
+    }
 
     /// The tag tone, selecting the matching well + tint token pair (ATOMS · 02).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum TagTone {
-        /// The neutral tag: `control` fill + `icon` ink.
+        /// The neutral tag: `control` fill + `secondary-foreground` ink.
         Neutral,
         /// `accent-subtle` well + `accent-foreground` tint.
         Accent,
         /// `success-subtle` + `success-foreground`.
         Success,
-        /// `amber-900` well + `warning-foreground`.
+        /// `warning-subtle` well + `warning-foreground`.
         Warning,
         /// `danger-subtle` + `danger-foreground`.
         Danger,
-        /// `cyan-900` well + `cyan-300`.
+        /// `info-subtle` well + `info-foreground`.
         Info,
     }
 
-    /// A soft tag: well fill + tint ink + radius-full pill, no border (ATOMS · 02 tag
-    /// variants — the design's tags are filled pills, not outlined chips).
+    impl TagTone {
+        /// (well fill, tint ink) for the subtle style; the outline style reuses the
+        /// hue-500 @ 40% border + hue-300 ink.
+        fn well_tint(self, mode: Mode) -> (Option<gpui_kit::Hsla>, Option<gpui_kit::Hsla>) {
+            match self {
+                TagTone::Neutral => (
+                    role_hsla(mode, "control"),
+                    role_hsla(mode, "secondary-foreground"),
+                ),
+                TagTone::Accent => (
+                    role_hsla(mode, "accent-subtle"),
+                    role_hsla(mode, "accent-foreground"),
+                ),
+                TagTone::Success => (
+                    role_hsla(mode, "success-subtle"),
+                    role_hsla(mode, "success-foreground"),
+                ),
+                TagTone::Warning => (
+                    role_hsla(mode, "warning-subtle"),
+                    role_hsla(mode, "warning-foreground"),
+                ),
+                TagTone::Danger => (
+                    role_hsla(mode, "danger-subtle"),
+                    role_hsla(mode, "danger-foreground"),
+                ),
+                TagTone::Info => (
+                    role_hsla(mode, "info-subtle"),
+                    role_hsla(mode, "info-foreground"),
+                ),
+            }
+        }
+
+        /// hue-500 @ 40% — the outline border color (e.g. `#f5823a66` for accent).
+        fn border_40(self) -> Option<gpui_kit::Hsla> {
+            let alias = match self {
+                TagTone::Neutral => "neutral-700",
+                TagTone::Accent => "orange-500",
+                TagTone::Success => "green-500",
+                TagTone::Warning => "amber-500",
+                TagTone::Danger => "red-500",
+                TagTone::Info => "cyan-500",
+            };
+            prim_hsla(alias).map(|c| c.opacity(0.4))
+        }
+    }
+
+    /// The sheet's tag geometry: h20, padding 0 6px, radius-sm (4), `tag` type style
+    /// (11/500 lh15). The 24px size variant is [`tag_tall`]; filter pills use
+    /// [`Tag::rounded_full`]. Instance refinement lands last in Tag's render, so these
+    /// win over the component's own padding/size mapping.
+    fn tag_geometry(tag: Tag) -> Tag {
+        type_style(tag.h(px(20.)).px(px(6.)), "tag")
+            .rounded(px(radius_tier("sm")))
+            .gap(px(4.))
+    }
+
+    /// A subtle tag: tone well fill + tint ink, no border (ATOMS · 02 tone × style:
+    /// subtle = the default state).
     pub fn tag_soft(tag: Tag, tone: TagTone, mode: Mode) -> Tag {
-        let (well, tint) = match tone {
-            TagTone::Neutral => (role_hsla(mode, "control"), role_hsla(mode, "icon")),
-            TagTone::Accent => (
-                role_hsla(mode, "accent-subtle"),
-                role_hsla(mode, "accent-foreground"),
-            ),
-            TagTone::Success => (
-                role_hsla(mode, "success-subtle"),
-                role_hsla(mode, "success-foreground"),
-            ),
-            TagTone::Warning => (
-                prim_hsla("amber-900"),
-                role_hsla(mode, "warning-foreground"),
-            ),
-            TagTone::Danger => (
-                role_hsla(mode, "danger-subtle"),
-                role_hsla(mode, "danger-foreground"),
-            ),
-            TagTone::Info => (prim_hsla("cyan-900"), prim_hsla("cyan-300")),
-        };
-        let mut tag = tag.rounded(px(radius_tier("full"))).border_0();
+        let (well, tint) = tone.well_tint(mode);
+        let mut tag = tag_geometry(tag).border_0();
         if let Some(bg) = well {
             tag = tag.bg(bg);
         }
@@ -198,11 +261,718 @@ pub mod display {
         tag
     }
 
+    /// An outline tag: transparent fill, 1px hue-500 @ 40% border, tint ink.
+    pub fn tag_outline(tag: Tag, tone: TagTone, mode: Mode) -> Tag {
+        let (_, tint) = tone.well_tint(mode);
+        let mut tag = tag_geometry(tag)
+            .bg(gpui_kit::transparent_white())
+            .border_1();
+        if let Some(b) = tone.border_40() {
+            tag = tag.border_color(b);
+        }
+        if let Some(fg) = tint {
+            tag = tag.text_color(fg);
+        }
+        tag
+    }
+
+    /// The 24px tag size (padding 0 8px, same type style).
+    pub fn tag_tall(tag: Tag) -> Tag {
+        type_style(tag.h(px(24.)).px(px(8.)), "tag")
+    }
+
+    /// The badge tone — one semantic color family per tone (ATOMS · 02: neutral ·
+    /// accent · success · warning · danger · info).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum BadgeTone {
+        /// neutral-200 fill, dark ink.
+        Neutral,
+        /// orange-500 fill, dark ink.
+        Accent,
+        /// green-500 fill, dark ink.
+        Success,
+        /// amber-500 fill, dark ink.
+        Warning,
+        /// red-500 fill, white ink.
+        Danger,
+        /// cyan-500 fill, dark ink.
+        Info,
+    }
+
+    impl BadgeTone {
+        /// (fill, ink): hue-500 fill with dark ink, except danger (red-500 + white)
+        /// and neutral (neutral-200 + neutral-925).
+        fn fill_ink(self) -> (Option<gpui_kit::Hsla>, Option<gpui_kit::Hsla>) {
+            let (fill, dark) = match self {
+                BadgeTone::Neutral => ("neutral-200", true),
+                BadgeTone::Accent => ("orange-500", true),
+                BadgeTone::Success => ("green-500", true),
+                BadgeTone::Warning => ("amber-500", true),
+                BadgeTone::Danger => ("red-500", false),
+                BadgeTone::Info => ("cyan-500", true),
+            };
+            (
+                prim_hsla(fill),
+                prim_hsla(if dark { "neutral-925" } else { "neutral-0" }),
+            )
+        }
+    }
+
+    /// A count badge: h16 pill, padding 0 5px, `badge` type style (10/600 lh12,
+    /// tabular), tone fill + ink. `count == 0` renders nothing (the sheet hides it).
+    pub fn badge_count(count: usize, tone: BadgeTone) -> Option<Div> {
+        if count == 0 {
+            return None;
+        }
+        let (fill, ink) = tone.fill_ink();
+        let mut el = type_style(
+            h_flex()
+                .h(px(16.))
+                .px(px(5.))
+                .items_center()
+                .justify_center()
+                .rounded_full()
+                .child(count.to_string()),
+            "badge",
+        );
+        if let Some(bg) = fill {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = ink {
+            el = el.text_color(fg);
+        }
+        Some(el)
+    }
+
+    /// Count badge as an element; renders an empty placeholder when `count == 0`.
+    pub fn badge_count_el(count: usize, tone: BadgeTone) -> Div {
+        badge_count(count, tone).unwrap_or_else(div)
+    }
+
+    /// A status dot: 8px circle with a 2px ring of the surface it sits on (gpui 0.3
+    /// has no outline property, so the ring is a 2px border inside a 12px box — the
+    /// same 8+2 geometry the sheet draws as outline).
+    pub fn badge_dot(tone: BadgeTone, ring: gpui_kit::Hsla) -> Div {
+        let (fill, _) = tone.fill_ink();
+        let mut el = div()
+            .size(px(12.))
+            .rounded_full()
+            .border_2()
+            .border_color(ring);
+        if let Some(bg) = fill {
+            el = el.bg(bg);
+        }
+        el
+    }
+
+    /// An icon badge: 16px disc, 10px glyph in the tone ink, bottom-right anchored.
+    pub fn badge_icon(icon: IconName, tone: BadgeTone) -> Div {
+        let (fill, ink) = tone.fill_ink();
+        let mut el = h_flex()
+            .size(px(16.))
+            .rounded_full()
+            .items_center()
+            .justify_center()
+            .child(super::atoms::icon(icon, 10.));
+        if let Some(bg) = fill {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = ink {
+            el = el.text_color(fg);
+        }
+        el
+    }
+
+    /// Anchor a badge over a child element (bell icon, avatar…): the count sits at the
+    /// top-right corner, the icon badge at the bottom-right (ATOMS · 02 anchored row).
+    pub fn badge_anchored(anchor: impl IntoElement, badge: Div, top_right: bool) -> Div {
+        let badge = badge.absolute();
+        let badge = if top_right {
+            badge.top(px(-6.)).right(px(-8.))
+        } else {
+            badge.bottom(px(-4.)).right(px(-4.))
+        };
+        div().relative().child(anchor).child(badge)
+    }
+
+    /// The avatar hue ramp — initials pick a well/tint pair deterministically from the
+    /// name (ATOMS · 02: hue-900 disc, hue-300 letters, chosen from the name).
+    const AVATAR_HUES: &[&str] = &[
+        "cyan", "lime", "pink", "violet", "orange", "green", "amber", "red", "sand", "steel",
+    ];
+
+    fn name_hue(name: &str) -> &'static str {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut h = DefaultHasher::new();
+        name.hash(&mut h);
+        AVATAR_HUES[(h.finish() as usize) % AVATAR_HUES.len()]
+    }
+
+    fn initials_of(name: &str) -> SharedString {
+        // Two words → first letter of each ("Andy Motor" → AM); one word → first two
+        // letters ("IO" → IO).
+        let mut words = name.split_whitespace();
+        let first = words.next().unwrap_or("?");
+        let second = words.next();
+        let initials = match second {
+            Some(w) => format!(
+                "{}{}",
+                first.chars().next().unwrap_or('?').to_uppercase(),
+                w.chars().next().unwrap_or('?').to_uppercase()
+            ),
+            None => first.chars().take(2).collect::<String>().to_uppercase(),
+        };
+        SharedString::from(initials)
+    }
+
+    /// Initials avatar at an exact size (16/20/24/32/48): hue-900 disc + hue-300
+    /// letters, weight 600, text scaled per the sheet (6/8/10/13/19px).
+    pub fn avatar_initials(name: &str, size_px: u32) -> Div {
+        let hue = name_hue(name);
+        let well = prim_hsla(&format!("{hue}-900"));
+        let tint = prim_hsla(&format!("{hue}-300"));
+        let (fs, lh) = match size_px {
+            16 => (6., 7.),
+            20 => (8., 10.),
+            24 => (10., 12.),
+            32 => (13., 16.),
+            48 => (19., 23.),
+            s => (s as f32 * 0.4, s as f32 * 0.48),
+        };
+        let mut el = div()
+            .size(px(size_px as f32))
+            .rounded_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(fs))
+            .line_height(px(lh))
+            .font_weight(FontWeight::SEMIBOLD)
+            .child(initials_of(name));
+        if let Some(bg) = well {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = tint {
+            el = el.text_color(fg);
+        }
+        el
+    }
+
+    /// Placeholder avatar: `neutral-850` disc + user glyph in `neutral-400` at 60% of
+    /// the size (ATOMS · 02 placeholder kind).
+    pub fn avatar_placeholder(size_px: u32, mode: Mode) -> Div {
+        let mut el = div()
+            .size(px(size_px as f32))
+            .rounded_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(super::atoms::icon(IconName::User, size_px as f32 * 0.6));
+        if let Some(bg) = role_hsla(mode, "surface-overlay") {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = role_hsla(mode, "icon-muted") {
+            el = el.text_color(fg);
+        }
+        el
+    }
+
+    /// The "current profile" ring: 2px accent @ 40% drawn OUTSIDE the disc (gpui 0.3
+    /// has no outline property, so the ring is a padded wrapper — the sheet's 32px
+    /// disc + 2px outline = 36px overall).
+    pub fn avatar_current(el: Div) -> Div {
+        match prim_hsla("orange-500") {
+            Some(c) => div().p(px(2.)).rounded_full().bg(c.opacity(0.4)).child(el),
+            None => el,
+        }
+    }
+
+    /// An overlap-stack item: 2px ring of the surface it sits on + −6px overlap
+    /// (ATOMS · 02 group: −6 overlap, 2px surface ring, +N disc).
+    pub fn avatar_stack_item(el: Div, ring: gpui_kit::Hsla, first: bool) -> Div {
+        let ring_wrap = div().p(px(2.)).rounded_full().bg(ring).child(el);
+        if first {
+            ring_wrap
+        } else {
+            ring_wrap.ml(px(-6.))
+        }
+    }
+
+    /// The +N overflow disc of an avatar stack: `neutral-800` fill, tint "+N" 10/600.
+    pub fn avatar_overflow(n: usize, size_px: u32, mode: Mode) -> Div {
+        let mut el = div()
+            .size(px(size_px as f32))
+            .rounded_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(10.))
+            .line_height(px(12.))
+            .font_weight(FontWeight::SEMIBOLD)
+            .child(format!("+{n}"));
+        if let Some(bg) = prim_hsla("neutral-800") {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = role_hsla(mode, "secondary-foreground") {
+            el = el.text_color(fg);
+        }
+        el
+    }
+
     /// An avatar: borderless circle (ATOMS · 02 — the ring appears only in overlap
-    /// stacks, which AvatarGroup draws itself).
+    /// stacks and on the current profile, both composed above).
     pub fn avatar(avatar: Avatar) -> Avatar {
         avatar.border_0()
     }
+}
+
+/// Choice-control specimens — ATOMS · 02 checkbox / radio / switch / toggle / slider.
+///
+/// gpui-kit 0.11 draws these controls' inner track/indicator as CHILD elements fed by
+/// theme seats (so the live rest/on cells are pixel-right through the theme bridge),
+/// but hover/pressed/focus are live-only pseudo-states with no state flag. The gallery
+/// matrix therefore paints those columns with these composed specimens — same tokens,
+/// same geometry as the sheet — while the rest/on/mixed cells stay LIVE components you
+/// can click. All colors resolve through roles/aliases, never literals.
+pub mod choice {
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::h_flex;
+    use gpui_kit::prelude::FluentBuilder as _;
+    use gpui_kit::{Div, FontWeight, Hsla, ParentElement as _, SharedString, Styled as _, div, px};
+
+    /// The checked axis: off / on / mixed (checkbox + radio).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Tri {
+        /// unchecked.
+        Off,
+        /// checked.
+        On,
+        /// indeterminate (some rows selected).
+        Mixed,
+    }
+
+    /// The interaction axis. Rest is a live state on the real components; hover /
+    /// pressed / focus / disabled are painted here (gpui has no flag for them).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Ix {
+        /// live rest state.
+        Rest,
+        /// painted hover.
+        Hover,
+        /// painted pressed.
+        Pressed,
+        /// painted focus ring.
+        Focus,
+        /// painted disabled (40%).
+        Disabled,
+    }
+
+    fn disabled(ix: Ix) -> bool {
+        ix == Ix::Disabled
+    }
+
+    /// The 20px focus ring wrapper drawn around checkbox/radio/switch (rx6, padding
+    /// 1px, 1.5px border — transparent at rest, `ring` color when focused).
+    fn ring_wrap(box_el: Div, ix: Ix, mode: Mode, full: bool) -> Div {
+        let mut w = div()
+            .size(px(20.))
+            .p(px(1.))
+            .border(px(1.5))
+            .border_color(gpui_kit::transparent_white())
+            .rounded(if full {
+                px(radius_tier("full"))
+            } else {
+                px(radius_tier("md"))
+            })
+            .child(box_el);
+        if ix == Ix::Focus
+            && let Some(c) = role_hsla(mode, "ring")
+        {
+            w = w.border_color(c);
+        }
+        if disabled(ix) {
+            w = w.opacity(0.4);
+        }
+        w
+    }
+
+    /// Checkbox box (16px rx4) at a checked × interaction cell, with the check/minus
+    /// glyph in `primary-foreground` when filled.
+    pub fn checkbox_box(tri: Tri, ix: Ix, mode: Mode) -> Div {
+        let filled = tri != Tri::Off;
+        let mut b = h_flex()
+            .size(px(16.))
+            .rounded(px(radius_tier("sm")))
+            .border_1()
+            .items_center()
+            .justify_center();
+        // fill + border per interaction (off: transparent → white-a4 → white-a8;
+        // on: primary → foreground → ring; focus brightens the box border)
+        let (bg, border) = match (filled, ix) {
+            (false, Ix::Rest) | (false, Ix::Disabled) => (None, role_hsla(mode, "input")),
+            (false, Ix::Hover) => (prim_hsla("white-a4"), role_hsla(mode, "input-hover")),
+            (false, Ix::Pressed) => (prim_hsla("white-a8"), role_hsla(mode, "input-hover")),
+            (false, Ix::Focus) => (None, role_hsla(mode, "input-focus")),
+            (true, Ix::Rest) | (true, Ix::Disabled) | (true, Ix::Focus) => {
+                (role_hsla(mode, "primary"), role_hsla(mode, "primary"))
+            }
+            (true, Ix::Hover) => (role_hsla(mode, "foreground"), role_hsla(mode, "foreground")),
+            (true, Ix::Pressed) => (role_hsla(mode, "ring"), role_hsla(mode, "ring")),
+        };
+        if let Some(bg) = bg {
+            b = b.bg(bg);
+        }
+        if let Some(bd) = border {
+            b = b.border_color(bd);
+        }
+        if filled {
+            let mark = if tri == Tri::Mixed {
+                IconName::Minus
+            } else {
+                IconName::Check
+            };
+            let mut icon = super::atoms::icon(mark, 12.);
+            if let Some(fg) = role_hsla(mode, "primary-foreground") {
+                icon = icon.text_color(fg);
+            }
+            b = b.child(icon);
+        }
+        ring_wrap(b, ix, mode, false)
+    }
+
+    /// Radio circle (16px, full round) at a checked × interaction cell, with the 6px
+    /// `primary-foreground` dot when on.
+    pub fn radio_circle(on: bool, ix: Ix, mode: Mode) -> Div {
+        let mut c = h_flex()
+            .size(px(16.))
+            .rounded_full()
+            .border_1()
+            .items_center()
+            .justify_center();
+        let (bg, border) = match (on, ix) {
+            (false, Ix::Rest) | (false, Ix::Disabled) => (None, role_hsla(mode, "input")),
+            (false, Ix::Hover) => (prim_hsla("white-a4"), role_hsla(mode, "input-hover")),
+            (false, Ix::Pressed) => (prim_hsla("white-a8"), role_hsla(mode, "input-hover")),
+            (false, Ix::Focus) => (None, role_hsla(mode, "input-focus")),
+            (true, Ix::Rest) | (true, Ix::Disabled) | (true, Ix::Focus) => {
+                (role_hsla(mode, "primary"), role_hsla(mode, "primary"))
+            }
+            (true, Ix::Hover) => (role_hsla(mode, "foreground"), role_hsla(mode, "foreground")),
+            (true, Ix::Pressed) => (role_hsla(mode, "ring"), role_hsla(mode, "ring")),
+        };
+        if let Some(bg) = bg {
+            c = c.bg(bg);
+        }
+        if let Some(bd) = border {
+            c = c.border_color(bd);
+        }
+        if on {
+            let mut dot = div().size(px(6.)).rounded_full();
+            if let Some(fg) = role_hsla(mode, "primary-foreground") {
+                dot = dot.bg(fg);
+            }
+            c = c.child(dot);
+        }
+        ring_wrap(c, ix, mode, true)
+    }
+
+    /// Switch track + thumb at an on × interaction cell. Medium = 36x20 (thumb 16),
+    /// small = 28x16 (thumb 12).
+    pub fn switch_track(on: bool, small: bool, ix: Ix, mode: Mode) -> Div {
+        let (tw, th, thumb) = if small {
+            (28., 16., 12.)
+        } else {
+            (36., 20., 16.)
+        };
+        let (bg, thumb_bg) = match (on, ix) {
+            (false, Ix::Rest) | (false, Ix::Disabled) => (
+                role_hsla(mode, "input"),
+                role_hsla(mode, "secondary-foreground"),
+            ),
+            (false, Ix::Hover) => (role_hsla(mode, "border-strong"), role_hsla(mode, "ring")),
+            (false, Ix::Pressed) => (role_hsla(mode, "input-hover"), role_hsla(mode, "ring")),
+            (false, Ix::Focus) => (
+                role_hsla(mode, "input"),
+                role_hsla(mode, "secondary-foreground"),
+            ),
+            (true, Ix::Rest) | (true, Ix::Disabled) | (true, Ix::Focus) => (
+                role_hsla(mode, "primary"),
+                role_hsla(mode, "primary-foreground"),
+            ),
+            (true, Ix::Hover) => (
+                role_hsla(mode, "foreground"),
+                role_hsla(mode, "primary-foreground"),
+            ),
+            (true, Ix::Pressed) => (
+                role_hsla(mode, "ring"),
+                role_hsla(mode, "primary-foreground"),
+            ),
+        };
+        let mut t = h_flex()
+            .w(px(tw))
+            .h(px(th))
+            .p(px(2.))
+            .rounded_full()
+            .items_center()
+            .map(|this| {
+                if on {
+                    this.justify_end()
+                } else {
+                    this.justify_start()
+                }
+            });
+        if let Some(bg) = bg {
+            t = t.bg(bg);
+        }
+        let mut knob = div().size(px(thumb)).rounded_full().shadow_sm().border_0();
+        if let Some(bg) = thumb_bg {
+            knob = knob.bg(bg);
+        }
+        t = t.child(knob);
+        ring_wrap(t, ix, mode, true)
+    }
+
+    /// Toggle chip at an on × interaction cell (ghost or outline), at a control size:
+    /// xs 20/6 · sm 24/8 · md 32/10 · lg 40/14, gap 6, 14px glyph, 12/500 label, rx6.
+    /// Icon is duotone whenever the state is "engaged" (hover/pressed/on), regular at
+    /// rest-off — the sheet's regular ↔ duotone swap.
+    #[allow(clippy::too_many_arguments)]
+    pub fn toggle_chip(
+        on: bool,
+        outline: bool,
+        ix: Ix,
+        icon: IconName,
+        label: impl Into<SharedString>,
+        h_px: f32,
+        height_px: f32,
+        mode: Mode,
+    ) -> Div {
+        let engaged = on || matches!(ix, Ix::Hover | Ix::Pressed);
+        let (bg, fg) = match (on, ix) {
+            (false, Ix::Rest) | (false, Ix::Disabled) => {
+                (None, role_hsla(mode, "secondary-foreground"))
+            }
+            (false, Ix::Hover) => (prim_hsla("white-a4"), role_hsla(mode, "foreground")),
+            (false, Ix::Pressed) => (prim_hsla("white-a8"), role_hsla(mode, "foreground")),
+            (false, Ix::Focus) => (None, role_hsla(mode, "secondary-foreground")),
+            (true, Ix::Rest) | (true, Ix::Disabled) => (
+                role_hsla(mode, "control-selected"),
+                role_hsla(mode, "foreground"),
+            ),
+            (true, Ix::Hover) => (prim_hsla("white-a16"), role_hsla(mode, "foreground")),
+            (true, Ix::Pressed) => (prim_hsla("white-a8"), role_hsla(mode, "foreground")),
+            (true, Ix::Focus) => (
+                role_hsla(mode, "control-selected"),
+                role_hsla(mode, "foreground"),
+            ),
+        };
+        let glyph = if engaged {
+            super::atoms::duotone_icon(icon, 14.)
+        } else {
+            super::atoms::icon(icon, 14.)
+        };
+        let mut el = h_flex()
+            .h(px(height_px))
+            .px(px(h_px))
+            .gap(px(6.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .border(px(2.))
+            .border_color(gpui_kit::transparent_white())
+            .child(glyph)
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(14.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(label.into()),
+            );
+        if outline {
+            el = el.border_1().map(|this| {
+                this.border_color(
+                    role_hsla(mode, "border-strong").unwrap_or(gpui_kit::transparent_white()),
+                )
+            });
+        }
+        if ix == Ix::Focus
+            && let Some(c) = role_hsla(mode, "ring")
+        {
+            el = el.border_2().border_color(c);
+        }
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = fg {
+            el = el.text_color(fg);
+        }
+        if disabled(ix) {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    /// Slider specimen: 4px track (white-a8) + `primary` fill + 14px thumb (2px
+    /// `primary-foreground` ring inside) + 20px halo (transparent / white-a12 hover /
+    /// white-a24 pressed / `ring` on focus). gpui's stock Slider keeps fixed internal
+    /// geometry, so the sheet-exact track is composed here; the live draggable Slider
+    /// rides the same theme seats.
+    pub fn slider_track(pct: f32, ix: Ix, width: f32, mode: Mode) -> Div {
+        let pct = pct.clamp(0., 100.);
+        let fill_w = width * pct / 100.;
+        let halo = match ix {
+            Ix::Hover => prim_hsla("white-a12"),
+            Ix::Pressed => prim_hsla("white-a24"),
+            Ix::Focus => role_hsla(mode, "ring"),
+            _ => Some(gpui_kit::transparent_white()),
+        };
+        let mut track = div()
+            .w(px(width))
+            .h(px(4.))
+            .rounded_full()
+            .bg(prim_hsla("white-a8").unwrap_or(gpui_kit::transparent_white()));
+        let mut fill = div()
+            .w(px(fill_w))
+            .h(px(4.))
+            .rounded_full()
+            .bg(role_hsla(mode, "primary").unwrap_or(gpui_kit::transparent_white()));
+        if disabled(ix) {
+            track = track.opacity(0.4);
+            fill = fill.opacity(0.4);
+        }
+        let mut halo_el = div()
+            .absolute()
+            .size(px(20.))
+            .rounded_full()
+            .left(px(fill_w - 10.))
+            .top(px(-5.));
+        if let Some(h) = halo {
+            halo_el = halo_el.bg(h);
+        }
+        let mut thumb = div()
+            .absolute()
+            .size(px(14.))
+            .rounded_full()
+            .border_2()
+            .left(px(fill_w - 7.))
+            .top(px(3.))
+            .bg(role_hsla(mode, "primary").unwrap_or(gpui_kit::transparent_white()))
+            .border_color(
+                role_hsla(mode, "primary-foreground").unwrap_or(gpui_kit::transparent_white()),
+            );
+        if disabled(ix) {
+            thumb = thumb.opacity(0.4);
+        }
+        div()
+            .relative()
+            .w(px(width))
+            .h(px(20.))
+            .child(track)
+            .child(fill)
+            .child(halo_el)
+            .child(thumb)
+    }
+
+    /// Range slider specimen: fill BETWEEN the two thumbs (p1..p2).
+    pub fn slider_range(p1: f32, p2: f32, width: f32, mode: Mode) -> Div {
+        let (a, b) = (
+            p1.clamp(0., 100.).min(p2.clamp(0., 100.)),
+            p2.clamp(0., 100.).max(p1.clamp(0., 100.)),
+        );
+        let fill = div()
+            .absolute()
+            .h(px(4.))
+            .rounded_full()
+            .left(px(width * a / 100.))
+            .w(px(width * (b - a) / 100.))
+            .top(px(8.))
+            .bg(role_hsla(mode, "primary").unwrap_or(gpui_kit::transparent_white()));
+        let thumb = |p: f32| {
+            div()
+                .absolute()
+                .size(px(14.))
+                .rounded_full()
+                .border_2()
+                .left(px(width * p / 100. - 7.))
+                .top(px(3.))
+                .bg(role_hsla(mode, "primary").unwrap_or(gpui_kit::transparent_white()))
+                .border_color(
+                    role_hsla(mode, "primary-foreground").unwrap_or(gpui_kit::transparent_white()),
+                )
+        };
+        div()
+            .relative()
+            .w(px(width))
+            .h(px(20.))
+            .child(
+                div()
+                    .absolute()
+                    .w(px(width))
+                    .h(px(4.))
+                    .rounded_full()
+                    .top(px(8.))
+                    .bg(prim_hsla("white-a8").unwrap_or(gpui_kit::transparent_white())),
+            )
+            .child(fill)
+            .child(thumb(a))
+            .child(thumb(b))
+    }
+
+    /// The pressed-state value bubble above the thumb: `primary` pill, rx4, padding
+    /// 2px 6px, 11/500 ink (ATOMS · 02 slider pressed: "620 RON").
+    pub fn slider_bubble(text: impl Into<SharedString>, mode: Mode) -> Div {
+        let mut el = h_flex()
+            .p(px(2.))
+            .px(px(6.))
+            .rounded(px(radius_tier("sm")))
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .font_weight(FontWeight::MEDIUM)
+            .child(text.into());
+        if let Some(bg) = role_hsla(mode, "primary") {
+            el = el.bg(bg);
+        }
+        if let Some(fg) = role_hsla(mode, "primary-foreground") {
+            el = el.text_color(fg);
+        }
+        el
+    }
+
+    /// One mark tick under the slider track + its caption (11/400 `icon-muted`).
+    pub fn slider_mark(pct: f32, width: f32, label: impl Into<SharedString>, mode: Mode) -> Div {
+        let mut tick = div()
+            .absolute()
+            .w(px(1.))
+            .h(px(4.))
+            .left(px(width * pct / 100.))
+            .bg(role_hsla(mode, "icon-muted").unwrap_or(gpui_kit::transparent_white()));
+        let mut cap = div()
+            .absolute()
+            .left(px(width * pct / 100.))
+            .top(px(8.))
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .child(label.into());
+        if let Some(fg) = role_hsla(mode, "icon-muted") {
+            tick = tick.bg(fg);
+            cap = cap.text_color(fg);
+        }
+        div()
+            .relative()
+            .w(px(width))
+            .h(px(20.))
+            .child(tick)
+            .child(cap)
+    }
+
+    /// Re-export for call sites that build the live controls' labels.
+    pub fn label_text(text: impl Into<SharedString>) -> SharedString {
+        text.into()
+    }
+
+    /// Type alias so gallery tables can name the specimen kinds.
+    pub type HslaOpt = Option<Hsla>;
 }
 
 /// Control presets — the ATOMS · 01 control-size scale (20/24/32/40px with radii
