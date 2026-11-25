@@ -77,14 +77,20 @@ impl gpui_kit::Render for Section {
                                 .label(tr(cx, "gallery.molecules.popups.popover.trigger"))
                                 .outline(),
                         )
-                        .child(
+                        // MOL·01: the panel is #222222 rx12 borderless — owned here via
+                        // appearance(false) + popup_panel (gpui's popover_style rounds at
+                        // the shared control radius).
+                        .appearance(false)
+                        .child(bookkeepy_ui::api::language::surface::popup_panel(
                             v_flex()
                                 .gap_1()
+                                .p_3()
                                 .child(tr(cx, "gallery.molecules.popups.popover.content_title"))
                                 .child(div().text_sm().text_color(theme.muted_foreground).child(
                                     tr(cx, "gallery.molecules.popups.popover.content_body"),
                                 )),
-                        ),
+                            cx.global::<crate::app::Prefs>().mode,
+                        )),
                 )
                 .child(
                     Popover::new("popover-arrow-demo")
@@ -219,9 +225,13 @@ impl gpui_kit::Render for Section {
                             .text_color(theme.link)
                             .child(tr(cx, "gallery.molecules.popups.hover_card.trigger")),
                     )
-                    .child(
+                    // MOL·02 hover card: 300x183 rx12 #222222 panel — owned via
+                    // appearance(false) + popup_panel.
+                    .appearance(false)
+                    .child(bookkeepy_ui::api::language::surface::popup_panel(
                         v_flex()
                             .gap_1()
+                            .p_3()
                             .child(
                                 div()
                                     .text_sm()
@@ -234,7 +244,8 @@ impl gpui_kit::Render for Section {
                                     .text_color(theme.muted_foreground)
                                     .child(tr(cx, "gallery.molecules.popups.hover_card.body")),
                             ),
-                    ),
+                        cx.global::<crate::app::Prefs>().mode,
+                    )),
             )
             .child(
                 HoverCard::new("hover-card-fast-demo")

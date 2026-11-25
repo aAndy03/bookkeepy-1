@@ -8,7 +8,7 @@ use gpui_kit::component::button::{Button, ButtonVariant, ButtonVariants as _};
 use gpui_kit::component::command::{Command, CommandGroup, CommandItem, CommandState};
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{
-    IconName, IndexPath, Placement, Sizable as _, WindowExt as _, h_flex, v_flex,
+    ActiveTheme as _, IconName, IndexPath, Placement, Sizable as _, WindowExt as _, h_flex, v_flex,
 };
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, IntoElement, ParentElement as _, Styled as _,
@@ -17,6 +17,12 @@ use gpui_kit::{
 
 use crate::app::{Gallery, tr};
 use crate::sections::layout::{demo_card, demo_row, section_page};
+
+/// Wrap a toast in the design surface — borderless `#1c1c1c` rx20 card
+/// (ORGANISMS · 01 notification), via the ui crate's preset with the active mode.
+fn toast(cx: &gpui_kit::App, n: Notification) -> Notification {
+    bookkeepy_ui::api::language::feedback::notification(n, cx.global::<crate::app::Prefs>().mode)
+}
 
 /// The overlay-organism section.
 pub struct Section {
@@ -84,7 +90,7 @@ impl gpui_kit::Render for Section {
                                             ))
                                             .on_click(move |_, window, cx| {
                                                 window.push_notification(
-                                                    Notification::success(done.clone()),
+                                                    toast(cx, Notification::success(done.clone())),
                                                     cx,
                                                 );
                                                 window.close_dialog(cx);
@@ -114,7 +120,7 @@ impl gpui_kit::Render for Section {
                                 .cancel_text(tr(cx, "common.cancel"))
                                 .on_ok(move |_, window, cx| {
                                     window.push_notification(
-                                        Notification::warning(confirmed.clone()),
+                                        toast(cx, Notification::warning(confirmed.clone())),
                                         cx,
                                     );
                                     true
@@ -132,7 +138,15 @@ impl gpui_kit::Render for Section {
                     .label(tr(cx, "gallery.organisms.overlay.sheet.open"))
                     .on_click(|_, window, cx| {
                         window.open_sheet_at(Placement::Right, cx, |sheet, _win, cx| {
+                            // ORG·02 sheet: borderless #222222 drawer (gpui draws a 1px
+                            // border + base bg by default).
+                            let mode = cx.global::<crate::app::Prefs>().mode;
+                            let bg = bookkeepy_ui::api::language::token_hsla(
+                                &bookkeepy_primary_data::theme::colors(mode).bg_popover,
+                            );
                             sheet
+                                .border_0()
+                                .bg(bg.unwrap_or(cx.theme().popover))
                                 .title(tr(cx, "gallery.organisms.overlay.sheet.title"))
                                 .size(px(360.))
                                 .child(
@@ -174,10 +188,10 @@ impl gpui_kit::Render for Section {
                             .label(tr(cx, "gallery.organisms.overlay.notification.info_label"))
                             .on_click(|_, window, cx| {
                                 window.push_notification(
-                                    Notification::info(tr(
+                                    toast(cx, Notification::info(tr(
                                         cx,
                                         "gallery.organisms.overlay.notification.info",
-                                    )),
+                                    ))),
                                     cx,
                                 );
                             }),
@@ -192,10 +206,10 @@ impl gpui_kit::Render for Section {
                             ))
                             .on_click(|_, window, cx| {
                                 window.push_notification(
-                                    Notification::success(tr(
+                                    toast(cx, Notification::success(tr(
                                         cx,
                                         "gallery.organisms.overlay.notification.success",
-                                    )),
+                                    ))),
                                     cx,
                                 );
                             }),
@@ -210,10 +224,10 @@ impl gpui_kit::Render for Section {
                             ))
                             .on_click(|_, window, cx| {
                                 window.push_notification(
-                                    Notification::warning(tr(
+                                    toast(cx, Notification::warning(tr(
                                         cx,
                                         "gallery.organisms.overlay.notification.warning",
-                                    )),
+                                    ))),
                                     cx,
                                 );
                             }),
@@ -228,10 +242,10 @@ impl gpui_kit::Render for Section {
                             ))
                             .on_click(|_, window, cx| {
                                 window.push_notification(
-                                    Notification::error(tr(
+                                    toast(cx, Notification::error(tr(
                                         cx,
                                         "gallery.organisms.overlay.notification.error",
-                                    )),
+                                    ))),
                                     cx,
                                 );
                             }),
@@ -297,7 +311,7 @@ impl gpui_kit::Render for Section {
                                                         _ => "gallery.organisms.overlay.command.backup_done",
                                                     };
                                                     window.push_notification(
-                                                        Notification::info(tr(cx, done_key)),
+                                                        toast(cx, Notification::info(tr(cx, done_key))),
                                                         cx,
                                                     );
                                                     window.close_dialog(cx);

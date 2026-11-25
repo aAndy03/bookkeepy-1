@@ -4,6 +4,7 @@
 //! skeleton, tooltip, scrollbar"; inputs live in `atoms_input`).
 
 use gpui_kit::component::ActiveTheme as _;
+use gpui_kit::component::Sizable as _;
 use gpui_kit::component::progress::{Progress, ProgressCircle};
 use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::skeleton::Skeleton;
@@ -64,7 +65,9 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.feedback.progress_circle",
+                    // ATOMS · 03: 32px ring, 2.5px stroke, inverted-neutral fill.
                     ProgressCircle::new("progress-circle-demo")
+                        .with_size(gpui_kit::component::Size::Size(px(32.)))
                         .value(55.)
                         .into_any_element(),
                 )

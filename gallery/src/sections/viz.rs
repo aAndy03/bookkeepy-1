@@ -64,6 +64,7 @@ const BAR_VALUES: [f64; 6] = [1200., -840., 2400., -1500., 450., -620.];
 
 /// A bar of the bar demo: months on the band axis, signed values colored by direction
 /// (money-in = bullish green, money-out = bearish red — CHARTS sheet direction rule).
+#[derive(Clone)]
 struct Bar {
     label: SharedString,
     value: f64,
@@ -201,6 +202,11 @@ fn chart_frame(demo: impl IntoElement) -> gpui_kit::AnyElement {
     div().w(px(320.)).h(px(200.)).child(demo).into_any_element()
 }
 
+/// A short strip frame — the CHARTS sparkline card (600x200 sheet strip, drawn small).
+fn strip_frame(demo: impl IntoElement) -> gpui_kit::AnyElement {
+    div().w(px(320.)).h(px(64.)).child(demo).into_any_element()
+}
+
 /// A hand-rolled mini chart showing the low-level `plot` building blocks
 /// (`ScaleLinear`, the `Line` shape, `PlotAxis`/`AxisText`) — the primitives
 /// behind the styled Chart components.
@@ -329,7 +335,7 @@ impl gpui_kit::Render for Section {
                         chart_frame({
                             let (bullish, bearish) =
                                 (cx.theme().chart_bullish, cx.theme().chart_bearish);
-                            BarChart::new(bars)
+                            BarChart::new(bars.clone())
                                 .id("viz-bar-chart")
                                 .band(|d| d.label.clone())
                                 .value(|d| d.value)
@@ -418,6 +424,28 @@ impl gpui_kit::Render for Section {
                         "gallery.viz.plot",
                         chart_frame(MiniPlot {
                             points: months.clone(),
+                        }),
+                    )
+                    .into_any_element(),
+                    demo_card(
+                        cx,
+                        "gallery.viz.chart.sparkline",
+                        // CHARTS sparkline: a bare in/out bar strip, no axes or labels.
+                        strip_frame({
+                            let (bullish, bearish) =
+                                (cx.theme().chart_bullish, cx.theme().chart_bearish);
+                            BarChart::new(bars)
+                                .id("viz-sparkline")
+                                .band(|d| d.label.clone())
+                                .value(|d| d.value)
+                                .fill(
+                                    move |d, _, _, _| {
+                                        if d.value >= 0. { bullish } else { bearish }
+                                    },
+                                )
+                                .label_axis(false)
+                                .value_axis(false)
+                                .grid(false)
                         }),
                     )
                     .into_any_element(),

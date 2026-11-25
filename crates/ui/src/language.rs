@@ -108,6 +108,20 @@ pub mod surface {
         }
         div.rounded(px(radii().overlay as f32))
     }
+
+    /// A floating panel exactly as the design draws popovers/menus/hover cards:
+    /// `#222222` rx12, borderless (MOLECULES · 01: 240x92 rx12 #222222 panels). Use
+    /// with `appearance(false)` + `content(...)` where the component lets us own the
+    /// panel chrome (Popover, HoverCard) — gpui's `popover_style` rounds at the shared
+    /// control radius, which the design reserves for controls.
+    pub fn popup_panel(div: Div, mode: Mode) -> Div {
+        let t = colors(mode);
+        let mut div = div.border_0();
+        if let Some(bg) = token_hsla(&t.bg_popover) {
+            div = div.bg(bg);
+        }
+        div.rounded(px(radii().card as f32))
+    }
 }
 
 /// Display presets — badges/tags/avatars per ATOMS · 02: tags are 20px rx4 pills on
@@ -385,6 +399,21 @@ pub mod feedback {
             alert = alert.bg(bg);
         }
         alert
+    }
+
+    /// A toast notification on the design surface: borderless `#1c1c1c` rx20 card
+    /// (ORGANISMS · 01 notification: 380x238 rx20 #1c1c1c, no hard border — gpui draws
+    /// a 1px `border` outline by default).
+    pub fn notification<N>(n: N, mode: Mode) -> N
+    where
+        N: gpui_kit::Styled,
+    {
+        let t = colors(mode);
+        let mut n = n.border_0().rounded(px(radii().banner as f32));
+        if let Some(bg) = token_hsla(&t.bg_sheet) {
+            n = n.bg(bg);
+        }
+        n
     }
 }
 
