@@ -1601,6 +1601,422 @@ pub mod feedback {
 pub use actions::solid_danger;
 pub use controls::{ControlSize, button_size, color_picker_size, icon_button_size};
 
+/// Field specimens — ATOMS · 03 input / number input / textarea. The LIVE text input
+/// (`Input::new(&state)`) renders rest/focus through the theme seats; hover, loading,
+/// disabled, invalid and readonly have no live flag in gpui 0.11, so the gallery paints
+/// those columns with these composed cells — same tokens, same geometry as the sheet.
+pub mod fields {
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::component::Sizable as _;
+    use gpui_kit::prelude::FluentBuilder as _;
+    use gpui_kit::{Div, FontWeight, Hsla, ParentElement as _, SharedString, Styled as _, div, px};
+
+    /// Field interaction state (ATOMS · 03 input matrix columns).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum FieldIx {
+        /// rest.
+        Rest,
+        /// hover (border `input-hover`).
+        Hover,
+        /// focus (border `input-focus` + 2px white-a16 ring on the wrapper).
+        Focus,
+        /// loading (spinner in the suffix slot).
+        Loading,
+        /// disabled (40%).
+        Disabled,
+        /// invalid (danger border, danger label + help).
+        Invalid,
+        /// readonly (no fill, subtle border, lock glyph).
+        Readonly,
+    }
+
+    /// The 32px (or sized) field: sunken fill `neutral-950`, rx6, hairline outline,
+    /// padding 0 10px, gap 8 — inside the rx8 2px ring wrapper (ring = white-a16 on
+    /// focus, transparent otherwise; gpui borders sit inside, so the wrapper is
+    /// padding 2px + border 2px around the field).
+    pub fn input_field(inner: Div, height: f32, ix: FieldIx, mode: Mode) -> Div {
+        let (bg, border) = match ix {
+            FieldIx::Rest | FieldIx::Loading | FieldIx::Disabled => {
+                (prim_hsla("neutral-950"), role_hsla(mode, "input"))
+            }
+            FieldIx::Hover => (prim_hsla("neutral-950"), role_hsla(mode, "input-hover")),
+            FieldIx::Focus => (prim_hsla("neutral-950"), role_hsla(mode, "input-focus")),
+            FieldIx::Invalid => (prim_hsla("neutral-950"), role_hsla(mode, "danger")),
+            FieldIx::Readonly => (
+                Some(gpui_kit::transparent_white()),
+                prim_hsla("neutral-825"),
+            ),
+        };
+        let mut field = h_flex()
+            .h(px(height))
+            .px(px(10.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .child(inner);
+        if let Some(bg) = bg {
+            field = field.bg(bg);
+        }
+        if let Some(b) = border {
+            field = field.border_color(b);
+        }
+        let mut ring = div()
+            .p(px(2.))
+            .rounded(px(radius_tier("lg")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .child(field);
+        if ix == FieldIx::Focus
+            && let Some(c) = prim_hsla("white-a16")
+        {
+            ring = ring.border_color(c);
+        }
+        if ix == FieldIx::Disabled {
+            ring = ring.opacity(0.4);
+        }
+        ring
+    }
+
+    /// One full input cell: label (12/500), field, help text (11/400) — the sheet's
+    /// column. `prefix`/`suffix` are glyph slots inside the field; `text` is the value
+    /// or placeholder ink (`placeholder` = neutral-500).
+    #[allow(clippy::too_many_arguments)]
+    pub fn input_cell(
+        label: impl Into<SharedString>,
+        ix: FieldIx,
+        prefix: Option<IconName>,
+        text: impl Into<SharedString>,
+        placeholder: bool,
+        suffix: Option<IconName>,
+        help: Option<SharedString>,
+        height: f32,
+        mode: Mode,
+    ) -> Div {
+        let label_color = match ix {
+            FieldIx::Invalid => role_hsla(mode, "danger-foreground"),
+            FieldIx::Disabled => prim_hsla("neutral-600"),
+            _ => role_hsla(mode, "foreground"),
+        };
+        let mut row = h_flex()
+            .items_center()
+            .gap(px(8.))
+            .child(super::atoms::icon(prefix.unwrap_or(IconName::Search), 14.));
+        let text_color = if placeholder {
+            prim_hsla("neutral-500")
+        } else {
+            role_hsla(mode, "foreground")
+        };
+        row = row.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .when_some(text_color, |d, c| d.text_color(c))
+                .child(text.into()),
+        );
+        if ix == FieldIx::Loading {
+            row = row.child(
+                gpui_kit::component::spinner::Spinner::new()
+                    .with_size(gpui_kit::component::Size::Size(px(14.)))
+                    .color(role_hsla(mode, "muted-foreground").unwrap_or_default()),
+            );
+        } else if let Some(s) = suffix {
+            let mut ic = super::atoms::icon(s, 14.);
+            let fg = match ix {
+                FieldIx::Invalid => role_hsla(mode, "danger-foreground"),
+                FieldIx::Disabled => prim_hsla("neutral-600"),
+                _ => role_hsla(mode, "icon-muted"),
+            };
+            if let Some(fg) = fg {
+                ic = ic.text_color(fg);
+            }
+            row = row.child(ic);
+        }
+        let field = input_field(row, height, ix, mode);
+        let mut col = v_flex().gap(px(6.)).child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .font_weight(FontWeight::MEDIUM)
+                .when_some(label_color, |d, c| d.text_color(c))
+                .child(label.into()),
+        );
+        col = col.child(field);
+        if let Some(help) = help {
+            let help_color = match ix {
+                FieldIx::Invalid => role_hsla(mode, "danger-foreground"),
+                _ => prim_hsla("neutral-500"),
+            };
+            col = col.child(
+                div()
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .when_some(help_color, |d, c| d.text_color(c))
+                    .child(help),
+            );
+        }
+        col
+    }
+
+    /// Textarea specimen: same field surface, h96, padding 8px 10px, text 12/400 lh18,
+    /// counter `n / max` bottom-right (warning tone near max).
+    pub fn textarea_cell(
+        label: impl Into<SharedString>,
+        ix: FieldIx,
+        text: impl Into<SharedString>,
+        counter: Option<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        let (bg, border) = match ix {
+            FieldIx::Readonly => (
+                Some(gpui_kit::transparent_white()),
+                prim_hsla("neutral-825"),
+            ),
+            FieldIx::Hover => (prim_hsla("neutral-950"), role_hsla(mode, "input-hover")),
+            FieldIx::Focus => (prim_hsla("neutral-950"), role_hsla(mode, "input-focus")),
+            FieldIx::Invalid => (prim_hsla("neutral-950"), role_hsla(mode, "danger")),
+            _ => (prim_hsla("neutral-950"), role_hsla(mode, "input")),
+        };
+        let body = v_flex()
+            .w_full()
+            .gap(px(6.))
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(18.))
+                    .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                    .child(text.into()),
+            )
+            .child(
+                h_flex().w_full().justify_end().child(
+                    div()
+                        .text_size(px(11.))
+                        .line_height(px(15.))
+                        .text_color(prim_hsla("neutral-400").unwrap_or(gpui_kit::white()))
+                        .child(counter.unwrap_or_default()),
+                ),
+            );
+        let mut field = v_flex()
+            .w_full()
+            .h(px(96.))
+            .p(px(8.))
+            .px(px(10.))
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .child(body);
+        if let Some(bg) = bg {
+            field = field.bg(bg);
+        }
+        if let Some(b) = border {
+            field = field.border_color(b);
+        }
+        let mut ring = div()
+            .p(px(2.))
+            .rounded(px(radius_tier("lg")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .child(field);
+        if ix == FieldIx::Focus
+            && let Some(c) = prim_hsla("white-a16")
+        {
+            ring = ring.border_color(c);
+        }
+        if ix == FieldIx::Disabled {
+            ring = ring.opacity(0.4);
+        }
+        v_flex()
+            .gap(px(6.))
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(14.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(
+                        role_hsla(mode, "danger-foreground")
+                            .filter(|_| ix == FieldIx::Invalid)
+                            .or_else(|| role_hsla(mode, "foreground"))
+                            .unwrap_or_default(),
+                    )
+                    .child(label.into()),
+            )
+            .child(ring)
+    }
+
+    /// Re-export so call sites can name the icon type.
+    pub type Glyph = IconName;
+
+    /// Type alias kept for table readability.
+    pub type ColorOpt = Option<Hsla>;
+}
+
+/// Feedback specimens — ATOMS · 03 progress / spinner / skeleton / tooltip / scrollbar
+/// painted plates. Live variants (stock `Progress`/`Spinner`/`Skeleton`, real tooltips,
+/// real scrollbars) ride the theme seats; these compositions pin the sheet-exact values
+/// for the static gallery cells.
+pub mod feedback2 {
+    use super::{Mode, prim_hsla, role_hsla};
+    use gpui_kit::base::h_flex;
+    use gpui_kit::{Div, FontWeight, Hsla, ParentElement as _, SharedString, Styled as _, div, px};
+
+    /// The progress tone (ATOMS · 03: neutral fill, or success/danger/warning/accent).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ProgressTone {
+        /// inverted neutral fill.
+        Neutral,
+        /// success (finish).
+        Success,
+        /// warning.
+        Warning,
+        /// danger (failure).
+        Danger,
+        /// accent.
+        Accent,
+    }
+
+    impl ProgressTone {
+        fn fill(self, mode: Mode) -> Option<Hsla> {
+            match self {
+                ProgressTone::Neutral => role_hsla(mode, "progress-fill"),
+                ProgressTone::Success => role_hsla(mode, "success"),
+                ProgressTone::Warning => role_hsla(mode, "warning"),
+                ProgressTone::Danger => role_hsla(mode, "danger"),
+                ProgressTone::Accent => role_hsla(mode, "accent"),
+            }
+        }
+    }
+
+    /// Determinate progress bar: white-a8 track + tone fill, pill radius, given height.
+    pub fn progress_bar(pct: f32, tone: ProgressTone, height: f32, width: f32, mode: Mode) -> Div {
+        let fill = tone.fill(mode).unwrap_or_default();
+        div()
+            .relative()
+            .w(px(width))
+            .h(px(height))
+            .rounded_full()
+            .bg(prim_hsla("white-a8").unwrap_or_default())
+            .child(
+                div()
+                    .absolute()
+                    .h(px(height))
+                    .w(px(width * pct.clamp(0., 100.) / 100.))
+                    .rounded_full()
+                    .bg(fill),
+            )
+    }
+
+    /// Progress label row: name left (11/400 icon-muted), `n / total` right (10/500).
+    pub fn progress_label(
+        name: impl Into<SharedString>,
+        n: usize,
+        total: usize,
+        width: f32,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .w(px(width))
+            .justify_between()
+            .child(
+                div()
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .text_color(role_hsla(mode, "icon-muted").unwrap_or_default())
+                    .child(name.into()),
+            )
+            .child(
+                div()
+                    .text_size(px(10.))
+                    .line_height(px(12.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(prim_hsla("neutral-500").unwrap_or_default())
+                    .child(format!("{n} / {total}")),
+            )
+    }
+
+    /// Tooltip plate (the one inverted surface): `tooltip` bg, dark ink, rx6, shadow
+    /// 0 4px 12px black@40%, padding 4px 8px, 11/400 text.
+    pub fn tooltip_plate(content: Div, width: Option<f32>, mode: Mode) -> Div {
+        let mut plate = div()
+            .p(px(4.))
+            .px(px(8.))
+            .rounded(px(6.))
+            .shadow_lg()
+            .bg(role_hsla(mode, "tooltip").unwrap_or_default())
+            .text_color(role_hsla(mode, "tooltip-foreground").unwrap_or_default())
+            .child(content);
+        if let Some(w) = width {
+            plate = plate.w(px(w));
+        }
+        plate
+    }
+
+    /// The inverse kbd hint inside a tooltip: neutral-200 cap, neutral-300 border with a
+    /// 2px base, rx4, h16.5, padding 0 5px, 11/500 neutral-750 ink.
+    pub fn tooltip_kbd(key: impl Into<SharedString>, _mode: Mode) -> Div {
+        div()
+            .h(px(16.5))
+            .px(px(5.))
+            .rounded(px(4.))
+            .bg(prim_hsla("neutral-200").unwrap_or_default())
+            .border_1()
+            .border_color(prim_hsla("neutral-300").unwrap_or_default())
+            .border_b(px(2.))
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(prim_hsla("neutral-750").unwrap_or_default())
+            .child(key.into())
+    }
+
+    /// Scrollbar interaction state (ATOMS · 03 scrollbar columns).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ScrollIx {
+        /// not scrolling: track transparent, thumb 6px white-a24.
+        Rest,
+        /// scrolling: track white-a4, thumb 8px white-a40.
+        Hover,
+        /// dragging: track white-a14, thumb 8px neutral-300.
+        Pressed,
+    }
+
+    /// Scrollbar specimen: 12px track + thumb per state — rest thumb 6px white-a24,
+    /// hover track white-a4 + thumb 8px white-a40, pressed track white-a8 + thumb 8px
+    /// neutral-300 (ATOMS · 03 scrollbar states).
+    pub fn scrollbar(track_h: f32, thumb_top: f32, thumb_h: f32, ix: ScrollIx) -> Div {
+        let (track_bg, thumb_w, thumb_bg) = match ix {
+            ScrollIx::Rest => (
+                Some(gpui_kit::transparent_white()),
+                6.,
+                prim_hsla("white-a24"),
+            ),
+            ScrollIx::Hover => (prim_hsla("white-a4"), 8., prim_hsla("white-a40")),
+            ScrollIx::Pressed => (prim_hsla("white-a8"), 8., prim_hsla("neutral-300")),
+        };
+        let mut track = div().relative().w(px(12.)).h(px(track_h)).rounded_full();
+        if let Some(bg) = track_bg {
+            track = track.bg(bg);
+        }
+        let mut thumb = div()
+            .absolute()
+            .left(px(if thumb_w > 6. { 2. } else { 3. }))
+            .top(px(thumb_top))
+            .w(px(thumb_w))
+            .h(px(thumb_h))
+            .rounded_full();
+        if let Some(bg) = thumb_bg {
+            thumb = thumb.bg(bg);
+        }
+        track.child(thumb)
+    }
+
+    /// Type alias kept for table readability.
+    pub type ColorOpt = Option<Hsla>;
+
+    /// Re-export for call sites.
+    pub type Shared = SharedString;
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

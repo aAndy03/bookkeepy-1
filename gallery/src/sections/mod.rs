@@ -17,6 +17,8 @@ use crate::app::Gallery;
 mod atoms_badge_avatar;
 mod atoms_button;
 mod atoms_choice;
+mod atoms_feedback;
+mod atoms_input;
 pub(crate) mod kit;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
@@ -91,6 +93,8 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(atoms_button, "atoms-button", Atoms),
     section!(atoms_badge_avatar, "atoms-badge-avatar", Atoms),
     section!(atoms_choice, "atoms-choice", Atoms),
+    section!(atoms_input, "atoms-input", Atoms),
+    section!(atoms_feedback, "atoms-feedback", Atoms),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).
