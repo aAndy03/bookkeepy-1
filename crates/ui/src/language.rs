@@ -890,12 +890,18 @@ pub mod choice {
             .child(halo_el)
             .child(thumb);
         if let Some(text) = bubble {
-            // bubble floats above the thumb, centered on it (sheet: pressed state)
+            // Bubble floats above the thumb, centered on the thumb's midpoint. A
+            // zero-width flex container at left=fill_w with justify_center centers the
+            // bubble on that x without needing to know the bubble's measured width.
             root = root.child(
                 div()
                     .absolute()
-                    .left(px((fill_w - 20.).max(0.)))
+                    .left(px(fill_w))
                     .top(px(-26.))
+                    .w(px(0.))
+                    .h(px(20.))
+                    .flex()
+                    .justify_center()
                     .child(slider_bubble(text, mode)),
             );
         }
