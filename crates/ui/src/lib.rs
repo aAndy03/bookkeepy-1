@@ -15,6 +15,7 @@
 //! (RULE-UI-004).
 
 pub mod api;
+pub mod assets;
 pub mod capabilities;
 pub mod language;
 pub mod theme;

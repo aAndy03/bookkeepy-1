@@ -149,7 +149,11 @@ impl Gallery {
         cx: &mut gpui_kit::Context<'_, Self>,
     ) -> impl gpui_kit::IntoElement + use<> {
         let active = self.active;
-        let mut sidebar = Sidebar::new("gallery-sidebar").side(Side::Left);
+        // Shell preset from the ui crate (TEMPLATES · shell): sidebar at the design's
+        // 284px expanded width — geometry from data/theme/layout.toml, never raw px.
+        let mut sidebar = bookkeepy_ui::api::language::shell::sidebar(
+            Sidebar::new("gallery-sidebar").side(Side::Left),
+        );
         for (layer, specs) in sections_by_layer() {
             let mut group = SidebarGroup::new(tr(cx, layer.title_key()));
             for spec in specs {

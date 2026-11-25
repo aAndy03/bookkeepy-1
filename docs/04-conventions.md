@@ -174,6 +174,15 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
   `control_lg`) applied through `Sizable`/`rounded`, and the danger pressed fill (solid
   red, white glyph) via the public `Styled` instance refinements. New properties land in
   the bridge first and the language builders only where the bridge cannot reach.
+  The **toolkit** (`crates/ui/src/language.rs`) is organized as preset modules per family —
+  `shell::sidebar` (284px from `data/theme/layout.toml`), `surface::card` (spec-panel
+  fill/border/overlay-radius), `controls::{ControlSize, button_size, color_picker_size}`
+  (the 20/24/32/40 scale), `actions::solid_danger` (the pressed-danger fill) — so any NEW
+  component gets the exact design look by composing themed defaults + one preset call,
+  never by restating values. **Icons**: `crates/ui/src/assets.rs` (`BookkeepyAssets`)
+  serves the design's Phosphor-duotone glyphs (references/phosphor, MIT) at gpui-kit's
+  lucide icon paths and falls back to the lucide set for unmapped names — one
+  `.with_assets(BookkeepyAssets)` at the app entry, no per-icon call-site changes.
 - **Shipped at M3 — the gallery + `ui` crate scaffold:** `crates/ui` (`bookkeepy-ui`:
   the theme bridge from `data/theme` into gpui-kit, the capability registry
   `src/capabilities.rs`, the widget layers `src/widgets/{atoms,molecules,organisms}/`)

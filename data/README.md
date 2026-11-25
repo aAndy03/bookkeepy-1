@@ -19,7 +19,8 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 | `theme/spacing.toml` | Spacing tokens — multiples of the 4px base grid | Bookkeepy v1 design language (same source) |
 | `theme/radii.toml` | Corner-radius tokens (micro → circle/pill) | Bookkeepy v1 design language (same source) |
 | `theme/typography.toml` | Font families + named text styles (size/weight/line-height/letter-spacing; amounts tabular) | Bookkeepy v1 design language (same source) |
-| `theme/elevation.toml` | Elevation: shadow tokens (black @ 60%, blur/offset scale) + z-index stacking layers | Bookkeepy v1 design language (same source) |
+| `theme/elevation.toml` | Elevation: shadow tokens (black @ 60%, blur/offset scale) + z-index stacking layers (base 0 … tooltip 60, SYSTEM · root sheet) | Bookkeepy v1 design language (same source) |
+| `theme/layout.toml` | Fixed shell geometry: sidebar expanded/collapsed widths (ORGANISMS · 01 / TEMPLATES) | Bookkeepy v1 design language (same source) |
 | `locales/en.toml`, `locales/ro.toml` | Locale catalogs (flat quoted dotted keys; `[meta].locale` must match the file stem). EN is the reference/fallback locale | Project-maintained; `xtask govern errors` enforces key parity + that every `errors.toml` i18n_key exists in every locale |
 
 Theme tokens are the single source of truth gpui-kit styled components and gallery

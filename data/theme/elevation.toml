@@ -31,12 +31,13 @@ offset_x_px = 0
 color = "#000000"
 opacity = 0.6
 
-# Z-index (stacking) layers — the composition order of the design sheets; steps of 100
-# leave room for insertions between layers.
+# Z-index (stacking) layers — the composition order drawn on the SYSTEM · root sheet
+# (z-base 0 … z-tooltip 60, steps of 10 leave room between layers).
 [z]
-base = 0 # in-flow content
-sticky = 100 # sticky headers/toolbars, floating action bars
-dropdown = 200 # popovers, menus, selects, date pickers, color pickers
-overlay = 300 # dialogs, alert dialogs, sheets
-toast = 400 # notifications/toasts
-tooltip = 500 # tooltips, the topmost layer
+base = 0 # in-flow content: board, shell, sidebar
+raised = 10 # sticky notes, dragged places
+hud = 20 # zoom control, minimap, location chip
+popover = 30 # menus, selects, hover cards, popovers
+dialog = 40 # dialogs, alert dialogs, sheets + scrim
+toast = 50 # notifications/toasts
+tooltip = 60 # tooltips, the topmost layer

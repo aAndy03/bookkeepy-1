@@ -42,7 +42,7 @@ fn bind_shortcuts(cx: &mut gpui_kit::App) {
 
 fn main() {
     gpui_kit::application()
-        .with_assets(gpui_kit::assets::Assets)
+        .with_assets(bookkeepy_ui::api::assets::BookkeepyAssets)
         .run(|cx| {
             gpui_kit::init(cx);
             // Design tokens → gpui-kit theme (dark = the design language's native theme).

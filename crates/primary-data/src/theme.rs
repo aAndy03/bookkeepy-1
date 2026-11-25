@@ -35,6 +35,10 @@ const ELEVATION_RAW: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../data/theme/elevation.toml"
 ));
+const LAYOUT_RAW: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../data/theme/layout.toml"
+));
 
 /// Theme mode. Dark is the design language's native theme; light mirrors the same ramp.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -84,6 +88,15 @@ pub struct SemanticColors {
     pub bg_control_hover: String,
     /// Dropdown/menu/calendar panels (MOLECULES · 01/03).
     pub bg_popover: String,
+    /// Active sidebar nav item — white/black @ 8% plate (ORGANISMS · 01); also the
+    /// menu/list hover overlay (MOLECULES · 01/02).
+    pub bg_nav_active: String,
+    /// Scrollbar thumb / strong overlay — white/black @ 40% (ATOMS · 03).
+    pub bg_thumb: String,
+    /// Row hover overlay — white/black @ 4% (ORGANISMS · 01 table/list/tree rows).
+    pub bg_row_hover: String,
+    /// Selected row overlay — white/black @ 12% + left indicator (ORGANISMS · 01).
+    pub bg_row_active: String,
     /// The inverted primary control — light fill on the dark theme (ATOMS · 01).
     pub bg_invert: String,
     /// Hover/press of the inverted fill — the highest state is the strongest.
@@ -182,6 +195,10 @@ impl SemanticColors {
             ("bg_control", &self.bg_control),
             ("bg_control_hover", &self.bg_control_hover),
             ("bg_popover", &self.bg_popover),
+            ("bg_nav_active", &self.bg_nav_active),
+            ("bg_thumb", &self.bg_thumb),
+            ("bg_row_hover", &self.bg_row_hover),
+            ("bg_row_active", &self.bg_row_active),
             ("bg_invert", &self.bg_invert),
             ("bg_invert_hover", &self.bg_invert_hover),
             ("on_invert", &self.on_invert),
@@ -374,6 +391,21 @@ struct Shadows {
     overlay: Shadow,
 }
 
+/// Parsed `layout.toml` (`[source]` + `[layout]`) — fixed shell geometry in px.
+#[derive(Debug, Deserialize)]
+struct LayoutFile {
+    layout: Layout,
+}
+
+/// The fixed shell dimensions (`[layout]`) — px.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Layout {
+    /// Sidebar expanded width (ORGANISMS · 01).
+    pub sidebar_expanded_px: u32,
+    /// Sidebar collapsed-to-icons width (ORGANISMS · 01).
+    pub sidebar_collapsed_px: u32,
+}
+
 /// Parsed `elevation.toml` (`[shadow.*]` + `[z]` layers; z-index is consumed by the layout
 /// contracts, shadows by the theme bridge).
 #[derive(Debug, Deserialize)]
@@ -452,6 +484,17 @@ pub fn shadows() -> (&'static Shadow, &'static Shadow, &'static Shadow) {
             .unwrap_or_else(|e| panic!("primary data theme/elevation.toml failed to parse: {e}"))
     });
     (&file.shadow.peek, &file.shadow.raised, &file.shadow.overlay)
+}
+
+/// Fixed shell geometry (`data/theme/layout.toml`).
+pub fn layout() -> &'static Layout {
+    static TOKENS: OnceLock<LayoutFile> = OnceLock::new();
+    &TOKENS
+        .get_or_init(|| {
+            toml::from_str(LAYOUT_RAW)
+                .unwrap_or_else(|e| panic!("primary data theme/layout.toml failed to parse: {e}"))
+        })
+        .layout
 }
 
 fn hex_ok(v: &str) -> bool {
@@ -547,6 +590,22 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
             )));
         }
     }
+    let l = layout();
+    for (name, v) in [
+        ("sidebar_expanded_px", l.sidebar_expanded_px),
+        ("sidebar_collapsed_px", l.sidebar_collapsed_px),
+    ] {
+        if v == 0 {
+            return Err(PrimaryDataError::Invalid(format!(
+                "theme/layout.toml {name} must be > 0"
+            )));
+        }
+    }
+    if l.sidebar_collapsed_px >= l.sidebar_expanded_px {
+        return Err(PrimaryDataError::Invalid(
+            "theme/layout.toml sidebar_collapsed_px must be < sidebar_expanded_px".into(),
+        ));
+    }
     Ok(())
 }
 
@@ -564,6 +623,8 @@ mod tests {
         assert_eq!(super::spacing().grid, 4);
         assert_eq!(super::radii().control, 6);
         assert_eq!(super::radii().control_lg, 8);
+        assert_eq!(super::layout().sidebar_expanded_px, 284);
+        assert_eq!(super::layout().sidebar_collapsed_px, 72);
         let body = super::style("body").unwrap();
         assert_eq!(body.size_px, 13);
         assert!(super::style("nonexistent").is_none());

@@ -6,6 +6,7 @@
 //! (`language`), the capability registry (`capabilities`), and the widget layers
 //! (`widgets`).
 
+pub use crate::assets;
 pub use crate::capabilities;
 pub use crate::language;
 pub use crate::theme;

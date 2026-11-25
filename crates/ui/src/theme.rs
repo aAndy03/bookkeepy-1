@@ -26,7 +26,9 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
         Mode::Light => ThemeMode::Light,
     };
     config.radius = Some(bookkeepy_primary_data::theme::radii().control as usize);
-    config.radius_lg = Some(bookkeepy_primary_data::theme::radii().card as usize);
+    // Large surfaces (dialogs, command palette, notifications) use the banner radius —
+    // ORGANISMS · 01/02 draw them rx20 #1c1c1c; calendar popovers read the same seat.
+    config.radius_lg = Some(bookkeepy_primary_data::theme::radii().banner as usize);
     // Flat controls — the design language draws no shadows on buttons, inputs or pickers
     // (ATOMS · 01/03, MOLECULES · 01/03 spec panels); elevation starts at popovers.
     config.shadow = Some(false);
@@ -39,17 +41,22 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // Inputs and picker triggers are the design's canvas wells (#0d0d0d on dark).
     config.colors.input = hex(&t.bg_canvas);
     config.colors.ring = hex(&t.focus_ring);
-    config.colors.caret = hex(&t.fg);
     config.colors.selection = hex(&t.selection);
     config.colors.overlay = hex(&t.overlay);
-    // `primary` = the brand accent (the default commit); `accent` = quiet hover tint for
-    // menus/lists — the design's pointer-hover row (#1c1c1c pill in MOLECULES · 01).
-    config.colors.primary = hex(&t.accent);
-    config.colors.primary_hover = hex(&t.accent_hover);
-    config.colors.primary_active = hex(&t.accent_hover);
-    config.colors.primary_foreground = hex(&t.on_accent);
-    config.colors.accent = hex(&t.bg_hover);
+    // `primary` is the INVERTED neutral, not the brand hue (ATOMS · 02/03 + TIME sheets):
+    // checkbox/radio/switch checked fills, the calendar's selected day, the neutral
+    // progress fill and the caret all read this seat — light fill + dark ink on dark,
+    // mirrored on light. The brand orange lives on `ring` (focus) and calendar
+    // today/range emphasis only.
+    config.colors.primary = hex(&t.bg_invert);
+    config.colors.primary_hover = hex(&t.bg_invert_hover);
+    config.colors.primary_active = hex(&t.bg_invert_hover);
+    config.colors.primary_foreground = hex(&t.on_invert);
+    // `accent` = the white @ 8% overlay: menu item hover/selected, list hover, sidebar
+    // active plate (MOLECULES · 01/02, ORGANISMS · 01).
+    config.colors.accent = hex(&t.bg_nav_active);
     config.colors.accent_foreground = hex(&t.fg);
+    config.colors.caret = hex(&t.bg_invert_hover);
     // Neutral controls (Default and Secondary buttons, selected segments): the design's
     // flat #1c1c1c control fill with its #2a2a2a hover. Their ink is quiet — ghost and
     // secondary sit at muted, rising on hover (ATOMS · 01 ghost/secondary specs).
@@ -119,14 +126,22 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.chart_bullish = hex(&t.chart_positive);
     config.colors.chart_bearish = hex(&t.chart_negative);
     config.colors.chart_grid = hex(&t.border_subtle);
-    // Shell chrome on the design ramp.
-    config.colors.title_bar = hex(&t.bg_chrome);
+    // Shell chrome on the design ramp (TEMPLATES · shell, ORGANISMS · 01/02): the title
+    // bar is the sheet panel with a bottom hairline; the status bar one step darker; the
+    // sidebar rides the canvas well; the active nav item is the white@8% plate, and the
+    // count badge is the accent. Window corners follow the card radius.
+    config.window_radius = Some(bookkeepy_primary_data::theme::radii().card as usize);
+    config.colors.title_bar = hex(&t.bg_sheet);
     config.colors.title_bar_border = hex(&t.border);
-    config.colors.status_bar = hex(&t.bg_chrome);
+    config.colors.status_bar = hex(&t.bg);
     config.colors.status_bar_border = hex(&t.border);
-    config.colors.sidebar = hex(&t.bg_sheet);
+    config.colors.sidebar = hex(&t.bg);
     config.colors.sidebar_foreground = hex(&t.fg_muted);
     config.colors.sidebar_border = hex(&t.border);
+    config.colors.sidebar_accent = hex(&t.bg_nav_active);
+    config.colors.sidebar_accent_foreground = hex(&t.fg);
+    config.colors.sidebar_primary = hex(&t.bg_nav_active);
+    config.colors.sidebar_primary_foreground = hex(&t.fg);
     // Dropdown/menu/calendar panels float on their own surface (#222222 on dark,
     // MOLECULES · 01/03), apart from cards and dialogs.
     config.colors.popover = hex(&t.bg_popover);
@@ -134,17 +149,43 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.group_box = hex(&t.bg_sheet);
     config.colors.table = hex(&t.bg);
     config.colors.table_even = hex(&t.bg_raised);
-    config.colors.table_head = hex(&t.bg_raised);
+    // Table header row is the control fill; rows ride the white overlays (hover @4%,
+    // selected @12% — ORGANISMS · 01 data table spec).
+    config.colors.table_head = hex(&t.bg_control);
     config.colors.table_head_foreground = hex(&t.fg_muted);
-    config.colors.table_active = hex(&t.bg_selected);
+    config.colors.table_active = hex(&t.bg_row_active);
     config.colors.table_active_border = hex(&t.border_subtle);
-    config.colors.table_hover = hex(&t.bg_hover);
-    config.colors.list = hex(&t.bg);
-    config.colors.list_head = hex(&t.bg_raised);
-    // Selected rows are the design's chrome fill with a quiet edge — the brand accent
-    // stays out of row selection (it is focus/highlight ink only).
-    config.colors.list_active = hex(&t.bg_selected);
+    config.colors.table_hover = hex(&t.bg_row_hover);
+    config.colors.table_row_border = hex(&t.border_subtle);
+    // Lists: card surface #171717, same row overlays as the table.
+    config.colors.list = hex(&t.bg_raised);
+    config.colors.list_head = hex(&t.bg_control);
+    config.colors.list_active = hex(&t.bg_row_active);
     config.colors.list_active_border = hex(&t.border_subtle);
+    // Row hover is the white @ 4% overlay (menu items use the @8% accent seat).
+    config.colors.list_hover = hex(&t.bg_row_hover);
+    // Scrollbar: white @ 4% track, white @ 40% thumb (ATOMS · 03 / ORGANISMS · 02).
+    config.colors.scrollbar = hex(&t.bg_row_hover);
+    config.colors.scrollbar_thumb = hex(&t.bg_thumb);
+    config.colors.scrollbar_thumb_hover = hex(&t.bg_thumb);
+    // Skeleton shimmer blocks ride the popover surface (ATOMS · 03: #222222 on #171717).
+    config.colors.skeleton = hex(&t.bg_popover);
+    // Switch off: #333 track + #a8a8a8 knob; on reads `primary` (inverted) automatically.
+    config.colors.switch = hex(&t.border_strong);
+    config.colors.switch_thumb = hex(&t.fg_muted);
+    // Slider: white @ 8% track, inverted thumb (ATOMS · 02 slider spec).
+    config.colors.slider_bar = hex(&t.bg_nav_active);
+    config.colors.slider_thumb = hex(&t.bg_invert);
+    // Tabs: quiet labels, active tab = white @ 4% chip (MOLECULES · 01 tabs: 209x28
+    // segments, active chip #fff fo 0.0392).
+    config.colors.tab = hex(&t.bg);
+    config.colors.tab_bar = hex(&t.bg);
+    config.colors.tab_bar_segmented = hex(&t.bg_control);
+    config.colors.tab_foreground = hex(&t.fg_muted);
+    config.colors.tab_active = hex(&t.bg_row_hover);
+    config.colors.tab_active_foreground = hex(&t.fg);
+    // Charts: gridlines are white @ 8% (CHARTS sheet), series keep the group palette.
+    config.colors.chart_grid = hex(&t.bg_nav_active);
     config.colors.window_border = hex(&t.border);
     Rc::new(config)
 }

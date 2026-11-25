@@ -140,19 +140,14 @@ pub mod layout {
             .children(cards)
     }
 
-    /// A demo card: caption + content (the showcased component variants).
+    /// A demo card: caption + content (the showcased component variants). The card
+    /// surface is the design's spec panel — via the ui crate's `surface::card` preset
+    /// (sheet fill + hairline + overlay radius from data/theme tokens, never raw).
     pub fn demo_card(cx: &App, caption_key: &str, demo: gpui_kit::AnyElement) -> impl IntoElement {
         let caption = crate::app::tr(cx, caption_key);
+        let mode = cx.global::<crate::app::Prefs>().mode;
         let theme = cx.theme();
-        div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .p_4()
-            .rounded_2xl()
-            .bg(theme.background)
-            .border_1()
-            .border_color(theme.border)
+        bookkeepy_ui::api::language::surface::card(div().flex().flex_col().gap_3().p_4(), mode)
             .child(
                 div()
                     .text_sm()
