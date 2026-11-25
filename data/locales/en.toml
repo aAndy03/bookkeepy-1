@@ -64,6 +64,7 @@ name = "English"
 # --- enforces that every key used by gallery/ui code exists here and in every locale.
 
 "gallery.app.title" = "Bookkeepy Gallery"
+"gallery.app.rebuilding" = "Gallery rebuild in progress — sections are being rebuilt from the design-language sheets."
 "gallery.layer.atoms" = "ATOMS"
 "gallery.layer.molecules" = "MOLECULES"
 "gallery.layer.organisms" = "ORGANISMS"

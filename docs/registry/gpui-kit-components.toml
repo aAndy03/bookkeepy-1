@@ -25,371 +25,424 @@ id = "accordion"
 title = "Accordion"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/accordion/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "alert"
 title = "Alert"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/alert/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "alert-dialog"
 title = "Alert Dialog"
 section = "organisms-overlay"
 docs = "https://gpui-kit.com/component/alert-dialog/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "attachment"
 title = "Attachment"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/attachment/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "avatar"
 title = "Avatar"
 section = "atoms-badge-avatar"
 docs = "https://gpui-kit.com/component/avatar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "badge"
 title = "Badge"
 section = "atoms-badge-avatar"
 docs = "https://gpui-kit.com/component/badge/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "bubble"
 title = "Bubble"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/bubble/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "button"
 title = "Button"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/button/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "calendar"
 title = "Calendar"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/calendar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "carousel"
 title = "Carousel"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/carousel/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "chart"
 title = "Chart"
 section = "viz"
 docs = "https://gpui-kit.com/component/chart/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "checkbox"
 title = "Checkbox"
 section = "atoms-choice"
 docs = "https://gpui-kit.com/component/checkbox/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "clipboard"
 title = "Clipboard"
 section = "molecules-data-list"
 docs = "https://gpui-kit.com/component/clipboard/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "collapsible"
 title = "Collapsible"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/collapsible/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "color-picker"
 title = "ColorPicker"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/color-picker/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "combobox"
 title = "Combobox"
 section = "molecules-pickers"
 docs = "https://gpui-kit.com/component/combobox/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "command"
 title = "Command"
 section = "organisms-overlay"
 docs = "https://gpui-kit.com/component/command/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "data-table"
 title = "DataTable"
 section = "organisms-table"
 docs = "https://gpui-kit.com/component/data-table/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "date-picker"
 title = "DatePicker"
 section = "molecules-pickers"
 docs = "https://gpui-kit.com/component/date-picker/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "description-list"
 title = "DescriptionList"
 section = "molecules-data-list"
 docs = "https://gpui-kit.com/component/description-list/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "dialog"
 title = "Dialog"
 section = "organisms-overlay"
 docs = "https://gpui-kit.com/component/dialog/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "diff"
 title = "Diff"
 section = "viz"
 docs = "https://gpui-kit.com/component/diff/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "dock"
 title = "Dock Area"
 section = "organisms-workspaces"
 docs = "https://gpui-kit.com/component/dock/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "editor"
 title = "Editor"
 section = "atoms-input"
 docs = "https://gpui-kit.com/component/editor/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "empty"
 title = "Empty"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/empty/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "focus-trap"
 title = "FocusTrap"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/focus-trap/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "form"
 title = "Form"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/form/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "grid-layout"
 title = "Grid Layout"
 section = "organisms-workspaces"
 docs = "https://gpui-kit.com/component/grid-layout/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "group-box"
 title = "GroupBox"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/group-box/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "hover-card"
 title = "HoverCard"
 section = "molecules-popups"
 docs = "https://gpui-kit.com/component/hover-card/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "icon"
 title = "Icon"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/icon/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "image"
 title = "Image"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/image/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "input"
 title = "Input"
 section = "atoms-input"
 docs = "https://gpui-kit.com/component/input/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "input-group"
 title = "Input Group"
 section = "atoms-input"
 docs = "https://gpui-kit.com/component/input-group/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "kbd"
 title = "Kbd"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/kbd/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "label"
 title = "Label"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/label/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "list"
 title = "List"
 section = "molecules-data-list"
 docs = "https://gpui-kit.com/component/list/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "marker"
 title = "Marker"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/marker/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "menu"
 title = "Menu"
 section = "molecules-popups"
 docs = "https://gpui-kit.com/component/menu/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "message"
 title = "Message"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/message/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "message-scroller"
 title = "MessageScroller"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/message-scroller/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "native-menu"
 title = "NativeMenu"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/native-menu/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "notification"
 title = "Notification"
 section = "organisms-overlay"
 docs = "https://gpui-kit.com/component/notification/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "number-input"
 title = "Number Input"
 section = "atoms-input"
 docs = "https://gpui-kit.com/component/number-input/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "otp-input"
 title = "OTP Input"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/otp-input/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "pagination"
 title = "Pagination"
 section = "molecules-data-list"
 docs = "https://gpui-kit.com/component/pagination/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "plot"
 title = "Plot"
 section = "viz"
 docs = "https://gpui-kit.com/component/plot/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "popover"
 title = "Popover"
 section = "molecules-popups"
 docs = "https://gpui-kit.com/component/popover/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "progress"
 title = "Progress"
 section = "atoms-feedback"
 docs = "https://gpui-kit.com/component/progress/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "questionnaire"
 title = "Questionnaire"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/questionnaire/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "radio"
 title = "Radio"
 section = "atoms-choice"
 docs = "https://gpui-kit.com/component/radio/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "rating"
 title = "Rating"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/rating/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "resizable"
 title = "Resizable"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/resizable/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "root"
@@ -403,56 +456,64 @@ id = "scrollable"
 title = "Scrollable"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/scrollable/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "select"
 title = "Select"
 section = "molecules-pickers"
 docs = "https://gpui-kit.com/component/select/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "settings"
 title = "Settings"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/settings/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "sheet"
 title = "Sheet"
 section = "organisms-overlay"
 docs = "https://gpui-kit.com/component/sheet/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "shimmer"
 title = "Shimmer"
 section = "atoms-feedback"
 docs = "https://gpui-kit.com/component/shimmer/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "sidebar"
 title = "Sidebar"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/sidebar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "skeleton"
 title = "Skeleton"
 section = "atoms-feedback"
 docs = "https://gpui-kit.com/component/skeleton/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "slider"
 title = "Slider"
 section = "atoms-choice"
 docs = "https://gpui-kit.com/component/slider/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "speech"
@@ -466,63 +527,72 @@ id = "spinner"
 title = "Spinner"
 section = "atoms-feedback"
 docs = "https://gpui-kit.com/component/spinner/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "status-bar"
 title = "StatusBar"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/status-bar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "stepper"
 title = "Stepper"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/stepper/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "switch"
 title = "Switch"
 section = "atoms-choice"
 docs = "https://gpui-kit.com/component/switch/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "table"
 title = "Table"
 section = "organisms-table"
 docs = "https://gpui-kit.com/component/table/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "tabs"
 title = "Tabs"
 section = "molecules-structure"
 docs = "https://gpui-kit.com/component/tabs/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "tag"
 title = "Tag"
 section = "atoms-badge-avatar"
 docs = "https://gpui-kit.com/component/tag/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "text-view"
 title = "TextView"
 section = "molecules-nav"
 docs = "https://gpui-kit.com/component/text-view/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "textarea"
 title = "Textarea"
 section = "atoms-input"
 docs = "https://gpui-kit.com/component/textarea/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "theme"
@@ -536,46 +606,53 @@ id = "time-field"
 title = "TimeField"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/time-field/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "title-bar"
 title = "TitleBar"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/title-bar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "toggle"
 title = "Toggle"
 section = "atoms-choice"
 docs = "https://gpui-kit.com/component/toggle/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "toolbar"
 title = "Toolbar"
 section = "organisms-shell"
 docs = "https://gpui-kit.com/component/toolbar/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "tooltip"
 title = "Tooltip"
 section = "atoms-feedback"
 docs = "https://gpui-kit.com/component/tooltip/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "tree"
 title = "Tree"
 section = "organisms-table"
 docs = "https://gpui-kit.com/component/tree/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
 
 [[component]]
 id = "virtual-list"
 title = "VirtualList"
 section = "organisms-table"
 docs = "https://gpui-kit.com/component/virtual-list/"
-status = "covered"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."

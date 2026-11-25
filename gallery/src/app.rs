@@ -15,8 +15,8 @@ use gpui_kit::component::sidebar::{Sidebar, SidebarGroup, SidebarMenuItem};
 use gpui_kit::component::{ActiveTheme as _, IconName, Sizable as _};
 use gpui_kit::component::{Side, TitleBar};
 use gpui_kit::{
-    AnyView, App, InteractiveElement as _, ParentElement as _, SharedString, Styled as _, Window,
-    div,
+    AnyView, App, InteractiveElement as _, IntoElement as _, ParentElement as _, SharedString,
+    Styled as _, Window, div,
 };
 
 use crate::Quit;
@@ -196,8 +196,18 @@ impl gpui_kit::Render for Gallery {
             Mode::Light => IconName::Moon,
         };
         let title = tr(cx, "gallery.app.title");
-        let host = self.host(self.active, window, cx);
         let (bg, fg) = (cx.theme().background, cx.theme().foreground);
+        // While the section registry is empty (M3 rebuild in progress), the content
+        // area shows a placeholder instead of a section host.
+        let content: gpui_kit::AnyElement = if SECTIONS.is_empty() {
+            div()
+                .p_6()
+                .text_color(cx.theme().muted_foreground)
+                .child(tr(cx, "gallery.app.rebuilding"))
+                .into_any_element()
+        } else {
+            self.host(self.active, window, cx).into_any_element()
+        };
 
         div()
             .key_context("Gallery")
@@ -244,7 +254,7 @@ impl gpui_kit::Render for Gallery {
                             .bg(bg)
                             .text_color(fg)
                             .overflow_y_scrollbar()
-                            .child(host),
+                            .child(content),
                     ),
             )
     }

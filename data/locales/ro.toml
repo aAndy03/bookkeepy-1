@@ -62,6 +62,7 @@ name = "Română"
 # --- impune ca fiecare cheie folosită în codul gallery/ui să existe aici și în orice altă limbă.
 
 "gallery.app.title" = "Galeria Bookkeepy"
+"gallery.app.rebuilding" = "Reconstrucția galeriei este în curs — secțiunile se reconstruiesc din foile design language."
 "gallery.layer.atoms" = "ATOMI"
 "gallery.layer.molecules" = "MOLECULE"
 "gallery.layer.organisms" = "ORGANISME"
