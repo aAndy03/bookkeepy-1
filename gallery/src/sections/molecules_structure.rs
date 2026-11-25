@@ -145,6 +145,7 @@ impl gpui_kit::Render for Section {
         _window: &mut Window,
         cx: &mut gpui_kit::Context<'_, Self>,
     ) -> impl IntoElement {
+        let mode = cx.global::<crate::app::Prefs>().mode;
         section_page(
             cx,
             "gallery.section.molecules-structure",
@@ -159,7 +160,7 @@ impl gpui_kit::Render for Section {
                             .gap_2()
                             .child(
                                 TabBar::new("structure-tabs")
-                                    .underline()
+                                    .segmented()
                                     .selected_index(self.tab)
                                     .on_click(cx.listener(
                                         |this, index: &usize, _window, cx| {
@@ -183,7 +184,7 @@ impl gpui_kit::Render for Section {
                         cx,
                         "gallery.molecules.structure.accordion",
                         Accordion::new("structure-accordion")
-                            .bordered(true)
+                            .bordered(false)
                             .item(|item| {
                                 item.title(tr(cx, "gallery.molecules.structure.accordion.title_clients"))
                                     .child(tr(cx, "gallery.molecules.structure.accordion.content_clients"))
@@ -230,10 +231,13 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.molecules.structure.group_box",
-                        GroupBox::new()
-                            .id("structure-group-box")
-                            .fill()
-                            .title(tr(cx, "gallery.molecules.structure.group_box.title"))
+                        bookkeepy_ui::api::language::surface::group_box(
+                            GroupBox::new()
+                                .id("structure-group-box")
+                                .fill()
+                                .title(tr(cx, "gallery.molecules.structure.group_box.title")),
+                            mode,
+                        )
                             .child(
                                 h_flex()
                                     .justify_between()
@@ -299,7 +303,6 @@ impl gpui_kit::Render for Section {
                         cx,
                         "gallery.molecules.structure.empty",
                         Empty::new()
-                            .border_1()
                             .header(
                                 EmptyHeader::new()
                                     .media(
@@ -322,7 +325,7 @@ impl gpui_kit::Render for Section {
                                     .flex_wrap()
                                     .justify_center()
                                     .gap_2()
-                                    .child(Button::new("empty-new-invoice").label(tr(
+                                    .child(Button::new("empty-new-invoice").primary().label(tr(
                                         cx,
                                         "gallery.molecules.structure.empty.action_new",
                                     )))
@@ -343,18 +346,26 @@ impl gpui_kit::Render for Section {
                     v_flex()
                         .gap_2()
                         .child(
-                            Alert::info(
-                                "structure-alert-info",
-                                tr(cx, "gallery.molecules.structure.alert.info_message"),
-                            )
-                            .title(tr(cx, "gallery.molecules.structure.alert.info_title")),
+                            bookkeepy_ui::api::language::feedback::alert(
+                                Alert::info(
+                                    "structure-alert-info",
+                                    tr(cx, "gallery.molecules.structure.alert.info_message"),
+                                )
+                                .title(tr(cx, "gallery.molecules.structure.alert.info_title")),
+                                bookkeepy_ui::api::language::feedback::AlertTone::Info,
+                                mode,
+                            ),
                         )
                         .child(
-                            Alert::warning(
-                                "structure-alert-warning",
-                                tr(cx, "gallery.molecules.structure.alert.warning_message"),
-                            )
-                            .banner(),
+                            bookkeepy_ui::api::language::feedback::alert(
+                                Alert::warning(
+                                    "structure-alert-warning",
+                                    tr(cx, "gallery.molecules.structure.alert.warning_message"),
+                                )
+                                .banner(),
+                                bookkeepy_ui::api::language::feedback::AlertTone::Warning,
+                                mode,
+                            ),
                         )
                         .into_any_element(),
                 )

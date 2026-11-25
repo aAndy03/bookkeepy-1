@@ -11,3 +11,4 @@ note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under refere
 [layout]
 sidebar_expanded_px = 284 # sidebar expanded width (ORGANISMS · 01: "expanded 284 px")
 sidebar_collapsed_px = 72 # sidebar collapsed to icons (ORGANISMS · 01: "collapsed 72 px")
+sidebar_divider_px = 2 # sidebar trailing-edge resize/divider line (ORGANISMS · 01: "2px border-strong line on the trailing edge")

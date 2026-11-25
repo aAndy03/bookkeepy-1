@@ -55,7 +55,7 @@ impl gpui_kit::Render for Section {
                 demo_card(
                     cx,
                     "gallery.atoms.choice.checkbox",
-                    Checkbox::new("agree")
+                    bookkeepy_ui::api::language::controls::checkbox(Checkbox::new("agree"))
                         .label(tr(cx, "gallery.atoms.choice.checkbox_label"))
                         .checked(self.checkbox)
                         .on_change(cx.listener(|this, checked: &bool, _, cx| {

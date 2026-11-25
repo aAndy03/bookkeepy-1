@@ -38,9 +38,12 @@ pub mod shell {
     use gpui_kit::{Styled as _, px};
 
     /// The app sidebar at the design's expanded width (ORGANISMS · 01: 284px; the
-    /// collapsed 72px state is the same component with `.collapsed(true)`).
+    /// collapsed 72px state is the same component with `.collapsed(true)`) with the
+    /// 2px trailing divider line (same sheet: "2px border-strong on the trailing edge").
     pub fn sidebar<E: SidebarItem>(sidebar: Sidebar<E>) -> Sidebar<E> {
-        sidebar.w(px(layout().sidebar_expanded_px as f32))
+        sidebar
+            .w(px(layout().sidebar_expanded_px as f32))
+            .border_r(px(layout().sidebar_divider_px as f32))
     }
 }
 
@@ -51,18 +54,30 @@ pub mod surface {
     use bookkeepy_primary_data::theme::{colors, radii};
     use gpui_kit::{Div, Styled as _, px};
 
-    /// A spec/demo card: sheet panel fill + hairline border + overlay radius
-    /// (ATOMS sheets: caption panels `#171717` rx16). `mode` = the active theme mode.
+    /// A spec/demo card: sheet panel fill + overlay radius, NO border — the design
+    /// language avoids hard separators on cards (ATOMS/ORGANISMS sheets: caption
+    /// panels are plain `#171717` rx16 fills). `mode` = the active theme mode.
     pub fn card(div: Div, mode: Mode) -> Div {
         let t = colors(mode);
         let mut div = div;
         if let Some(bg) = token_hsla(&t.bg_sheet) {
             div = div.bg(bg);
         }
-        if let Some(border) = token_hsla(&t.border) {
-            div = div.border_1().border_color(border);
-        }
         div.rounded(px(radii().overlay as f32))
+    }
+
+    /// A group box on the design surface: borderless #171717 rx16 card (ORGANISMS · 02
+    /// group box: 440x106 rx16 `#171717`, no border — the hard outline is a gpui default).
+    pub fn group_box<G>(g: G, mode: Mode) -> G
+    where
+        G: gpui_kit::Styled,
+    {
+        let t = colors(mode);
+        let mut g = g.border_0().rounded(px(radii().overlay as f32));
+        if let Some(bg) = token_hsla(&t.bg_raised) {
+            g = g.bg(bg);
+        }
+        g
     }
 }
 
@@ -123,6 +138,20 @@ pub mod controls {
     pub fn color_picker_size(picker: ColorPicker, size: ControlSize) -> ColorPicker {
         picker.with_size(Size::Size(px(size.height() as f32)))
     }
+
+    /// A checkbox on the design geometry — 16x16 rx4 (ATOMS · 02: box 16x16 rx `mini`;
+    /// gpui's default rounds it at the control radius 6). Checked fill/ink ride the
+    /// `primary` seat (inverted neutral).
+    pub fn checkbox(
+        c: gpui_kit::component::checkbox::Checkbox,
+    ) -> gpui_kit::component::checkbox::Checkbox {
+        c.rounded(px(radii().mini as f32))
+    }
+
+    /// A radio on the design geometry — r8 outer (ATOMS · 02: r8 + r3 dot, rx = half).
+    pub fn radio(r: gpui_kit::component::radio::Radio) -> gpui_kit::component::radio::Radio {
+        r.rounded(px(radii().circle as f32))
+    }
 }
 
 /// Action presets — states the gpui variant API does not carry.
@@ -164,6 +193,46 @@ pub mod actions {
             token_hsla(&t.danger),
             token_hsla(&t.on_solid),
         )
+    }
+}
+
+/// Feedback presets — alert banners are the design's tint WELL fills with NO border and
+/// the overlay radius (MOLECULES · 02 alert: 460x55 rx16 in the semantic well, light
+/// glyph). gpui's alert bg is a 4% hue wash; this pins the drawn well fill per tone.
+pub mod feedback {
+    use super::{Mode, token_hsla};
+    use bookkeepy_primary_data::theme::{colors, radii};
+    use gpui_kit::component::alert::Alert;
+    use gpui_kit::{Styled as _, px};
+
+    /// The alert tone, selecting the matching `*_well` token (MOLECULES · 02 alert wells).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum AlertTone {
+        /// `info_well`.
+        Info,
+        /// `success_well`.
+        Success,
+        /// `warning_well`.
+        Warning,
+        /// `danger_well`.
+        Danger,
+    }
+
+    /// An alert banner on the design surface: well fill, borderless, rx16. The light
+    /// glyph + title ink ride the variant's own theme seats.
+    pub fn alert(alert: Alert, tone: AlertTone, mode: Mode) -> Alert {
+        let t = colors(mode);
+        let well = match tone {
+            AlertTone::Info => &t.info_well,
+            AlertTone::Success => &t.success_well,
+            AlertTone::Warning => &t.warning_well,
+            AlertTone::Danger => &t.danger_well,
+        };
+        let mut alert = alert.border_0().rounded(px(radii().overlay as f32));
+        if let Some(bg) = token_hsla(well) {
+            alert = alert.bg(bg);
+        }
+        alert
     }
 }
 

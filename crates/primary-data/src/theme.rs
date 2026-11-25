@@ -97,6 +97,10 @@ pub struct SemanticColors {
     pub bg_row_hover: String,
     /// Selected row overlay — white/black @ 12% + left indicator (ORGANISMS · 01).
     pub bg_row_active: String,
+    /// Fully transparent — stripes/borders-off seats (the design avoids hard separators).
+    pub bg_none: String,
+    /// Tinted container bg for the accent (drop targets, selection strips).
+    pub accent_well: String,
     /// The inverted primary control — light fill on the dark theme (ATOMS · 01).
     pub bg_invert: String,
     /// Hover/press of the inverted fill — the highest state is the strongest.
@@ -199,6 +203,8 @@ impl SemanticColors {
             ("bg_thumb", &self.bg_thumb),
             ("bg_row_hover", &self.bg_row_hover),
             ("bg_row_active", &self.bg_row_active),
+            ("bg_none", &self.bg_none),
+            ("accent_well", &self.accent_well),
             ("bg_invert", &self.bg_invert),
             ("bg_invert_hover", &self.bg_invert_hover),
             ("on_invert", &self.on_invert),
@@ -404,6 +410,8 @@ pub struct Layout {
     pub sidebar_expanded_px: u32,
     /// Sidebar collapsed-to-icons width (ORGANISMS · 01).
     pub sidebar_collapsed_px: u32,
+    /// Sidebar trailing-edge divider/resize line width (ORGANISMS · 01).
+    pub sidebar_divider_px: u32,
 }
 
 /// Parsed `elevation.toml` (`[shadow.*]` + `[z]` layers; z-index is consumed by the layout
@@ -594,6 +602,7 @@ pub fn validate_structure() -> Result<(), PrimaryDataError> {
     for (name, v) in [
         ("sidebar_expanded_px", l.sidebar_expanded_px),
         ("sidebar_collapsed_px", l.sidebar_collapsed_px),
+        ("sidebar_divider_px", l.sidebar_divider_px),
     ] {
         if v == 0 {
             return Err(PrimaryDataError::Invalid(format!(
@@ -625,6 +634,7 @@ mod tests {
         assert_eq!(super::radii().control_lg, 8);
         assert_eq!(super::layout().sidebar_expanded_px, 284);
         assert_eq!(super::layout().sidebar_collapsed_px, 72);
+        assert_eq!(super::layout().sidebar_divider_px, 2);
         let body = super::style("body").unwrap();
         assert_eq!(body.size_px, 13);
         assert!(super::style("nonexistent").is_none());

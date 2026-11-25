@@ -68,6 +68,12 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.secondary_hover = hex(&t.bg_control_hover);
     config.colors.secondary_active = hex(&t.bg_control_hover);
     config.colors.secondary_foreground = hex(&t.fg_muted);
+    // The button_secondary* seats must be set explicitly — unset, gpui falls back to the
+    // shadcn light-gray secondary and secondary buttons render wrong on dark.
+    config.colors.button_secondary = hex(&t.bg_control);
+    config.colors.button_secondary_hover = hex(&t.bg_control_hover);
+    config.colors.button_secondary_active = hex(&t.bg_control_hover);
+    config.colors.button_secondary_foreground = hex(&t.fg_muted);
     // The primary button INVERTS — light fill, dark ink, brightest on press; one per
     // surface, the only button that does (ATOMS · 01 primary row). The brand accent stays
     // reserved for focus, selection highlights and indicators — never the primary button.
@@ -132,12 +138,12 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // count badge is the accent. Window corners follow the card radius.
     config.window_radius = Some(bookkeepy_primary_data::theme::radii().card as usize);
     config.colors.title_bar = hex(&t.bg_sheet);
-    config.colors.title_bar_border = hex(&t.border);
+    config.colors.title_bar_border = hex(&t.border_subtle);
     config.colors.status_bar = hex(&t.bg);
     config.colors.status_bar_border = hex(&t.border);
     config.colors.sidebar = hex(&t.bg);
     config.colors.sidebar_foreground = hex(&t.fg_muted);
-    config.colors.sidebar_border = hex(&t.border);
+    config.colors.sidebar_border = hex(&t.border_heavy);
     config.colors.sidebar_accent = hex(&t.bg_nav_active);
     config.colors.sidebar_accent_foreground = hex(&t.fg);
     config.colors.sidebar_primary = hex(&t.bg_nav_active);
@@ -186,6 +192,19 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.tab_active_foreground = hex(&t.fg);
     // Charts: gridlines are white @ 8% (CHARTS sheet), series keep the group palette.
     config.colors.chart_grid = hex(&t.bg_nav_active);
+    // Drag/drop + progress: no shadcn blue leaks — accent-colored, and the neutral
+    // progress fill is the inverted neutral.
+    config.colors.drag_border = hex(&t.accent);
+    config.colors.drop_target = hex(&t.accent_well);
+    config.colors.progress_bar = hex(&t.bg_invert);
+    // The design avoids hard separators: row borders and stripe fills go transparent,
+    // accordion is flat on the base surface.
+    config.colors.table_row_border = hex(&t.bg_none);
+    config.colors.list_active_border = hex(&t.bg_none);
+    config.colors.table_active_border = hex(&t.bg_none);
+    config.colors.table_even = hex(&t.bg_none);
+    config.colors.list_even = hex(&t.bg_none);
+    config.colors.accordion = hex(&t.bg);
     config.colors.window_border = hex(&t.border);
     Rc::new(config)
 }
