@@ -3,11 +3,12 @@
 //! The gallery and the future `app` binary compose ui surfaces through this seam only.
 //!
 //! M3 scaffold ships: the theme bridge (`theme`), the design-language builders
-//! (`language`), the capability registry (`capabilities`), and the widget layers
-//! (`widgets`).
+//! (`language`), the bundled fonts (`fonts`), the capability registry (`capabilities`),
+//! and the widget layers (`widgets`).
 
 pub use crate::assets;
 pub use crate::capabilities;
+pub use crate::fonts;
 pub use crate::language;
 pub use crate::theme;
 pub use crate::widgets;

@@ -12,7 +12,9 @@ note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under refere
 
 [font]
 # UI family exactly as drawn in the sheets, with fallbacks (first available wins).
-ui = "Inter, system-ui, sans-serif"
+# "Inter Variable" is the bundled variable face (crates/ui/fonts, registered at startup
+# by `bookkeepy_ui::fonts::register`) — one file carries every weight the styles use.
+ui = "\"Inter Variable\", Inter, system-ui, sans-serif"
 # Numeric/monospaced surfaces: code, IDs, hash chains, tabular amounts.
 mono = "\"JetBrains Mono\", \"Cascadia Mono\", \"SF Mono\", \"Consolas\", monospace"
 
@@ -97,6 +99,16 @@ line_height_px = 12
 letter_spacing_px = 0.3
 font = "ui"
 # section labels, switcher captions (lowercase)
+
+[[style]]
+id = "money"
+size_px = 10
+weight = 500
+line_height_px = 12
+letter_spacing_px = 0.3
+font = "ui"
+tabular = true
+# small money labels (row currency hints, list captions) — overline cut, tabular figures
 
 [[style]]
 id = "amount-xl"

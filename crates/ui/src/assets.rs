@@ -1,20 +1,38 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! `BookkeepyAssets` — the app's asset source (RULE-UI-005, DESIGN-ASSETS): serves the
-//! design language's **Phosphor regular** glyphs (references/phosphor, MIT, catalog.yaml;
+//! design language's **Phosphor** glyphs (references/phosphor, OFL/MIT, catalog.yaml;
 //! TOKENS §08: regular at rest, duotone on interaction) at gpui-kit's lucide icon paths,
 //! so every `IconName::…` call site renders the designed glyph with no API churn. Paths
 //! with no Phosphor mapping fall through to the default gpui-kit lucide set, so nothing
-//! renders empty. (Per-state regular→duotone swap needs a component seam; until then the
-//! rest weight is the designed one.)
+//! renders empty.
+//!
+//! Two weights are served: `icons/<name>.svg` → Phosphor **regular** (the rest state),
+//! `icons/duotone/<name>.svg` → Phosphor **duotone** (the interaction state). Components
+//! that swap weight on hover draw the duotone path explicitly via [`crate::language::atoms`]
+//! (gpui-kit 0.11's `Icon` has no weight axis, but `Icon::path` is the seam).
 
 use std::borrow::Cow;
 
 use gpui_kit::{AssetSource, Result, SharedString};
 
+/// Asset path prefix under which the duotone weight is served (`icons/duotone/<name>.svg`).
+pub const DUOTONE_PREFIX: &str = "icons/duotone/";
+
 /// Phosphor duotone SVG bytes for a gpui-kit lucide icon path (`icons/<name>.svg`).
 /// The map is the lucide→phosphor name translation for the icons the design uses.
 fn phosphor_bytes(path: &str) -> Option<&'static [u8]> {
-    let svg = match path {
+    if let Some(name) = path.strip_prefix(DUOTONE_PREFIX) {
+        return phosphor_duotone_bytes(name);
+    }
+    lucide_to_phosphor(path).and_then(phosphor_regular_bytes)
+}
+
+/// The lucide→Phosphor glyph-name translation for the icons the design uses
+/// (`icons/circle-check.svg` → `check-circle`, …). Shared by the regular and the
+/// duotone weights so both resolve the same master.
+fn lucide_to_phosphor(path: &str) -> Option<&'static str> {
+    Some(match path {
+        "icons/arrow-up-right.svg" => "arrow-up-right",
         "icons/bell.svg" => "bell",
         "icons/calendar.svg" => "calendar-blank",
         "icons/chart-pie.svg" => "chart-pie-slice",
@@ -26,6 +44,7 @@ fn phosphor_bytes(path: &str) -> Option<&'static [u8]> {
         "icons/chevrons-up-down.svg" => "caret-up-down",
         "icons/circle-check.svg" => "check-circle",
         "icons/alert-circle.svg" => "warning-circle",
+        "icons/circle-alert.svg" => "warning-circle",
         "icons/circle-dollar-sign.svg" => "currency-circle-dollar",
         "icons/clock.svg" => "clock-counter-clockwise",
         "icons/copy.svg" => "copy",
@@ -69,17 +88,26 @@ fn phosphor_bytes(path: &str) -> Option<&'static [u8]> {
         "icons/sun.svg" => "sun",
         "icons/tag.svg" => "tag",
         "icons/undo-2.svg" => "arrow-counter-clockwise",
+        "icons/upload.svg" => "export",
         "icons/user.svg" => "user",
         "icons/users.svg" => "users",
         "icons/wallet.svg" => "wallet",
         "icons/x.svg" => "x",
         _ => return None,
-    };
+    })
+}
+
+/// Embedded Phosphor **regular** bytes for a Phosphor glyph name.
+fn phosphor_regular_bytes(svg: &str) -> Option<&'static [u8]> {
     Some(
         match svg {
             "arrow-clockwise" => {
                 include_str!("../../../references/phosphor/regular/arrow-clockwise.svg")
             }
+            "arrow-up-right" => {
+                include_str!("../../../references/phosphor/regular/arrow-up-right.svg")
+            }
+            "export" => include_str!("../../../references/phosphor/regular/export.svg"),
             "arrow-counter-clockwise" => {
                 include_str!("../../../references/phosphor/regular/arrow-counter-clockwise.svg")
             }
@@ -159,15 +187,79 @@ fn phosphor_bytes(path: &str) -> Option<&'static [u8]> {
                 include_str!("../../../references/phosphor/regular/warning-circle.svg")
             }
             "x" => include_str!("../../../references/phosphor/regular/x.svg"),
-            _ => unreachable!("phosphor map entry without embedded svg"),
+            _ => return None,
         }
         .as_bytes(),
     )
 }
 
-/// The lucide paths this source overrides with Phosphor duotone glyphs.
+/// The duotone asset path for a lucide icon path (`icons/circle-check.svg` →
+/// `icons/duotone/check-circle.svg`), when a Phosphor duotone master is embedded.
+pub fn duotone_path(lucide_path: &str) -> Option<SharedString> {
+    let name = lucide_to_phosphor(lucide_path)?;
+    let path = format!("{DUOTONE_PREFIX}{name}.svg");
+    phosphor_duotone_bytes(name).map(|_| SharedString::from(path))
+}
+
+/// Phosphor **duotone** SVG bytes for `icons/duotone/<name>.svg` — the interaction
+/// weight (TOKENS §08). Only the glyphs the design uses are embedded.
+fn phosphor_duotone_bytes(name: &str) -> Option<&'static [u8]> {
+    let svg = match name.strip_suffix(".svg").unwrap_or(name) {
+        "arrow-up-right" => "arrow-up-right",
+        "bell" => "bell",
+        "caret-down" => "caret-down",
+        "chart-line-up" => "chart-line-up",
+        "check-circle" => "check-circle",
+        "eye-closed" => "eye-closed",
+        "export" => "export",
+        "funnel" => "funnel",
+        "gear-six" => "gear-six",
+        "magnifying-glass" => "magnifying-glass",
+        "plus" => "plus",
+        "spinner-gap" => "spinner-gap",
+        "wallet" => "wallet",
+        "warning-circle" => "warning-circle",
+        "x" => "x",
+        _ => return None,
+    };
+    Some(
+        match svg {
+            "arrow-up-right" => {
+                include_str!("../../../references/phosphor/duotone/arrow-up-right.svg")
+            }
+            "bell" => include_str!("../../../references/phosphor/duotone/bell.svg"),
+            "caret-down" => include_str!("../../../references/phosphor/duotone/caret-down.svg"),
+            "chart-line-up" => {
+                include_str!("../../../references/phosphor/duotone/chart-line-up.svg")
+            }
+            "check-circle" => {
+                include_str!("../../../references/phosphor/duotone/check-circle.svg")
+            }
+            "eye-closed" => include_str!("../../../references/phosphor/duotone/eye-closed.svg"),
+            "export" => include_str!("../../../references/phosphor/duotone/export.svg"),
+            "funnel" => include_str!("../../../references/phosphor/duotone/funnel.svg"),
+            "gear-six" => include_str!("../../../references/phosphor/duotone/gear-six.svg"),
+            "magnifying-glass" => {
+                include_str!("../../../references/phosphor/duotone/magnifying-glass.svg")
+            }
+            "plus" => include_str!("../../../references/phosphor/duotone/plus.svg"),
+            "spinner-gap" => include_str!("../../../references/phosphor/duotone/spinner-gap.svg"),
+            "wallet" => include_str!("../../../references/phosphor/duotone/wallet.svg"),
+            "warning-circle" => {
+                include_str!("../../../references/phosphor/duotone/warning-circle.svg")
+            }
+            "x" => include_str!("../../../references/phosphor/duotone/x.svg"),
+            _ => unreachable!("duotone map entry without embedded svg"),
+        }
+        .as_bytes(),
+    )
+}
+
+/// The lucide paths this source overrides with Phosphor regular glyphs.
 const MAPPED: &[&str] = &[
     "icons/alert-circle.svg",
+    "icons/arrow-up-right.svg",
+    "icons/circle-alert.svg",
     "icons/bell.svg",
     "icons/calendar.svg",
     "icons/chart-pie.svg",
@@ -221,10 +313,30 @@ const MAPPED: &[&str] = &[
     "icons/sun.svg",
     "icons/tag.svg",
     "icons/undo-2.svg",
+    "icons/upload.svg",
     "icons/user.svg",
     "icons/users.svg",
     "icons/wallet.svg",
     "icons/x.svg",
+];
+
+/// The duotone paths this source serves from `references/phosphor/duotone/`.
+const DUOTONE_MAPPED: &[&str] = &[
+    "icons/duotone/arrow-up-right.svg",
+    "icons/duotone/bell.svg",
+    "icons/duotone/caret-down.svg",
+    "icons/duotone/chart-line-up.svg",
+    "icons/duotone/check-circle.svg",
+    "icons/duotone/eye-closed.svg",
+    "icons/duotone/export.svg",
+    "icons/duotone/funnel.svg",
+    "icons/duotone/gear-six.svg",
+    "icons/duotone/magnifying-glass.svg",
+    "icons/duotone/plus.svg",
+    "icons/duotone/spinner-gap.svg",
+    "icons/duotone/wallet.svg",
+    "icons/duotone/warning-circle.svg",
+    "icons/duotone/x.svg",
 ];
 
 /// The app asset source: Phosphor duotone at the mapped lucide paths, gpui-kit's lucide
@@ -245,6 +357,7 @@ impl AssetSource for BookkeepyAssets {
         all.extend(
             MAPPED
                 .iter()
+                .chain(DUOTONE_MAPPED.iter())
                 .filter(|p| p.starts_with(path))
                 .map(|p| SharedString::from(*p)),
         );
@@ -267,6 +380,39 @@ mod tests {
             assert!(
                 text.contains("currentColor"),
                 "{path} must be a themable regular svg"
+            );
+        }
+    }
+
+    #[test]
+    fn duotone_path_translates_lucide_to_phosphor_names() {
+        // lucide names differ from phosphor names — the duotone path must translate.
+        assert_eq!(
+            duotone_path("icons/circle-check.svg").as_deref(),
+            Some("icons/duotone/check-circle.svg")
+        );
+        assert_eq!(
+            duotone_path("icons/circle-alert.svg").as_deref(),
+            Some("icons/duotone/warning-circle.svg")
+        );
+        assert_eq!(
+            duotone_path("icons/wallet.svg").as_deref(),
+            Some("icons/duotone/wallet.svg")
+        );
+        assert!(duotone_path("icons/arrow-down.svg").is_none());
+    }
+
+    #[test]
+    fn duotone_paths_serve_phosphor_duotone() {
+        for path in DUOTONE_MAPPED {
+            let bytes = BookkeepyAssets.load(path).ok().flatten();
+            let Some(bytes) = bytes else {
+                panic!("{path} must serve embedded phosphor duotone bytes");
+            };
+            let text = std::str::from_utf8(&bytes).unwrap_or("");
+            assert!(
+                text.contains("currentColor") && text.contains("opacity"),
+                "{path} must be a themable duotone svg (fill + 20% layer)"
             );
         }
     }

@@ -335,6 +335,190 @@ pub mod controls {
     }
 }
 
+/// Composed atoms — the design-language atoms the gallery showcases AND the app reuses
+/// (doc 04 §4.9 / ADR-0017: one component set, the gallery is only a harness). These are
+/// the ATOMS · 01 building blocks where gpui-kit's stock component cannot express the
+/// drawn design (suffix at caption size, highlight well, external-link glyph, duotone
+/// weight) — each is a thin composition over the styled component + tokens, so there is
+/// exactly one place to change the look.
+pub mod atoms {
+    use super::{Mode, role_hsla};
+    use bookkeepy_primary_data::theme::style;
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::h_flex;
+    use gpui_kit::component::button::{Button, ButtonVariants as _};
+    use gpui_kit::component::label::Label;
+    use gpui_kit::component::{Icon, Sizable as _, Size};
+    use gpui_kit::{
+        Div, ElementId, FontWeight, HighlightStyle, ParentElement as _, SharedString, Styled as _,
+        StyledText, div, px,
+    };
+    use std::ops::Range;
+
+    /// The sheet's `Label` master: `label` type style (12px) drawn at weight **500**
+    /// with the foreground ink (ATOMS · 01 label masters are semibold; the `label`
+    /// style itself stays 400 for nav/buttons).
+    pub fn label(text: impl Into<SharedString>) -> Label {
+        let mut l = Label::new(text);
+        if let Some(s) = style("label") {
+            // (gpui 0.3 has no letter-spacing axis; the style's tracking is sub-pixel
+            // at these sizes — size/line-height/weight carry the look.)
+            l = l
+                .text_size(px(s.size_px as f32))
+                .line_height(px(s.line_height_px as f32))
+                .font_weight(FontWeight::MEDIUM);
+        }
+        l
+    }
+
+    /// A caption-styled suffix span (the `caption` type style, muted ink) — the
+    /// "quiet suffix" of ATOMS · 01 (`(optional)`, `*`, `RON`, `locked`, `required`).
+    pub fn suffix(text: impl Into<SharedString>, mode: Mode) -> Div {
+        let mut el = div().child(text.into());
+        if let Some(s) = style("caption") {
+            el = el
+                .text_size(px(s.size_px as f32))
+                .line_height(px(s.line_height_px as f32))
+                .font_weight(FontWeight::from(s.weight as f32));
+        }
+        if let Some(c) = role_hsla(mode, "muted-foreground") {
+            el = el.text_color(c);
+        }
+        el
+    }
+
+    /// A field label: label text + quiet caption suffix on the same baseline, 4px apart
+    /// (ATOMS · 01: "secondary suffix: caption, muted" — NOT the same level as the label).
+    pub fn field_label(
+        text: impl Into<SharedString>,
+        suffix_text: impl Into<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .gap(px(super::space("space-1") as f32))
+            .items_baseline()
+            .child(label(text))
+            .child(suffix(suffix_text, mode))
+    }
+
+    /// A masked amount label: bullets for the amount + the currency suffix beside it
+    /// (ATOMS · 01 masked: "•••• with the eye toggle beside it" — the toggle is the
+    /// caller's button; this is the static part).
+    pub fn masked_label(
+        text: impl Into<SharedString>,
+        suffix_text: impl Into<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .gap(px(super::space("space-1") as f32))
+            .items_baseline()
+            .child(label(text).masked(true))
+            .child(suffix(suffix_text, mode))
+    }
+
+    /// A search-highlighted label: the match sits on the `accent-subtle` well with the
+    /// `accent-foreground` ink (ATOMS · 01 highlight: match on accent-subtle, rest
+    /// muted) — gpui-kit's `Label::highlights` hardcodes `theme.blue`, so the composed
+    /// atom renders the StyledText itself.
+    pub fn highlighted(
+        text: impl Into<SharedString>,
+        matched: &str,
+        prefix: bool,
+        mode: Mode,
+    ) -> Div {
+        let text: SharedString = text.into();
+        let lower = text.to_lowercase();
+        let needle = matched.to_lowercase();
+        let mut ranges: Vec<Range<usize>> = Vec::new();
+        if !needle.is_empty() {
+            if prefix {
+                if lower.starts_with(&needle) {
+                    ranges.push(0..matched.len());
+                }
+            } else {
+                let mut start = 0;
+                while let Some(pos) = lower[start..].find(&needle) {
+                    let s = start + pos;
+                    let e = s + matched.len();
+                    if e <= text.len() {
+                        ranges.push(s..e);
+                    }
+                    start = e.max(s + 1);
+                    while start < text.len() && !text.is_char_boundary(start) {
+                        start += 1;
+                    }
+                }
+            }
+        }
+        let hl: Vec<(Range<usize>, HighlightStyle)> = ranges
+            .into_iter()
+            .map(|r| {
+                (
+                    r,
+                    HighlightStyle {
+                        color: role_hsla(mode, "accent-foreground"),
+                        background_color: role_hsla(mode, "accent-subtle"),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect();
+        let mut el = div().child(StyledText::new(&text).with_highlights(hl));
+        if let Some(s) = style("label") {
+            el = el
+                .text_size(px(s.size_px as f32))
+                .line_height(px(s.line_height_px as f32));
+        }
+        if let Some(c) = role_hsla(mode, "muted-foreground") {
+            el = el.text_color(c);
+        }
+        el
+    }
+
+    /// An external link: `base::Link` behaviour via `Button::link()`, underlined, with
+    /// the 12px arrow-up-right glyph after the text (ATOMS · 01 link: "links are only
+    /// for leaving the app"). Ink rides the theme's link seats (rest secondary, hover
+    /// foreground, pressed muted, disabled no-underline).
+    pub fn external_link(id: impl Into<ElementId>, text: impl Into<SharedString>) -> Button {
+        Button::new(id).link().underline().child(
+            h_flex()
+                .gap_1()
+                .items_center()
+                .child(text.into())
+                .child(Icon::new(IconName::ArrowUpRight).with_size(Size::Size(px(12.)))),
+        )
+    }
+
+    /// A Phosphor regular icon at an exact size (the size ladder xs 12 … xl 24,
+    /// ATOMS · 01 — icons never sit on a plate).
+    pub fn icon(name: IconName, size_px: f32) -> Icon {
+        Icon::new(name).with_size(Size::Size(px(size_px)))
+    }
+
+    /// The same glyph in the **duotone** weight (interaction state) — served by
+    /// [`crate::assets::BookkeepyAssets`] under `icons/duotone/…` and swapped in via
+    /// `Icon::path`, gpui-kit 0.11's icon-style seam. Falls back to regular when no
+    /// duotone master is embedded for the glyph.
+    pub fn duotone_icon(name: IconName, size_px: f32) -> Icon {
+        let icon = Icon::new(name);
+        let icon = match crate::assets::duotone_path(&name.path()) {
+            Some(duo) => icon.path(duo),
+            None => icon,
+        };
+        icon.with_size(Size::Size(px(size_px)))
+    }
+
+    /// A semantic icon role (ATOMS · 01 color roles: `icon`, `icon-muted`, …,
+    /// `money-in`) — glyph in the role's color, no plate.
+    pub fn role_icon(name: IconName, size_px: f32, role: &str, mode: Mode) -> Icon {
+        let mut ic = icon(name, size_px);
+        if let Some(c) = role_hsla(mode, role) {
+            ic = ic.text_color(c);
+        }
+        ic
+    }
+}
+
 /// Action presets — states the gpui variant API does not carry.
 pub mod actions {
     use super::*;

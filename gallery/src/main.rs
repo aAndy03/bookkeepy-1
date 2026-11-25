@@ -45,6 +45,8 @@ fn main() {
         .with_assets(bookkeepy_ui::api::assets::BookkeepyAssets)
         .run(|cx| {
             gpui_kit::init(cx);
+            // Bundled Inter Variable (all weights the type styles use) before first frame.
+            bookkeepy_ui::api::fonts::register(cx);
             // Design tokens → gpui-kit theme (dark = the design language's native theme).
             bookkeepy_ui::theme::apply(bookkeepy_primary_data::theme::Mode::Dark, cx);
             // Runtime prefs (locale + mode) as a gpui global; switching refreshes windows.

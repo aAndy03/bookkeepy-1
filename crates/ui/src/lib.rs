@@ -17,6 +17,7 @@
 pub mod api;
 pub mod assets;
 pub mod capabilities;
+pub mod fonts;
 pub mod language;
 pub mod theme;
 pub mod widgets;

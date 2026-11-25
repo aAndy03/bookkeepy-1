@@ -15,6 +15,7 @@ use gpui_kit::{Context, Window};
 use crate::app::Gallery;
 
 mod atoms_button;
+pub(crate) mod kit;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
 /// (references/designlanguage): ATOMS · 01–04, MOLECULES · 01–03, ORGANISMS · 01–02,
