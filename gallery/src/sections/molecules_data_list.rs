@@ -16,7 +16,7 @@ use gpui_kit::component::pagination::Pagination;
 use gpui_kit::component::{Icon, IconName, IndexPath, h_flex};
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, IntoElement, ParentElement as _, SharedString,
-    Styled as _, Task, Window, px,
+    Styled as _, Task, Window,
 };
 
 use crate::app::{Gallery, tr};
@@ -175,7 +175,7 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.molecules.data_list.list",
-                        List::new(&self.accounts).h(px(180.)).into_any_element(),
+                        List::new(&self.accounts).into_any_element(),
                     )
                     .into_any_element(),
                     demo_card(
@@ -186,7 +186,7 @@ impl gpui_kit::Render for Section {
                                 cx,
                                 "gallery.molecules.data_list.searchable.placeholder",
                             ))
-                            .h(px(180.))
+
                             .into_any_element(),
                     )
                     .into_any_element(),

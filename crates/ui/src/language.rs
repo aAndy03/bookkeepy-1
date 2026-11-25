@@ -66,6 +66,21 @@ pub mod surface {
         div.rounded(px(radii().overlay as f32))
     }
 
+    /// A dialog panel on the design surface: `#1c1c1c` rx20 borderless over the scrim
+    /// (ORGANISMS · 01 dialog: 440x327 rx20 #1c1c1c on #000@60%). gpui's dialog bg reads
+    /// the base background; this pins the drawn panel fill + geometry.
+    pub fn dialog<D>(d: D, mode: Mode) -> D
+    where
+        D: gpui_kit::Styled,
+    {
+        let t = colors(mode);
+        let mut d = d.border_0().rounded(px(radii().banner as f32));
+        if let Some(bg) = token_hsla(&t.bg_sheet) {
+            d = d.bg(bg);
+        }
+        d
+    }
+
     /// A group box on the design surface: borderless #171717 rx16 card (ORGANISMS · 02
     /// group box: 440x106 rx16 `#171717`, no border — the hard outline is a gpui default).
     pub fn group_box<G>(g: G, mode: Mode) -> G
@@ -78,6 +93,58 @@ pub mod surface {
             g = g.bg(bg);
         }
         g
+    }
+}
+
+/// Display presets — badges/tags/avatars per ATOMS · 02: tags are 20px rx4 pills on
+/// `#1c1c1c` with a colored dot; the colored variants sit on the tint WELLS with the
+/// tint as ink (not solid hues); avatars are borderless circles.
+pub mod display {
+    use super::{Mode, token_hsla};
+    use bookkeepy_primary_data::theme::{colors, radii};
+    use gpui_kit::component::avatar::Avatar;
+    use gpui_kit::component::tag::Tag;
+    use gpui_kit::{Styled as _, px};
+
+    /// The tag tone, selecting the matching `*_well` + `*_tint` token pair (ATOMS · 02).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TagTone {
+        /// `accent_well` + `accent_hover`.
+        Accent,
+        /// `success_well` + `success_tint`.
+        Success,
+        /// `warning_well` + `warning_tint`.
+        Warning,
+        /// `danger_well` + `danger_tint`.
+        Danger,
+        /// `info_well` + `info_tint`.
+        Info,
+    }
+
+    /// A soft tag: tint-well fill + tint ink + rx4 (ATOMS · 02 tinted tag variants).
+    pub fn tag_soft(tag: Tag, tone: TagTone, mode: Mode) -> Tag {
+        let t = colors(mode);
+        let (well, tint) = match tone {
+            TagTone::Accent => (&t.accent_well, &t.accent_hover),
+            TagTone::Success => (&t.success_well, &t.success_tint),
+            TagTone::Warning => (&t.warning_well, &t.warning_tint),
+            TagTone::Danger => (&t.danger_well, &t.danger_tint),
+            TagTone::Info => (&t.info_well, &t.info_tint),
+        };
+        let mut tag = tag.rounded(px(radii().mini as f32));
+        if let Some(bg) = token_hsla(well) {
+            tag = tag.bg(bg);
+        }
+        if let Some(fg) = token_hsla(tint) {
+            tag = tag.text_color(fg);
+        }
+        tag
+    }
+
+    /// An avatar: borderless circle (ATOMS · 02 — the #2a2a2a ring appears only in
+    /// overlap stacks, which AvatarGroup draws itself).
+    pub fn avatar(avatar: Avatar) -> Avatar {
+        avatar.border_0()
     }
 }
 

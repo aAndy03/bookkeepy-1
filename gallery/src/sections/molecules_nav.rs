@@ -340,7 +340,7 @@ impl gpui_kit::Render for Section {
                                     .into_any_element()
                             },
                         )
-                        .w_full()
+                        .w(gpui_kit::px(380.))
                         .h_80()
                         .with_jump_button_label(tr(cx, "gallery.molecules.nav.chat.jump"))
                         .into_any_element(),

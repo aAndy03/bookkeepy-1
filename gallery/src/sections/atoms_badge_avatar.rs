@@ -30,6 +30,7 @@ impl gpui_kit::Render for Section {
         cx: &mut gpui_kit::Context<'_, Self>,
     ) -> impl IntoElement {
         let name: gpui_kit::SharedString = tr(cx, "gallery.atoms.display.sample_name");
+        let mode = cx.global::<crate::app::Prefs>().mode;
         section_page(
             cx,
             "gallery.section.atoms-badge-avatar",
@@ -54,24 +55,44 @@ impl gpui_kit::Render for Section {
                     cx,
                     "gallery.atoms.display.tag",
                     demo_row([
-                        Tag::primary()
-                            .child(tr(cx, "gallery.atoms.display.tag_primary"))
-                            .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::primary(),
+                            bookkeepy_ui::api::language::display::TagTone::Accent,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_primary"))
+                        .into_any_element(),
                         Tag::secondary()
                             .child(tr(cx, "gallery.atoms.display.tag_secondary"))
                             .into_any_element(),
-                        Tag::success()
-                            .child(tr(cx, "gallery.atoms.display.tag_success"))
-                            .into_any_element(),
-                        Tag::warning()
-                            .child(tr(cx, "gallery.atoms.display.tag_warning"))
-                            .into_any_element(),
-                        Tag::danger()
-                            .child(tr(cx, "gallery.atoms.display.tag_danger"))
-                            .into_any_element(),
-                        Tag::info()
-                            .child(tr(cx, "gallery.atoms.display.tag_info"))
-                            .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::success(),
+                            bookkeepy_ui::api::language::display::TagTone::Success,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_success"))
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::warning(),
+                            bookkeepy_ui::api::language::display::TagTone::Warning,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_warning"))
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::danger(),
+                            bookkeepy_ui::api::language::display::TagTone::Danger,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_danger"))
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::display::tag_soft(
+                            Tag::info(),
+                            bookkeepy_ui::api::language::display::TagTone::Info,
+                            mode,
+                        )
+                        .child(tr(cx, "gallery.atoms.display.tag_info"))
+                        .into_any_element(),
                     ])
                     .into_any_element(),
                 )
@@ -80,11 +101,21 @@ impl gpui_kit::Render for Section {
                     cx,
                     "gallery.atoms.display.avatar",
                     demo_row([
-                        Avatar::new().name(name.clone()).into_any_element(),
-                        Avatar::new().placeholder(IconName::User).into_any_element(),
+                        bookkeepy_ui::api::language::display::avatar(
+                            Avatar::new().name(name.clone()),
+                        )
+                        .into_any_element(),
+                        bookkeepy_ui::api::language::display::avatar(
+                            Avatar::new().placeholder(IconName::User),
+                        )
+                        .into_any_element(),
                         AvatarGroup::new()
-                            .child(Avatar::new().name(name.clone()))
-                            .child(Avatar::new().placeholder(IconName::User))
+                            .child(bookkeepy_ui::api::language::display::avatar(
+                                Avatar::new().name(name.clone()),
+                            ))
+                            .child(bookkeepy_ui::api::language::display::avatar(
+                                Avatar::new().placeholder(IconName::User),
+                            ))
                             .into_any_element(),
                     ])
                     .into_any_element(),

@@ -53,41 +53,44 @@ impl gpui_kit::Render for Section {
                     .on_click(|_, window, cx| {
                         window.open_dialog(cx, |dialog, _win, cx| {
                             let done = tr(cx, "gallery.organisms.overlay.dialog.done");
-                            dialog
-                                .title(tr(cx, "gallery.organisms.overlay.dialog.title"))
-                                .child(
-                                    v_flex()
-                                        .gap_2()
-                                        .child(tr(cx, "gallery.organisms.overlay.dialog.body")),
-                                )
-                                .footer(
-                                    h_flex()
-                                        .justify_end()
-                                        .gap_2()
-                                        .child(
-                                            Button::new("overlay-dialog-cancel")
-                                                .outline()
-                                                .label(tr(cx, "common.cancel"))
-                                                .on_click(|_, window, cx| {
-                                                    window.close_dialog(cx);
-                                                }),
-                                        )
-                                        .child(
-                                            Button::new("overlay-dialog-ok")
-                                                .primary()
-                                                .label(tr(
+                            bookkeepy_ui::api::language::surface::dialog(
+                                dialog,
+                                cx.global::<crate::app::Prefs>().mode,
+                            )
+                            .title(tr(cx, "gallery.organisms.overlay.dialog.title"))
+                            .child(
+                                v_flex()
+                                    .gap_2()
+                                    .child(tr(cx, "gallery.organisms.overlay.dialog.body")),
+                            )
+                            .footer(
+                                h_flex()
+                                    .justify_end()
+                                    .gap_2()
+                                    .child(
+                                        Button::new("overlay-dialog-cancel")
+                                            .outline()
+                                            .label(tr(cx, "common.cancel"))
+                                            .on_click(|_, window, cx| {
+                                                window.close_dialog(cx);
+                                            }),
+                                    )
+                                    .child(
+                                        Button::new("overlay-dialog-ok")
+                                            .primary()
+                                            .label(tr(
+                                                cx,
+                                                "gallery.organisms.overlay.dialog.confirm",
+                                            ))
+                                            .on_click(move |_, window, cx| {
+                                                window.push_notification(
+                                                    Notification::success(done.clone()),
                                                     cx,
-                                                    "gallery.organisms.overlay.dialog.confirm",
-                                                ))
-                                                .on_click(move |_, window, cx| {
-                                                    window.push_notification(
-                                                        Notification::success(done.clone()),
-                                                        cx,
-                                                    );
-                                                    window.close_dialog(cx);
-                                                }),
-                                        ),
-                                )
+                                                );
+                                                window.close_dialog(cx);
+                                            }),
+                                    ),
+                            )
                         });
                     })
                     .into_any_element(),
