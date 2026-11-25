@@ -22,7 +22,7 @@ use gpui_kit::{
     SharedString, Styled as _, Window, div, px,
 };
 
-use crate::app::{Gallery, tr};
+use crate::app::{Gallery, Prefs, tr};
 
 /// Section entry point (the `section!` macro's `new` fn).
 pub fn view(_window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
@@ -337,65 +337,254 @@ impl gpui_kit::Render for AtomsButton {
             );
 
         // ── link ─────────────────────────────────────────────────────────────
-        let link_row = |cx: &mut Context<'_, Self>| {
-            h_flex().gap_6().children(
-                [
-                    "gallery.atoms.state.rest",
-                    "gallery.atoms.state.hover",
-                    "gallery.atoms.state.pressed",
-                    "gallery.atoms.state.focus",
-                    "gallery.atoms.state.disabled",
-                ]
-                .iter()
-                .enumerate()
-                .map(|(i, key)| {
-                    let mut b = Button::new(format!("link-{i}"))
-                        .link()
-                        .label(tr(cx, "gallery.atoms.demo.gpui_link"))
-                        .on_click(cx.listener(Self::on_click));
-                    if i == 4 {
-                        b = b.disabled(true);
-                    }
-                    Self::cell(cx, key, b)
-                }),
-            )
-        };
+        // ATOMS·01 Link: external URLs only. rest = underlined secondary text + external
+        // glyph (12px) · hover = foreground, glyph duotone · pressed = muted ·
+        // focus = 2px ring · disabled = no underline. Built on Button.link() (base::Link).
+        let l_bank = tr(cx, "gallery.atoms.demo.open_bank");
+        let link_states = [
+            "gallery.atoms.state.rest",
+            "gallery.atoms.state.hover",
+            "gallery.atoms.state.pressed",
+            "gallery.atoms.state.focus",
+            "gallery.atoms.state.disabled",
+        ];
+        let link_row = h_flex()
+            .gap_6()
+            .children(link_states.iter().enumerate().map(|(i, key)| {
+                let mut b = Button::new(format!("link-{i}"))
+                    .link()
+                    .underline()
+                    .child(
+                        h_flex().gap_1().items_center().child(l_bank.clone()).child(
+                            Icon::new(IconName::ArrowUpRight)
+                                .with_size(gpui_kit::component::Size::Size(px(12.))),
+                        ),
+                    )
+                    .on_click(cx.listener(Self::on_click));
+                if i == 4 {
+                    b = b.disabled(true);
+                }
+                Self::cell(cx, key, b)
+            }));
+        let l_lead = tr(cx, "gallery.atoms.link.inline_lead");
+        let l_inline = tr(cx, "gallery.atoms.link.inline_link");
         let link = v_flex()
             .gap_4()
-            .child(Self::overline(cx, tr(cx, "gallery.atoms.button.link")))
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.link.title")))
             .child(caption(cx, tr(cx, "gallery.atoms.link.hint")))
-            .child(link_row(cx))
-            .child(caption(cx, tr(cx, "gallery.atoms.link.inline")));
+            .child(link_row)
+            .child(
+                h_flex()
+                    .gap_1()
+                    .items_baseline()
+                    .child(caption(cx, l_lead))
+                    .child(
+                        Button::new("link-inline")
+                            .link()
+                            .underline()
+                            .label(l_inline)
+                            .on_click(cx.listener(Self::on_click)),
+                    ),
+            );
 
-        // ── icon sizes / label / kbd ─────────────────────────────────────────
-        let icon_sizes =
-            v_flex()
-                .gap_4()
-                .child(Self::overline(cx, tr(cx, "gallery.atoms.icon_sizes")))
-                .child(h_flex().gap_6().items_center().children(
-                    [12., 14., 16., 20., 24.].iter().map(|s| {
+        // ── icon ─────────────────────────────────────────────────────────────
+        // ATOMS·01 Icon: no plate — icons never sit on a background; regular at rest,
+        // duotone on interaction; colors come from the semantic icon roles only.
+        let icon_sizes_row = h_flex().gap_6().items_center().children(
+            [
+                ("xs", 12.),
+                ("sm", 14.),
+                ("md", 16.),
+                ("lg", 20.),
+                ("xl", 24.),
+            ]
+            .iter()
+            .map(|(name, s)| {
+                v_flex()
+                    .gap_2()
+                    .items_center()
+                    .child(Self::overline(
+                        cx,
+                        SharedString::from(format!("{name} {s:.0}")),
+                    ))
+                    .child(
                         Icon::new(IconName::House)
-                            .with_size(gpui_kit::component::Size::Size(px(*s)))
-                    }),
-                ));
-        let label_row = h_flex()
+                            .with_size(gpui_kit::component::Size::Size(px(*s))),
+                    )
+            }),
+        );
+        let mode = cx.global::<Prefs>().mode;
+        let icon_roles = [
+            "icon",
+            "icon-muted",
+            "icon-hover",
+            "icon-selected",
+            "icon-disabled",
+            "icon-attention",
+            "success",
+            "danger",
+            "warning",
+            "money-in",
+        ];
+        let icon_roles_row = h_flex()
             .gap_6()
             .items_center()
-            .child(Label::new(tr(cx, "gallery.atoms.demo.account")))
-            .child(
-                Label::new(tr(cx, "gallery.atoms.demo.account"))
-                    .secondary(tr(cx, "gallery.atoms.demo.optional")),
-            );
-        let kbd_row = h_flex().gap_2().items_center().children(
-            ["ctrl-k", "ctrl-n", "ctrl-shift-f", "ctrl-0", "esc", "enter"]
-                .iter()
-                .map(|k| Kbd::new(Keystroke::parse(k).unwrap_or_default())),
-        );
-        let basics = v_flex()
+            .children(icon_roles.iter().map(|role| {
+                let color = bookkeepy_ui::api::language::role_hsla(mode, role).unwrap_or_default();
+                v_flex()
+                    .gap_2()
+                    .items_center()
+                    .child(Self::overline(cx, SharedString::from(*role)))
+                    .child(Icon::new(IconName::CircleCheck).text_color(color))
+            }));
+        let icon = v_flex()
             .gap_4()
-            .child(Self::overline(cx, tr(cx, "gallery.atoms.label_kbd")))
-            .child(label_row)
-            .child(kbd_row);
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.icon.title")))
+            .child(caption(cx, tr(cx, "gallery.atoms.icon.hint")))
+            .child(icon_sizes_row)
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.icon.roles")))
+            .child(icon_roles_row);
+
+        // ── label ────────────────────────────────────────────────────────────
+        // ATOMS·01 Label: default = label style in foreground · secondary suffix = caption
+        // muted · required * muted · masked •••• + eye · highlight = match on accent-subtle
+        // (Full) / accent-foreground (Prefix) · disabled / invalid.
+        let fg = cx.theme().foreground;
+        let labels = v_flex()
+            .gap_4()
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.label.title")))
+            .child(caption(cx, tr(cx, "gallery.atoms.label.hint")))
+            .child(
+                h_flex().gap_6().items_center().children([
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.default",
+                        Label::new(tr(cx, "gallery.atoms.demo.payee"))
+                            .text_size(px(12.))
+                            .font_weight(gpui_kit::FontWeight::MEDIUM)
+                            .text_color(fg),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.secondary",
+                        Label::new(tr(cx, "gallery.atoms.demo.account"))
+                            .secondary(tr(cx, "gallery.atoms.demo.optional")),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.required",
+                        Label::new(tr(cx, "gallery.atoms.demo.amount")).secondary("*"),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.masked",
+                        Label::new("\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}")
+                            .secondary(tr(cx, "gallery.atoms.demo.ron")),
+                    ),
+                ]),
+            )
+            .child(
+                h_flex().gap_6().items_center().children([
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.highlight_full",
+                        Label::new(tr(cx, "gallery.atoms.demo.mega_image")).highlights(
+                            gpui_kit::component::label::HighlightsMatch::Full(tr(
+                                cx,
+                                "gallery.atoms.demo.mega",
+                            )),
+                        ),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.highlight_prefix",
+                        Label::new(tr(cx, "gallery.atoms.demo.netflix")).highlights(
+                            gpui_kit::component::label::HighlightsMatch::Prefix(tr(
+                                cx,
+                                "gallery.atoms.demo.net",
+                            )),
+                        ),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.disabled",
+                        Label::new(tr(cx, "gallery.atoms.demo.currency"))
+                            .secondary(tr(cx, "gallery.atoms.demo.locked"))
+                            .text_color(cx.theme().muted_foreground.opacity(0.5)),
+                    ),
+                    Self::cell(
+                        cx,
+                        "gallery.atoms.label.invalid",
+                        Label::new(tr(cx, "gallery.atoms.demo.amount"))
+                            .text_color(cx.theme().red_light),
+                    ),
+                ]),
+            )
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.label.sizes")))
+            .child(
+                h_flex().gap_6().items_baseline().children(
+                    [
+                        "money", "overline", "caption", "label", "body-lg", "heading",
+                    ]
+                    .iter()
+                    .map(|st| {
+                        let style = bookkeepy_primary_data::theme::style(st);
+                        let mut el = div()
+                            .text_color(fg)
+                            .child(tr(cx, "gallery.atoms.demo.payee"));
+                        if let Some(s) = style {
+                            el = el
+                                .text_size(px(s.size_px as f32))
+                                .font_weight(gpui_kit::FontWeight::from(s.weight as f32));
+                        }
+                        v_flex()
+                            .gap_2()
+                            .child(Self::overline(cx, SharedString::from(*st)))
+                            .child(el)
+                    }),
+                ),
+            );
+
+        // ── kbd ──────────────────────────────────────────────────────────────
+        // ATOMS·01 Kbd: keycap = raised key with a 2px base · plain = appearance(false)
+        // inside menus/dense rows · inverse = on the light tooltip surface · echo shows
+        // the platform text (Windows: Ctrl+Shift+P · macOS: ⇧⌘P) — never hard-coded keys.
+        let kbd_keys = ["ctrl-k", "ctrl-n", "ctrl-shift-f", "ctrl-0", "esc", "enter"];
+        let kbd_keycap = h_flex()
+            .gap_2()
+            .items_center()
+            .children(kbd_keys.iter().map(|k| {
+                bookkeepy_ui::api::language::controls::kbd(
+                    Kbd::new(Keystroke::parse(k).unwrap_or_default()),
+                    mode,
+                )
+            }));
+        let kbd_plain = h_flex().gap_2().items_center().children(
+            kbd_keys
+                .iter()
+                .map(|k| Kbd::new(Keystroke::parse(k).unwrap_or_default()).appearance(false)),
+        );
+        let tooltip_surface =
+            bookkeepy_ui::api::language::role_hsla(mode, "tooltip").unwrap_or_default();
+        let kbd_inverse = h_flex()
+            .w(gpui_kit::Length::Auto)
+            .bg(tooltip_surface)
+            .rounded(px(bookkeepy_ui::api::language::radius_tier("sm")))
+            .p_2()
+            .child(
+                Kbd::new(Keystroke::parse("ctrl-shift-p").unwrap_or_default()).text_color(
+                    bookkeepy_ui::api::language::role_hsla(mode, "tooltip-foreground")
+                        .unwrap_or_default(),
+                ),
+            );
+        let kbd = v_flex()
+            .gap_4()
+            .items_start()
+            .child(Self::overline(cx, tr(cx, "gallery.atoms.kbd.title")))
+            .child(caption(cx, tr(cx, "gallery.atoms.kbd.hint")))
+            .child(Self::cell(cx, "gallery.atoms.kbd.keycap", kbd_keycap))
+            .child(Self::cell(cx, "gallery.atoms.kbd.plain", kbd_plain))
+            .child(Self::cell(cx, "gallery.atoms.kbd.inverse", kbd_inverse));
 
         // ── page ─────────────────────────────────────────────────────────────
         v_flex()
@@ -416,7 +605,8 @@ impl gpui_kit::Render for AtomsButton {
             .child(anatomy)
             .child(icon_buttons)
             .child(link)
-            .child(icon_sizes)
-            .child(basics)
+            .child(icon)
+            .child(labels)
+            .child(kbd)
     }
 }

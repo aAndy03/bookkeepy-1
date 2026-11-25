@@ -289,14 +289,18 @@ pub mod controls {
         r
     }
 
-    /// A kbd key chip on the design surface: `control` fill rx4 key on the page bg
-    /// (ATOMS · 01: kbd 45x18 rx4 #1c1c1c, not gpui's sunken muted chip).
+    /// A kbd keycap on the design surface: `control` fill (#1c1c1c) rx4 with a 2px
+    /// `border-strong` base (the "raised key with a 2px base", ATOMS · 01 kbd:
+    /// 44x16.5, padding 0 5px, ink `secondary-foreground` 11px/500).
     pub fn kbd(k: gpui_kit::component::kbd::Kbd, mode: Mode) -> gpui_kit::component::kbd::Kbd {
-        let mut k = k.border_0().rounded(px(radius_tier("sm")));
+        let mut k = k.rounded(px(radius_tier("sm"))).border_b(px(2.)).px(px(5.));
         if let Some(bg) = role_hsla(mode, "control") {
             k = k.bg(bg);
         }
-        if let Some(fg) = role_hsla(mode, "icon") {
+        if let Some(border) = role_hsla(mode, "border-strong") {
+            k = k.border_color(border);
+        }
+        if let Some(fg) = role_hsla(mode, "secondary-foreground") {
             k = k.text_color(fg);
         }
         k

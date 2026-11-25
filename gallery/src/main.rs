@@ -52,15 +52,17 @@ fn main() {
             bind_shortcuts(cx);
             // `--section <id>` deep-links a gallery section (used by the screenshot
             // harness in references/ tooling; unknown ids fall back to the first).
-            let section = std::env::args()
-                .skip(1)
-                .zip(std::env::args().skip(2))
-                .find(|(a, _)| a == "--section")
-                .map(|(_, v)| v);
+            let args: Vec<String> = std::env::args().skip(1).collect();
+            let arg_val = |flag: &str| args.windows(2).find(|w| w[0] == flag).map(|w| w[1].clone());
+            let section = arg_val("--section");
+            // `--height <px>` lets the screenshot harness capture a whole section.
+            let height = arg_val("--height")
+                .and_then(|v| v.parse::<f32>().ok())
+                .unwrap_or(900.);
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(gpui_kit::Bounds {
                     origin: gpui_kit::point(gpui_kit::px(160.), gpui_kit::px(120.)),
-                    size: gpui_kit::size(gpui_kit::px(1440.), gpui_kit::px(900.)),
+                    size: gpui_kit::size(gpui_kit::px(1440.), gpui_kit::px(height)),
                 })),
                 titlebar: Some(gpui_kit::TitlebarOptions {
                     title: Some("Bookkeepy gallery".into()),
