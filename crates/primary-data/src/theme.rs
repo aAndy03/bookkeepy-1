@@ -651,6 +651,7 @@ const REQUIRED_ROLES: &[&str] = &[
     "sidebar-selected",
     "primary",
     "primary-hover",
+    "primary-active",
     // icons
     "icon",
     "icon-muted",

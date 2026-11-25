@@ -14,6 +14,8 @@ use gpui_kit::{Context, Window};
 
 use crate::app::Gallery;
 
+mod atoms_button;
+
 /// Top-level sidebar group — mirrors the design language's sheet families
 /// (references/designlanguage): ATOMS · 01–04, MOLECULES · 01–03, ORGANISMS · 01–02,
 /// CHARTS, TEMPLATES, SYSTEM, TOKENS, and bookkeepy's custom COMPONENTS.
@@ -80,9 +82,9 @@ macro_rules! section {
     };
 }
 
-/// The gallery's section list — EMPTY while the sheet-based gallery is being rebuilt.
+/// The gallery's section list — rebuilt sheet-by-sheet from the design language.
 /// Add sections here; `govern ui` validates the ids against the component inventory.
-pub const SECTIONS: &[SectionSpec] = &[];
+pub const SECTIONS: &[SectionSpec] = &[section!(atoms_button, "atoms-button", Atoms)];
 
 /// `Layer::sections` in registry order (sidebar groups).
 pub fn sections_by_layer() -> Vec<(Layer, Vec<&'static SectionSpec>)> {

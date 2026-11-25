@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! `BookkeepyAssets` — the app's asset source (RULE-UI-005, DESIGN-ASSETS): serves the
-//! design language's **Phosphor duotone** glyphs (references/phosphor, MIT, catalog.yaml)
-//! at gpui-kit's lucide icon paths, so every `IconName::…` call site renders the designed
-//! duotone glyph with no API churn. Paths with no Phosphor mapping fall through to the
-//! default gpui-kit lucide set, so nothing renders empty.
+//! design language's **Phosphor regular** glyphs (references/phosphor, MIT, catalog.yaml;
+//! TOKENS §08: regular at rest, duotone on interaction) at gpui-kit's lucide icon paths,
+//! so every `IconName::…` call site renders the designed glyph with no API churn. Paths
+//! with no Phosphor mapping fall through to the default gpui-kit lucide set, so nothing
+//! renders empty. (Per-state regular→duotone swap needs a component seam; until then the
+//! rest weight is the designed one.)
 
 use std::borrow::Cow;
 
@@ -75,87 +77,87 @@ fn phosphor_bytes(path: &str) -> Option<&'static [u8]> {
     Some(
         match svg {
             "arrow-clockwise" => {
-                include_str!("../../../references/phosphor/duotone/arrow-clockwise.svg")
+                include_str!("../../../references/phosphor/regular/arrow-clockwise.svg")
             }
             "arrow-counter-clockwise" => {
-                include_str!("../../../references/phosphor/duotone/arrow-counter-clockwise.svg")
+                include_str!("../../../references/phosphor/regular/arrow-counter-clockwise.svg")
             }
             "arrow-square-out" => {
-                include_str!("../../../references/phosphor/duotone/arrow-square-out.svg")
+                include_str!("../../../references/phosphor/regular/arrow-square-out.svg")
             }
             "arrows-clockwise" => {
-                include_str!("../../../references/phosphor/duotone/arrows-clockwise.svg")
+                include_str!("../../../references/phosphor/regular/arrows-clockwise.svg")
             }
-            "arrows-out" => include_str!("../../../references/phosphor/duotone/arrows-out.svg"),
-            "bank" => include_str!("../../../references/phosphor/duotone/bank.svg"),
-            "bell" => include_str!("../../../references/phosphor/duotone/bell.svg"),
+            "arrows-out" => include_str!("../../../references/phosphor/regular/arrows-out.svg"),
+            "bank" => include_str!("../../../references/phosphor/regular/bank.svg"),
+            "bell" => include_str!("../../../references/phosphor/regular/bell.svg"),
             "calendar-blank" => {
-                include_str!("../../../references/phosphor/duotone/calendar-blank.svg")
+                include_str!("../../../references/phosphor/regular/calendar-blank.svg")
             }
-            "caret-down" => include_str!("../../../references/phosphor/duotone/caret-down.svg"),
-            "caret-right" => include_str!("../../../references/phosphor/duotone/caret-right.svg"),
-            "caret-up" => include_str!("../../../references/phosphor/duotone/caret-up.svg"),
+            "caret-down" => include_str!("../../../references/phosphor/regular/caret-down.svg"),
+            "caret-right" => include_str!("../../../references/phosphor/regular/caret-right.svg"),
+            "caret-up" => include_str!("../../../references/phosphor/regular/caret-up.svg"),
             "caret-up-down" => {
-                include_str!("../../../references/phosphor/duotone/caret-up-down.svg")
+                include_str!("../../../references/phosphor/regular/caret-up-down.svg")
             }
             "chart-line-up" => {
-                include_str!("../../../references/phosphor/duotone/chart-line-up.svg")
+                include_str!("../../../references/phosphor/regular/chart-line-up.svg")
             }
             "chart-pie-slice" => {
-                include_str!("../../../references/phosphor/duotone/chart-pie-slice.svg")
+                include_str!("../../../references/phosphor/regular/chart-pie-slice.svg")
             }
-            "check" => include_str!("../../../references/phosphor/duotone/check.svg"),
-            "check-circle" => include_str!("../../../references/phosphor/duotone/check-circle.svg"),
+            "check" => include_str!("../../../references/phosphor/regular/check.svg"),
+            "check-circle" => include_str!("../../../references/phosphor/regular/check-circle.svg"),
             "clock-counter-clockwise" => {
-                include_str!("../../../references/phosphor/duotone/clock-counter-clockwise.svg")
+                include_str!("../../../references/phosphor/regular/clock-counter-clockwise.svg")
             }
-            "cloud-slash" => include_str!("../../../references/phosphor/duotone/cloud-slash.svg"),
-            "copy" => include_str!("../../../references/phosphor/duotone/copy.svg"),
+            "cloud-slash" => include_str!("../../../references/phosphor/regular/cloud-slash.svg"),
+            "copy" => include_str!("../../../references/phosphor/regular/copy.svg"),
             "currency-circle-dollar" => {
-                include_str!("../../../references/phosphor/duotone/currency-circle-dollar.svg")
+                include_str!("../../../references/phosphor/regular/currency-circle-dollar.svg")
             }
-            "download" => include_str!("../../../references/phosphor/duotone/download.svg"),
-            "dots-three" => include_str!("../../../references/phosphor/duotone/dots-three.svg"),
-            "eye" => include_str!("../../../references/phosphor/duotone/eye.svg"),
-            "eye-closed" => include_str!("../../../references/phosphor/duotone/eye-closed.svg"),
-            "file" => include_str!("../../../references/phosphor/duotone/file.svg"),
-            "file-text" => include_str!("../../../references/phosphor/duotone/file-text.svg"),
-            "funnel" => include_str!("../../../references/phosphor/duotone/funnel.svg"),
-            "gear-six" => include_str!("../../../references/phosphor/duotone/gear-six.svg"),
-            "house" => include_str!("../../../references/phosphor/duotone/house.svg"),
-            "hard-drive" => include_str!("../../../references/phosphor/duotone/hard-drive.svg"),
-            "heart" => include_str!("../../../references/phosphor/duotone/heart.svg"),
+            "download" => include_str!("../../../references/phosphor/regular/download.svg"),
+            "dots-three" => include_str!("../../../references/phosphor/regular/dots-three.svg"),
+            "eye" => include_str!("../../../references/phosphor/regular/eye.svg"),
+            "eye-closed" => include_str!("../../../references/phosphor/regular/eye-closed.svg"),
+            "file" => include_str!("../../../references/phosphor/regular/file.svg"),
+            "file-text" => include_str!("../../../references/phosphor/regular/file-text.svg"),
+            "funnel" => include_str!("../../../references/phosphor/regular/funnel.svg"),
+            "gear-six" => include_str!("../../../references/phosphor/regular/gear-six.svg"),
+            "house" => include_str!("../../../references/phosphor/regular/house.svg"),
+            "hard-drive" => include_str!("../../../references/phosphor/regular/hard-drive.svg"),
+            "heart" => include_str!("../../../references/phosphor/regular/heart.svg"),
             "magnifying-glass" => {
-                include_str!("../../../references/phosphor/duotone/magnifying-glass.svg")
+                include_str!("../../../references/phosphor/regular/magnifying-glass.svg")
             }
-            "minus" => include_str!("../../../references/phosphor/duotone/minus.svg"),
-            "moon" => include_str!("../../../references/phosphor/duotone/moon.svg"),
-            "note" => include_str!("../../../references/phosphor/duotone/note.svg"),
-            "palette" => include_str!("../../../references/phosphor/duotone/palette.svg"),
-            "pencil" => include_str!("../../../references/phosphor/duotone/pencil.svg"),
-            "piggy-bank" => include_str!("../../../references/phosphor/duotone/piggy-bank.svg"),
-            "plus" => include_str!("../../../references/phosphor/duotone/plus.svg"),
-            "question" => include_str!("../../../references/phosphor/duotone/question.svg"),
-            "receipt" => include_str!("../../../references/phosphor/duotone/receipt.svg"),
-            "repeat" => include_str!("../../../references/phosphor/duotone/repeat.svg"),
+            "minus" => include_str!("../../../references/phosphor/regular/minus.svg"),
+            "moon" => include_str!("../../../references/phosphor/regular/moon.svg"),
+            "note" => include_str!("../../../references/phosphor/regular/note.svg"),
+            "palette" => include_str!("../../../references/phosphor/regular/palette.svg"),
+            "pencil" => include_str!("../../../references/phosphor/regular/pencil.svg"),
+            "piggy-bank" => include_str!("../../../references/phosphor/regular/piggy-bank.svg"),
+            "plus" => include_str!("../../../references/phosphor/regular/plus.svg"),
+            "question" => include_str!("../../../references/phosphor/regular/question.svg"),
+            "receipt" => include_str!("../../../references/phosphor/regular/receipt.svg"),
+            "repeat" => include_str!("../../../references/phosphor/regular/repeat.svg"),
             "sidebar-simple" => {
-                include_str!("../../../references/phosphor/duotone/sidebar-simple.svg")
+                include_str!("../../../references/phosphor/regular/sidebar-simple.svg")
             }
-            "spinner-gap" => include_str!("../../../references/phosphor/duotone/spinner-gap.svg"),
-            "square" => include_str!("../../../references/phosphor/duotone/square.svg"),
-            "squares-four" => include_str!("../../../references/phosphor/duotone/squares-four.svg"),
-            "star" => include_str!("../../../references/phosphor/duotone/star.svg"),
-            "sun" => include_str!("../../../references/phosphor/duotone/sun.svg"),
-            "tag" => include_str!("../../../references/phosphor/duotone/tag.svg"),
-            "trash" => include_str!("../../../references/phosphor/duotone/trash.svg"),
-            "tray" => include_str!("../../../references/phosphor/duotone/tray.svg"),
-            "user" => include_str!("../../../references/phosphor/duotone/user.svg"),
-            "users" => include_str!("../../../references/phosphor/duotone/users.svg"),
-            "wallet" => include_str!("../../../references/phosphor/duotone/wallet.svg"),
+            "spinner-gap" => include_str!("../../../references/phosphor/regular/spinner-gap.svg"),
+            "square" => include_str!("../../../references/phosphor/regular/square.svg"),
+            "squares-four" => include_str!("../../../references/phosphor/regular/squares-four.svg"),
+            "star" => include_str!("../../../references/phosphor/regular/star.svg"),
+            "sun" => include_str!("../../../references/phosphor/regular/sun.svg"),
+            "tag" => include_str!("../../../references/phosphor/regular/tag.svg"),
+            "trash" => include_str!("../../../references/phosphor/regular/trash.svg"),
+            "tray" => include_str!("../../../references/phosphor/regular/tray.svg"),
+            "user" => include_str!("../../../references/phosphor/regular/user.svg"),
+            "users" => include_str!("../../../references/phosphor/regular/users.svg"),
+            "wallet" => include_str!("../../../references/phosphor/regular/wallet.svg"),
             "warning-circle" => {
-                include_str!("../../../references/phosphor/duotone/warning-circle.svg")
+                include_str!("../../../references/phosphor/regular/warning-circle.svg")
             }
-            "x" => include_str!("../../../references/phosphor/duotone/x.svg"),
+            "x" => include_str!("../../../references/phosphor/regular/x.svg"),
             _ => unreachable!("phosphor map entry without embedded svg"),
         }
         .as_bytes(),
@@ -253,7 +255,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mapped_paths_serve_phosphor_duotone() {
+    fn mapped_paths_serve_phosphor_regular() {
         for path in MAPPED {
             let bytes = BookkeepyAssets.load(path).ok().flatten();
             let Some(bytes) = bytes else {
@@ -262,7 +264,7 @@ mod tests {
             let text = std::str::from_utf8(&bytes).unwrap_or("");
             assert!(
                 text.contains("currentColor"),
-                "{path} must be a themable duotone svg"
+                "{path} must be a themable regular svg"
             );
         }
     }

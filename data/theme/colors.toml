@@ -147,7 +147,8 @@ ghost-active      = "$white-a8"
 sidebar-hover     = "$white-a4"
 sidebar-selected  = "$white-a8"     # active sidebar nav plate
 primary           = "$neutral-100"  # the inverted primary control — light fill, dark ink
-primary-hover     = "$neutral-0"    # highest state is the brightest
+primary-hover     = "$neutral-0"    # hover: highest state is the brightest
+primary-active    = "$neutral-200"  # pressed/selected: steps back down (#D1D1D1)
 
 [theme.dark.icons]
 icon           = "$neutral-200"     # default body/label ink in controls
@@ -260,6 +261,7 @@ sidebar-hover     = "#0000000A"
 sidebar-selected  = "#00000014"
 primary           = "#111111"   # inverted primary on light: dark fill
 primary-hover     = "#0A0A0A"
+primary-active    = "#2E2E2E"   # pressed/selected mirror of neutral-200
 
 [theme.light.icons]
 icon           = "#2E2E2E"

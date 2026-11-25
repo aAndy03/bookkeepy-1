@@ -212,16 +212,17 @@ pub mod display {
 pub mod controls {
     use super::*;
 
-    /// The design language's control-size scale (ATOMS · 01 size chips).
+    /// The design language's control-size scale (ATOMS · 01 size chips:
+    /// xsmall 20 · small 24 · medium 32 · large 40, radius 6/6/6/8).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum ControlSize {
-        /// 20px — chips and micro controls (radius tier `sm`).
+        /// 20px — chips and micro controls (radius `md` tier = 6).
         XSmall,
-        /// 24px — dense controls (radius tier `md`).
+        /// 24px — dense controls (radius `md` tier = 6).
         Small,
-        /// 32px — the standard control (radius tier `md`).
+        /// 32px — the standard control (radius `md` tier = 6).
         Medium,
-        /// 40px — large controls (radius tier `lg`).
+        /// 40px — large controls (radius `lg` tier = 8).
         Large,
     }
 
@@ -236,10 +237,10 @@ pub mod controls {
             }
         }
 
-        /// Corner radius on the scale: the radius tiers (sm/md/md/lg).
+        /// Corner radius on the scale: 6/6/6/8 (radius tiers md/md/md/lg).
         pub fn radius(self) -> u32 {
             match self {
-                Self::XSmall => radius_tier("sm") as u32,
+                Self::XSmall => radius_tier("md") as u32,
                 Self::Small => radius_tier("md") as u32,
                 Self::Medium => radius_tier("md") as u32,
                 Self::Large => radius_tier("lg") as u32,
@@ -441,9 +442,9 @@ mod tests {
 
     #[test]
     fn control_scale_matches_the_design_sheets() {
-        // ATOMS · 01 size chips: 20/24/32/40 with rx 4/6/6/8.
+        // ATOMS · 01 size chips: 20/24/32/40 with rx 6/6/6/8.
         let ladder = [
-            (ControlSize::XSmall, 20, 4),
+            (ControlSize::XSmall, 20, 6),
             (ControlSize::Small, 24, 6),
             (ControlSize::Medium, 32, 6),
             (ControlSize::Large, 40, 8),

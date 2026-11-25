@@ -81,8 +81,8 @@ id = "button"
 title = "Button"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/button/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
 
 [[component]]
 id = "calendar"
@@ -265,8 +265,8 @@ id = "icon"
 title = "Icon"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/icon/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
 
 [[component]]
 id = "image"
@@ -297,16 +297,16 @@ id = "kbd"
 title = "Kbd"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/kbd/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
 
 [[component]]
 id = "label"
 title = "Label"
 section = "atoms-button"
 docs = "https://gpui-kit.com/component/label/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
 
 [[component]]
 id = "list"

@@ -105,7 +105,9 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // The primary button INVERTS — the only button that does (ATOMS · 01 primary row).
     config.colors.button_primary = role("primary");
     config.colors.button_primary_hover = role("primary-hover");
-    config.colors.button_primary_active = role("primary-hover");
+    // Pressed/selected steps back down (ATOMS · 01 matrix: rest #EDEDED → hover #FFFFFF
+    // → pressed/selected #D1D1D1), with the focus ring on `ring`.
+    config.colors.button_primary_active = role("primary-active");
     config.colors.button_primary_foreground = role("primary-foreground");
     config.colors.muted = role("surface-raised");
     config.colors.muted_foreground = role("muted-foreground");
@@ -143,10 +145,11 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.button_info_hover = role("info");
     config.colors.button_info_active = role("info");
     config.colors.button_info_foreground = prim("cyan-300");
-    // Links are the `link` role (white on dark) — never accent-colored (TOKENS §02).
-    config.colors.link = role("link");
+    // Links (ATOMS · 01): rest = underlined secondary text, hover rises to the `link`
+    // role (white on dark) with a duotone glyph, pressed = muted. Never accent-colored.
+    config.colors.link = role("secondary-foreground");
     config.colors.link_hover = role("link");
-    config.colors.link_active = role("link");
+    config.colors.link_active = role("muted-foreground");
     // Chart palette — the sheet's data series (data-1..5 on the first five seats).
     config.colors.chart_1 = role("data-1");
     config.colors.chart_2 = role("data-2");
