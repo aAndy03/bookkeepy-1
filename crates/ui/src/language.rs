@@ -237,13 +237,25 @@ pub mod controls {
             }
         }
 
-        /// Corner radius on the scale: 6/6/6/8 (radius tiers md/md/md/lg).
+        /// Corner radius on the scale as drawn: 20px → **4** (tier sm), 24/32 → 6 (md),
+        /// 40 → 8 (lg).
         pub fn radius(self) -> u32 {
             match self {
-                Self::XSmall => radius_tier("md") as u32,
+                Self::XSmall => radius_tier("sm") as u32,
                 Self::Small => radius_tier("md") as u32,
                 Self::Medium => radius_tier("md") as u32,
                 Self::Large => radius_tier("lg") as u32,
+            }
+        }
+
+        /// Horizontal padding on the scale as drawn: 20 → 6, 24 → 8, 32 → 12, 40 → 16
+        /// (TOKENS §04 `inset-control` ladder; gpui-kit's own h_*/px_* steps differ).
+        pub fn h_padding(self) -> u32 {
+            match self {
+                Self::XSmall => space("space-1.5"),
+                Self::Small => space("space-2"),
+                Self::Medium => space("space-3"),
+                Self::Large => space("space-4"),
             }
         }
 
@@ -261,9 +273,24 @@ pub mod controls {
         }
     }
 
-    /// Size a [`Button`] on the design control-size scale — exact height and radius
-    /// stay on the scale even where gpui's own sizes stop at 32px (its `large`).
+    /// Size a [`Button`] on the design control-size scale — height, radius AND horizontal
+    /// padding stay on the sheet's ladder even where gpui's own sizes differ (its
+    /// `large` is 32px, the sheet's large is 40px). The label weight pins to 500 —
+    /// every button label in ATOMS · 01 is drawn medium (gpui leaves it at the theme
+    /// default 400; the component never sets a weight on the label, so the instance
+    /// refinement cascades into it).
     pub fn button_size(button: Button, size: ControlSize) -> Button {
+        button
+            .with_size(Size::Size(px(size.height() as f32)))
+            .rounded(ButtonRounded::Size(px(size.radius() as f32)))
+            .px(px(size.h_padding() as f32))
+            .font_weight(gpui_kit::FontWeight::MEDIUM)
+    }
+
+    /// Size an icon-ONLY [`Button`] on the scale — a square (height = width), no
+    /// horizontal padding (the padded branch of gpui's layout only applies to labeled
+    /// buttons, and an instance `px()` would break the square).
+    pub fn icon_button_size(button: Button, size: ControlSize) -> Button {
         button
             .with_size(Size::Size(px(size.height() as f32)))
             .rounded(ButtonRounded::Size(px(size.radius() as f32)))
@@ -355,13 +382,16 @@ pub mod controls {
 /// weight) — each is a thin composition over the styled component + tokens, so there is
 /// exactly one place to change the look.
 pub mod atoms {
+    use super::controls::ControlSize;
     use super::{Mode, role_hsla};
     use bookkeepy_primary_data::theme::style;
     use gpui_kit::assets::IconName;
     use gpui_kit::base::h_flex;
-    use gpui_kit::component::button::{Button, ButtonVariants as _};
+    use gpui_kit::component::button::{Button, ButtonRounded, ButtonVariant, ButtonVariants as _};
     use gpui_kit::component::label::Label;
+    use gpui_kit::component::spinner::Spinner;
     use gpui_kit::component::{Icon, Sizable as _, Size};
+    use gpui_kit::prelude::FluentBuilder as _;
     use gpui_kit::{
         Div, ElementId, FontWeight, HighlightStyle, ParentElement as _, SharedString, Styled as _,
         StyledText, div, px,
@@ -510,8 +540,81 @@ pub mod atoms {
 
     /// A button glyph sized for its control (ATOMS · 01: icon ≈ 44% of control height —
     /// 20→12, 24→14, 32→14, 40→16). Pass to `Button::icon(...)`.
-    pub fn button_icon(name: IconName, size: super::controls::ControlSize) -> Icon {
+    pub fn button_icon(name: IconName, size: ControlSize) -> Icon {
         icon(name, size.icon_px() as f32)
+    }
+
+    /// The leading glyph of a [`button`]: a Phosphor icon, or the loading spinner.
+    #[derive(Debug, Clone, Copy)]
+    pub enum ButtonGlyph {
+        /// A Phosphor glyph at the control's icon size.
+        Icon(IconName),
+        /// The rotating spinner (the `loading` state's glyph).
+        Spinner,
+    }
+
+    /// Label text metrics per control size, as drawn in ATOMS · 01's sizes row:
+    /// 20px → 11/15 (caption), 24 & 32 → 12/14 (label), 40 → 14/22 (body-lg); all 500.
+    fn label_metrics(size: ControlSize) -> (f32, f32) {
+        match size {
+            ControlSize::XSmall => (11., 15.),
+            ControlSize::Small | ControlSize::Medium => (12., 14.),
+            ControlSize::Large => (14., 22.),
+        }
+    }
+
+    /// A design-language button with EXACT sheet metrics: height/radius/h-padding on
+    /// the control scale, 6px icon↔label gap, glyph at the control's icon size, label
+    /// at the control's type metrics in weight 500.
+    ///
+    /// The icon+label are rendered as the content child (not `.icon()`/`.label()`)
+    /// because gpui-kit 0.11 forces `.icon()` to `0.75 × control height` when the
+    /// button is sized via `Size::Size` — too large vs the drawn 12/14/14/16.
+    pub fn button(
+        id: impl Into<ElementId>,
+        variant: ButtonVariant,
+        glyph: Option<ButtonGlyph>,
+        label: impl Into<SharedString>,
+        size: ControlSize,
+    ) -> Button {
+        let label = label.into();
+        let (lsize, llh) = label_metrics(size);
+        let content = h_flex()
+            .gap(px(super::space("space-1.5") as f32))
+            .items_center()
+            .when_some(glyph, |c, g| match g {
+                ButtonGlyph::Icon(name) => c.child(icon(name, size.icon_px() as f32)),
+                ButtonGlyph::Spinner => {
+                    c.child(Spinner::new().with_size(Size::Size(px(size.icon_px() as f32))))
+                }
+            })
+            .child(
+                div()
+                    .text_size(px(lsize))
+                    .line_height(px(llh))
+                    .font_weight(FontWeight::MEDIUM)
+                    .whitespace_nowrap()
+                    .child(label.clone()),
+            );
+        Button::new(id)
+            .with_variant(variant)
+            .with_size(Size::Size(px(size.height() as f32)))
+            .rounded(ButtonRounded::Size(px(size.radius() as f32)))
+            .px(px(size.h_padding() as f32))
+            .accessibility_label(label)
+            .child(content)
+    }
+
+    /// An icon-ONLY button on the scale: a square (height = width), glyph centered at
+    /// the control's icon size (ATOMS · 01 icon-button: 16px glyph in the 32px square).
+    pub fn icon_button(id: impl Into<ElementId>, glyph: IconName, size: ControlSize) -> Button {
+        Button::new(id)
+            .ghost()
+            .with_size(Size::Size(px(size.height() as f32)))
+            .rounded(ButtonRounded::Size(px(size.radius() as f32)))
+            .w(px(size.height() as f32))
+            .px_0()
+            .child(icon(glyph, size.icon_px() as f32))
     }
 
     /// The same glyph in the **duotone** weight (interaction state) — served by
@@ -639,7 +742,7 @@ pub mod feedback {
 }
 
 pub use actions::solid_danger;
-pub use controls::{ControlSize, button_size, color_picker_size};
+pub use controls::{ControlSize, button_size, color_picker_size, icon_button_size};
 
 #[cfg(test)]
 mod tests {
@@ -649,16 +752,19 @@ mod tests {
 
     #[test]
     fn control_scale_matches_the_design_sheets() {
-        // ATOMS · 01 size chips: 20/24/32/40 with rx 6/6/6/8.
+        // ATOMS · 01 sizes row as drawn: 20/24/32/40 height, rx 4/6/6/8,
+        // h-padding 6/8/12/16, glyph 12/14/14/16.
         let ladder = [
-            (ControlSize::XSmall, 20, 6),
-            (ControlSize::Small, 24, 6),
-            (ControlSize::Medium, 32, 6),
-            (ControlSize::Large, 40, 8),
+            (ControlSize::XSmall, 20, 4, 6, 12),
+            (ControlSize::Small, 24, 6, 8, 14),
+            (ControlSize::Medium, 32, 6, 12, 14),
+            (ControlSize::Large, 40, 8, 16, 16),
         ];
-        for (size, height, radius) in ladder {
+        for (size, height, radius, h_pad, icon) in ladder {
             assert_eq!(size.height(), height, "{size:?} height");
             assert_eq!(size.radius(), radius, "{size:?} radius");
+            assert_eq!(size.h_padding(), h_pad, "{size:?} h-padding");
+            assert_eq!(size.icon_px(), icon, "{size:?} icon");
         }
     }
 
