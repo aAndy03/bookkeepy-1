@@ -282,6 +282,10 @@ pub mod controls {
     pub fn button_size(button: Button, size: ControlSize) -> Button {
         button
             .with_size(Size::Size(px(size.height() as f32)))
+            // gpui-kit maps Size::Size on a LABELED button to horizontal padding only
+            // (px(size*0.2)) and never sets the height — pin it explicitly so the
+            // control keeps its 20/24/32/40 ladder instead of collapsing to text height
+            .h(px(size.height() as f32))
             .rounded(ButtonRounded::Size(px(size.radius() as f32)))
             .px(px(size.h_padding() as f32))
             .font_weight(gpui_kit::FontWeight::MEDIUM)
@@ -599,6 +603,8 @@ pub mod atoms {
         Button::new(id)
             .with_variant(variant)
             .with_size(Size::Size(px(size.height() as f32)))
+            // labeled Size::Size buttons get no fixed height from gpui-kit — pin it
+            .h(px(size.height() as f32))
             .rounded(ButtonRounded::Size(px(size.radius() as f32)))
             .px(px(size.h_padding() as f32))
             .accessibility_label(label)
@@ -611,6 +617,7 @@ pub mod atoms {
         Button::new(id)
             .ghost()
             .with_size(Size::Size(px(size.height() as f32)))
+            .h(px(size.height() as f32))
             .rounded(ButtonRounded::Size(px(size.radius() as f32)))
             .w(px(size.height() as f32))
             .px_0()
