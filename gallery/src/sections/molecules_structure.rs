@@ -27,7 +27,7 @@ use gpui_kit::component::{Icon, IconName, Sizable as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::{
     AnyView, AppContext as _, Context, FocusHandle, IntoElement, ParentElement as _, Styled as _,
-    Window, div,
+    Window, div, px,
 };
 
 use crate::app::{Gallery, tr};
@@ -161,6 +161,9 @@ impl gpui_kit::Render for Section {
                             .child(
                                 TabBar::new("structure-tabs")
                                     .segmented()
+                                    // MOL·01 tabs: the segmented bar is an rx6 #1c1c1c
+                                    // plate (not gpui's rx20), active chip white@4%.
+                                    .rounded(px(bookkeepy_primary_data::theme::radii().item as f32))
                                     .selected_index(self.tab)
                                     .on_click(cx.listener(
                                         |this, index: &usize, _window, cx| {
@@ -303,6 +306,9 @@ impl gpui_kit::Render for Section {
                         cx,
                         "gallery.molecules.structure.empty",
                         Empty::new()
+                            // MOL·01 empty: borderless rx16 panel (no dashed outline).
+                            .border_0()
+                            .rounded(px(bookkeepy_primary_data::theme::radii().overlay as f32))
                             .header(
                                 EmptyHeader::new()
                                     .media(
@@ -364,6 +370,39 @@ impl gpui_kit::Render for Section {
                                 )
                                 .banner(),
                                 bookkeepy_ui::api::language::feedback::AlertTone::Warning,
+                                mode,
+                            ),
+                        )
+                        .child(
+                            bookkeepy_ui::api::language::feedback::alert(
+                                Alert::success(
+                                    "structure-alert-success",
+                                    tr(cx, "gallery.molecules.structure.alert.success_message"),
+                                )
+                                .title(tr(cx, "gallery.molecules.structure.alert.success_title")),
+                                bookkeepy_ui::api::language::feedback::AlertTone::Success,
+                                mode,
+                            ),
+                        )
+                        .child(
+                            bookkeepy_ui::api::language::feedback::alert(
+                                Alert::error(
+                                    "structure-alert-danger",
+                                    tr(cx, "gallery.molecules.structure.alert.danger_message"),
+                                )
+                                .title(tr(cx, "gallery.molecules.structure.alert.danger_title")),
+                                bookkeepy_ui::api::language::feedback::AlertTone::Danger,
+                                mode,
+                            ),
+                        )
+                        .child(
+                            bookkeepy_ui::api::language::feedback::alert(
+                                Alert::new(
+                                    "structure-alert-accent",
+                                    tr(cx, "gallery.molecules.structure.alert.accent_message"),
+                                )
+                                .title(tr(cx, "gallery.molecules.structure.alert.accent_title")),
+                                bookkeepy_ui::api::language::feedback::AlertTone::Accent,
                                 mode,
                             ),
                         )

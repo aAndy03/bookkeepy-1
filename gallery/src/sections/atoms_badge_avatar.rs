@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Atoms — display primitives: Badge, Tag, Avatar, Marker, Image (design sheet:
-//! "ATOMS · 02 badge, tag, avatar, checkbox, radio, switch, toggle, slider" — the badge/
-//! tag/avatar family; the choice controls live in `atoms_choice`).
+//! Atoms — display primitives: Badge, Tag, Avatar (design sheet:
+//! "ATOMS · 02 badge, tag, avatar, checkbox, radio, switch, toggle, slider" — the
+//! badge/tag/avatar family; Marker and Image live in the ATOMS · 04 section
+//! `atoms-media`, Rating in `atoms-media` too, choice controls in `atoms_choice`).
 
 use gpui_kit::component::avatar::{Avatar, AvatarGroup};
 use gpui_kit::component::badge::Badge;
-use gpui_kit::component::marker::{Marker, MarkerContent, MarkerIcon};
 use gpui_kit::component::tag::Tag;
 use gpui_kit::component::{ActiveTheme as _, Icon, IconName};
-use gpui_kit::{
-    AnyView, AppContext as _, Context, InteractiveElement as _, IntoElement, ObjectFit,
-    ParentElement as _, Styled as _, StyledImage as _, Window, img,
-};
+use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, ParentElement as _, Window};
 
 use crate::app::{Gallery, tr};
 use crate::sections::layout::{demo_card, demo_row, section_page};
@@ -127,30 +124,6 @@ impl gpui_kit::Render for Section {
                             .into_any_element(),
                     ])
                     .into_any_element(),
-                )
-                .into_any_element(),
-                demo_card(
-                    cx,
-                    "gallery.atoms.display.marker",
-                    Marker::new()
-                        .icon(MarkerIcon::new().child(Icon::new(IconName::CircleCheck)))
-                        .content(
-                            MarkerContent::new()
-                                .text(tr(cx, "gallery.atoms.display.marker_online")),
-                        )
-                        .into_any_element(),
-                )
-                .into_any_element(),
-                demo_card(
-                    cx,
-                    "gallery.atoms.display.image",
-                    // Asset-backed image (a shipped icon; remote URLs stay offline-free —
-                    // the app never loads remote content, doc 08).
-                    img("icons/inbox.svg")
-                        .id("image-demo")
-                        .size_16()
-                        .object_fit(ObjectFit::Contain)
-                        .into_any_element(),
                 )
                 .into_any_element(),
             ],

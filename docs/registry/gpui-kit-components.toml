@@ -44,7 +44,7 @@ status = "covered"
 [[component]]
 id = "attachment"
 title = "Attachment"
-section = "molecules-data-list"
+section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/attachment/"
 status = "covered"
 
@@ -79,7 +79,7 @@ status = "covered"
 [[component]]
 id = "calendar"
 title = "Calendar"
-section = "molecules-pickers"
+section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/calendar/"
 status = "covered"
 
@@ -121,7 +121,7 @@ status = "covered"
 [[component]]
 id = "color-picker"
 title = "ColorPicker"
-section = "molecules-pickers"
+section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/color-picker/"
 status = "covered"
 
@@ -233,14 +233,14 @@ status = "covered"
 [[component]]
 id = "icon"
 title = "Icon"
-section = "molecules-nav"
+section = "atoms-button"
 docs = "https://gpui-kit.com/component/icon/"
 status = "covered"
 
 [[component]]
 id = "image"
 title = "Image"
-section = "atoms-badge-avatar"
+section = "atoms-media"
 docs = "https://gpui-kit.com/component/image/"
 status = "covered"
 
@@ -261,14 +261,14 @@ status = "covered"
 [[component]]
 id = "kbd"
 title = "Kbd"
-section = "molecules-nav"
+section = "atoms-button"
 docs = "https://gpui-kit.com/component/kbd/"
 status = "covered"
 
 [[component]]
 id = "label"
 title = "Label"
-section = "molecules-nav"
+section = "atoms-button"
 docs = "https://gpui-kit.com/component/label/"
 status = "covered"
 
@@ -282,7 +282,7 @@ status = "covered"
 [[component]]
 id = "marker"
 title = "Marker"
-section = "atoms-badge-avatar"
+section = "atoms-media"
 docs = "https://gpui-kit.com/component/marker/"
 status = "covered"
 
@@ -331,7 +331,7 @@ status = "covered"
 [[component]]
 id = "otp-input"
 title = "OTP Input"
-section = "atoms-input"
+section = "atoms-media"
 docs = "https://gpui-kit.com/component/otp-input/"
 status = "covered"
 
@@ -380,7 +380,7 @@ status = "covered"
 [[component]]
 id = "rating"
 title = "Rating"
-section = "atoms-choice"
+section = "atoms-media"
 docs = "https://gpui-kit.com/component/rating/"
 status = "covered"
 
@@ -534,7 +534,7 @@ note = "Not a section card: exercised by crates/ui/src/theme.rs (data/theme toke
 [[component]]
 id = "time-field"
 title = "TimeField"
-section = "molecules-pickers"
+section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/time-field/"
 status = "covered"
 
@@ -548,7 +548,7 @@ status = "covered"
 [[component]]
 id = "toggle"
 title = "Toggle"
-section = "atoms-button"
+section = "atoms-choice"
 docs = "https://gpui-kit.com/component/toggle/"
 status = "covered"
 

@@ -193,7 +193,8 @@ impl gpui_kit::Render for Section {
     }
 }
 
-/// One dashboard tile: a small themed card with a localized title.
+/// One dashboard tile: the design's board cards are #1c1c1c rx16, borderless
+/// (TEMPLATES · board), on the page background.
 fn grid_tile(cx: &App, title_key: &'static str) -> gpui_kit::AnyElement {
     let theme = cx.theme();
     div()
@@ -202,7 +203,8 @@ fn grid_tile(cx: &App, title_key: &'static str) -> gpui_kit::AnyElement {
         .flex_col()
         .justify_center()
         .p_4()
-        .bg(theme.muted)
+        .bg(theme.group_box)
+        .rounded(px(bookkeepy_primary_data::theme::radii().overlay as f32))
         .child(div().text_sm().child(tr(cx, title_key)))
         .into_any_element()
 }

@@ -59,34 +59,29 @@ struct Candle {
     close: f64,
 }
 
-/// The cost categories of the bar demo.
-const BAR_KEYS: [&str; 4] = [
-    "gallery.viz.bar.rent",
-    "gallery.viz.bar.payroll",
-    "gallery.viz.bar.software",
-    "gallery.viz.bar.marketing",
-];
+/// The months of the bar demo (in/out direction per month, CHARTS bar card).
+const BAR_VALUES: [f64; 6] = [1200., -840., 2400., -1500., 450., -620.];
 
-/// The cost values of the bar demo.
-const BAR_VALUES: [f64; 4] = [1200., 2400., 450., 900.];
-
-/// A bar of the bar demo, carrying its data-palette color (CHARTS sheet: data-1..8
-/// color categories).
+/// A bar of the bar demo: months on the band axis, signed values colored by direction
+/// (money-in = bullish green, money-out = bearish red — CHARTS sheet direction rule).
 struct Bar {
     label: SharedString,
     value: f64,
-    color: Hsla,
 }
 
-/// The shares of the pie demo.
-const PIE_KEYS: [&str; 3] = [
+/// The slices of the pie demo — six shares in the donut legend's data order
+/// (cyan, lime, pink, sand, orange, green).
+const PIE_KEYS: [&str; 6] = [
     "gallery.viz.pie.income",
     "gallery.viz.pie.expenses",
     "gallery.viz.pie.savings",
+    "gallery.viz.pie.rent",
+    "gallery.viz.pie.transport",
+    "gallery.viz.pie.fun",
 ];
 
 /// The share values of the pie demo.
-const PIE_VALUES: [f64; 3] = [5200., 3300., 1900.];
+const PIE_VALUES: [f64; 6] = [5200., 3300., 1900., 1250., 640., 410.];
 
 /// A donut slice, carrying its data-palette color (CHARTS donut legend order).
 struct Slice {
@@ -147,29 +142,28 @@ fn candle_points(cx: &App) -> Vec<Candle> {
         .collect()
 }
 
-/// The bars of the bar demo, colored by the data palette (one color per category).
+/// The bars of the bar demo, one per month (direction shown by sign).
 fn bar_points(cx: &App) -> Vec<Bar> {
-    let palette = [
-        cx.theme().chart_1,
-        cx.theme().chart_2,
-        cx.theme().chart_3,
-        cx.theme().chart_4,
-    ];
-    BAR_KEYS
+    MONTH_KEYS
         .iter()
         .zip(BAR_VALUES)
-        .enumerate()
-        .map(|(i, (key, value))| Bar {
+        .map(|(key, value)| Bar {
             label: tr(cx, key),
             value,
-            color: palette[i % palette.len()],
         })
         .collect()
 }
 
 /// The slices of the pie demo, colored in the donut legend's data order.
 fn pie_points(cx: &App) -> Vec<Slice> {
-    let palette = [cx.theme().chart_1, cx.theme().chart_2, cx.theme().chart_3];
+    let palette = [
+        cx.theme().chart_1,
+        cx.theme().chart_2,
+        cx.theme().chart_3,
+        cx.theme().chart_4,
+        cx.theme().chart_5,
+        cx.theme().chart_bullish,
+    ];
     PIE_KEYS
         .iter()
         .zip(PIE_VALUES)
@@ -332,17 +326,24 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.viz.chart.bar",
-                        chart_frame(
+                        chart_frame({
+                            let (bullish, bearish) =
+                                (cx.theme().chart_bullish, cx.theme().chart_bearish);
                             BarChart::new(bars)
                                 .id("viz-bar-chart")
                                 .band(|d| d.label.clone())
                                 .value(|d| d.value)
                                 .label(|d| format!("{:.0}", d.value))
-                                // CHARTS sheet: one data color per category, 2px bar tips.
-                                .fill(|d, _, _, _| d.color)
+                                // CHARTS bar card: direction colors — in = bullish
+                                // green, out = bearish red; 2px bar tips.
+                                .fill(
+                                    move |d, _, _, _| {
+                                        if d.value >= 0. { bullish } else { bearish }
+                                    },
+                                )
                                 .corner_radii(px(2.))
-                                .grid_dashed(false),
-                        ),
+                                .grid_dashed(false)
+                        }),
                     )
                     .into_any_element(),
                     demo_card(

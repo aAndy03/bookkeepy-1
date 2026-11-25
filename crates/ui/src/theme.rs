@@ -140,7 +140,6 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.title_bar = hex(&t.bg_sheet);
     config.colors.title_bar_border = hex(&t.border_subtle);
     config.colors.status_bar = hex(&t.bg);
-    config.colors.status_bar_border = hex(&t.border);
     config.colors.sidebar = hex(&t.bg);
     config.colors.sidebar_foreground = hex(&t.fg_muted);
     config.colors.sidebar_border = hex(&t.border_heavy);
@@ -163,14 +162,12 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.table_foot = hex(&t.bg_none);
     config.colors.table_foot_foreground = hex(&t.fg_muted);
     config.colors.table_active = hex(&t.bg_row_active);
-    config.colors.table_active_border = hex(&t.border_subtle);
     config.colors.table_hover = hex(&t.bg_row_hover);
     config.colors.table_row_border = hex(&t.border_subtle);
     // Lists: card surface #171717, same row overlays as the table.
     config.colors.list = hex(&t.bg_raised);
     config.colors.list_head = hex(&t.bg_control);
     config.colors.list_active = hex(&t.bg_row_active);
-    config.colors.list_active_border = hex(&t.border_subtle);
     // Row hover is the white @ 4% overlay (menu items use the @8% accent seat).
     config.colors.list_hover = hex(&t.bg_row_hover);
     // Scrollbar: white @ 4% track, white @ 40% thumb (ATOMS · 03 / ORGANISMS · 02).
@@ -196,19 +193,23 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.tab_active_foreground = hex(&t.fg);
     // Charts: gridlines are white @ 8% (CHARTS sheet), series keep the group palette.
     config.colors.chart_grid = hex(&t.bg_nav_active);
-    // Drag/drop + progress: no shadcn blue leaks — accent-colored, and the neutral
-    // progress fill is the inverted neutral.
-    config.colors.drag_border = hex(&t.accent);
+    // Drag/drop + progress: the design's drag outline is the light fg hairline
+    // (ORGANISMS · 02 resizable: #d1d1d1), the drop target keeps the accent well;
+    // the neutral progress fill is the inverted neutral.
+    config.colors.drag_border = hex(&t.fg);
     config.colors.drop_target = hex(&t.accent_well);
     config.colors.progress_bar = hex(&t.bg_invert);
     // The design avoids hard separators: row borders and stripe fills go transparent,
-    // accordion is flat on the base surface.
+    // accordion is flat on the base surface. The SELECTED row keeps the 2px light
+    // indicator (ORGANISMS · 01: selected = white@12% + left accent 2px #d1d1d1).
     config.colors.table_row_border = hex(&t.bg_none);
-    config.colors.list_active_border = hex(&t.bg_none);
-    config.colors.table_active_border = hex(&t.bg_none);
+    config.colors.list_active_border = hex(&t.fg);
+    config.colors.table_active_border = hex(&t.fg);
     config.colors.list_even = hex(&t.bg_none);
     config.colors.accordion = hex(&t.bg);
     config.colors.window_border = hex(&t.border);
+    // Status-bar hairline is the subtle separator (ORGANISMS · 02: #222222).
+    config.colors.status_bar_border = hex(&t.border_subtle);
     Rc::new(config)
 }
 
@@ -224,4 +225,19 @@ pub fn config(mode: Mode) -> Rc<ThemeConfig> {
 pub fn apply(mode: Mode, cx: &mut App) {
     let theme = config(mode);
     Theme::update(cx, |t| t.apply_config(&theme));
+    // The raw-hue slots (icon color roles, rating stars, color-picker swatches) are
+    // private in `ThemeConfig` (serde-only `base.*`); set them on the resolved theme.
+    // Design hues, not tailwind's red-600/green-600/yellow-600.
+    let t = bookkeepy_primary_data::theme::colors(mode);
+    let hsla = |v: &str| gpui_kit::component::theme::try_parse_color(v).unwrap_or_default();
+    Theme::update(cx, |th| {
+        th.red = hsla(&t.danger);
+        th.red_light = hsla(&t.danger_tint);
+        th.green = hsla(&t.success);
+        th.green_light = hsla(&t.success_tint);
+        th.blue = hsla(&t.info);
+        th.blue_light = hsla(&t.info_tint);
+        th.yellow = hsla(&t.warning);
+        th.yellow_light = hsla(&t.warning_tint);
+    });
 }

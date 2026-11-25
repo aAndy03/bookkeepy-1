@@ -125,8 +125,19 @@ impl gpui_kit::Render for Section {
                     demo_card(
                         cx,
                         "gallery.organisms.shell.title_bar.caption",
+                        // ORG·01: the title bar is the flat #1c1c1c sheet panel with a
+                        // bottom hairline — not gpui's 55/45 gradient.
                         TitleBar::new()
                             .max_w(px(360.))
+                            .bg(
+                                bookkeepy_ui::api::language::token_hsla(
+                                    &bookkeepy_primary_data::theme::colors(
+                                        cx.global::<crate::app::Prefs>().mode,
+                                    )
+                                    .bg_sheet,
+                                )
+                                .unwrap_or(theme.title_bar),
+                            )
                             .child(Label::new(tr(cx, "gallery.organisms.shell.title_bar.name")))
                             .child(
                                 Button::new("shell-title-bar-bell")

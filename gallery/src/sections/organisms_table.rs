@@ -189,6 +189,9 @@ impl gpui_kit::Render for Section {
                         .child(
                             DataTable::new(&self.invoices)
                                 .stripe(true)
+                                // ORG·01: the table rides the card — no hard border box.
+                                .bordered(false)
+                                .fixed_cols_border(false)
                                 .accessibility_label(tr(
                                     cx,
                                     "gallery.organisms.table.data_table.a11y",

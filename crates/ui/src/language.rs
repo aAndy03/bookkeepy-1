@@ -26,7 +26,9 @@ use gpui_kit::{Hsla, Styled as _, px};
 
 /// Resolve a mode-specific design-token value into a [`Hsla`]; `None` degrades to the
 /// component's own themed fallback (RULE-DATA-003: corrupted data never panics the UI).
-fn token_hsla(value: &str) -> Option<Hsla> {
+/// Public so gallery call-sites can pin sheet-exact token colors where a component has
+/// no theme seat for them.
+pub fn token_hsla(value: &str) -> Option<Hsla> {
     try_parse_color(value).ok()
 }
 
@@ -93,6 +95,18 @@ pub mod surface {
             g = g.bg(bg);
         }
         g
+    }
+
+    /// A spec/demo panel exactly as the design sheets draw their caption cards:
+    /// `#171717` rx16, borderless (ATOMS/ORGANISMS/CHARTS sheets), distinct from the
+    /// `#1c1c1c` demo cards of TEMPLATES (`card`).
+    pub fn spec_panel(div: Div, mode: Mode) -> Div {
+        let t = colors(mode);
+        let mut div = div.border_0();
+        if let Some(bg) = token_hsla(&t.bg_raised) {
+            div = div.bg(bg);
+        }
+        div.rounded(px(radii().overlay as f32))
     }
 }
 
@@ -210,18 +224,77 @@ pub mod controls {
         picker.with_size(Size::Size(px(size.height() as f32)))
     }
 
-    /// A checkbox on the design geometry — 16x16 rx4 (ATOMS · 02: box 16x16 rx `mini`;
-    /// gpui's default rounds it at the control radius 6). Checked fill/ink ride the
-    /// `primary` seat (inverted neutral).
+    /// A checkbox on the design geometry — 16x16 rx4, rest fill white @ 8% with NO
+    /// border (ATOMS · 02: rest = `#ffffff` fo 0.0784 overlay, not gpui's dark input
+    /// well). Checked fill/ink ride the `primary` seat (inverted neutral).
     pub fn checkbox(
         c: gpui_kit::component::checkbox::Checkbox,
+        mode: Mode,
     ) -> gpui_kit::component::checkbox::Checkbox {
-        c.rounded(px(radii().mini as f32))
+        let t = colors(mode);
+        let mut c = c.rounded(px(radii().mini as f32)).border_0();
+        if let Some(bg) = token_hsla(&t.bg_nav_active) {
+            c = c.bg(bg);
+        }
+        c
     }
 
-    /// A radio on the design geometry — r8 outer (ATOMS · 02: r8 + r3 dot, rx = half).
-    pub fn radio(r: gpui_kit::component::radio::Radio) -> gpui_kit::component::radio::Radio {
-        r.rounded(px(radii().circle as f32))
+    /// A radio on the design geometry — r8 outer, rest fill light (ATOMS · 02: rest
+    /// outer `#ededed`, no dark well), checked = inverted neutral + dot.
+    pub fn radio(
+        r: gpui_kit::component::radio::Radio,
+        mode: Mode,
+    ) -> gpui_kit::component::radio::Radio {
+        let t = colors(mode);
+        let mut r = r.rounded(px(radii().circle as f32)).border_0();
+        if let Some(bg) = token_hsla(&t.bg_invert) {
+            r = r.bg(bg);
+        }
+        r
+    }
+
+    /// A kbd key chip on the design surface: raised `#1c1c1c` rx4 key on the page bg
+    /// (ATOMS · 01: kbd 45x18 rx4 `#1c1c1c`, not gpui's sunken muted chip).
+    pub fn kbd(k: gpui_kit::component::kbd::Kbd, mode: Mode) -> gpui_kit::component::kbd::Kbd {
+        let t = colors(mode);
+        let mut k = k.border_0().rounded(px(radii().mini as f32));
+        if let Some(bg) = token_hsla(&t.bg_control) {
+            k = k.bg(bg);
+        }
+        if let Some(fg) = token_hsla(&t.fg) {
+            k = k.text_color(fg);
+        }
+        k
+    }
+
+    /// A toggle button on the design surface: rest fill white @ 4%, borderless, the
+    /// 120x32 drawn size (ATOMS · 02 toggle: fo 0.0392 rest → fo 0.1216+ active ladder;
+    /// the checked overlay rides the component's own active state).
+    pub fn toggle(
+        t: gpui_kit::component::button::Toggle,
+        mode: Mode,
+    ) -> gpui_kit::component::button::Toggle {
+        let colors = colors(mode);
+        let mut t = t.border_0().min_w(px(120.));
+        if let Some(bg) = token_hsla(&colors.bg_row_hover) {
+            t = t.bg(bg);
+        }
+        t
+    }
+
+    /// A segmented toggle group on the design surface: `#1c1c1c` rx6 container, segments
+    /// white @ 12% rx4 when selected (MOLECULES · 02 toggle group: 198x28 rx6 container,
+    /// 47/55x24 rx4 segments).
+    pub fn toggle_group<G>(g: G, mode: Mode) -> G
+    where
+        G: gpui_kit::Styled,
+    {
+        let t = colors(mode);
+        let mut g = g.border_0().rounded(px(radii().item as f32));
+        if let Some(bg) = token_hsla(&t.bg_control) {
+            g = g.bg(bg);
+        }
+        g
     }
 }
 
@@ -279,6 +352,8 @@ pub mod feedback {
     /// The alert tone, selecting the matching `*_well` token (MOLECULES · 02 alert wells).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum AlertTone {
+        /// `accent_well` + `accent_hover` glyph.
+        Accent,
         /// `info_well`.
         Info,
         /// `success_well`.
@@ -289,17 +364,23 @@ pub mod feedback {
         Danger,
     }
 
-    /// An alert banner on the design surface: well fill, borderless, rx16. The light
-    /// glyph + title ink ride the variant's own theme seats.
+    /// An alert banner on the design surface: well fill, borderless, rx16, with the
+    /// title in body ink and the glyph in the light tint (MOLECULES · 02 alert: title
+    /// `#ededed`/`#d1d1d1`, light icon variant — not the raw hue). gpui's alert bg is a
+    /// 4% hue wash; this pins the drawn well fill per tone.
     pub fn alert(alert: Alert, tone: AlertTone, mode: Mode) -> Alert {
         let t = colors(mode);
         let well = match tone {
+            AlertTone::Accent => &t.accent_well,
             AlertTone::Info => &t.info_well,
             AlertTone::Success => &t.success_well,
             AlertTone::Warning => &t.warning_well,
             AlertTone::Danger => &t.danger_well,
         };
-        let mut alert = alert.border_0().rounded(px(radii().overlay as f32));
+        let mut alert = alert
+            .border_0()
+            .rounded(px(radii().overlay as f32))
+            .text_color(token_hsla(&t.fg).unwrap_or_default());
         if let Some(bg) = token_hsla(well) {
             alert = alert.bg(bg);
         }

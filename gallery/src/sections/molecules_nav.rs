@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Molecules — navigation & conversation surfaces: Label, Icon, Kbd, TextView,
-//! Stepper, Carousel, Bubble, Message, MessageScroller (design sheet:
+//! Molecules — navigation & conversation surfaces: TextView, Stepper, Carousel, Bubble, Message,
+//! MessageScroller (design sheets: ORGANISMS · 01 sidebar/nav, MOLECULES conversation).
 //! "MOLECULES · label, icon, kbd, stepper, carousel, chat bubbles, messages").
 
 use std::rc::Rc;
@@ -10,18 +10,16 @@ use gpui_kit::component::bubble::{Bubble, BubbleGroup, BubbleVariant};
 use gpui_kit::component::carousel::{
     Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselState,
 };
-use gpui_kit::component::kbd::Kbd;
-use gpui_kit::component::label::Label;
 use gpui_kit::component::message::{
     Message, MessageAlignment, MessageContent, MessageFooter, MessageGroup, MessageHeader,
 };
 use gpui_kit::component::message_scroller::{MessageScroller, MessageScrollerState};
 use gpui_kit::component::stepper::{Stepper, StepperItem};
 use gpui_kit::component::text::TextView;
-use gpui_kit::component::{ActiveTheme as _, Icon, IconName, Sizable as _, h_flex};
+use gpui_kit::component::{ActiveTheme as _, IconName, Sizable as _};
 use gpui_kit::{
-    AnyView, App, AppContext as _, Context, InteractiveElement as _, IntoElement, Keystroke,
-    Modifiers, ParentElement as _, Styled as _, Window, div,
+    AnyView, App, AppContext as _, Context, InteractiveElement as _, IntoElement,
+    ParentElement as _, Styled as _, Window, div,
 };
 
 use crate::app::{Gallery, tr};
@@ -72,18 +70,6 @@ fn slide(cx: &App, key: &str) -> impl IntoElement {
         .bg(cx.theme().secondary)
         .text_color(cx.theme().secondary_foreground)
         .child(tr(cx, key))
-}
-
-/// A `Ctrl+<key>` keystroke built without fallible parsing.
-fn ctrl_stroke(key: &str) -> Keystroke {
-    Keystroke {
-        modifiers: Modifiers {
-            control: true,
-            ..Default::default()
-        },
-        key: key.to_string(),
-        key_char: None,
-    }
 }
 
 /// The nav/conversation-molecule section.
@@ -160,72 +146,18 @@ impl gpui_kit::Render for Section {
             cx,
             "gallery.section.molecules-nav",
             [
-                // Static text & iconography primitives.
-                demo_row([
-                    demo_card(
-                        cx,
-                        "gallery.molecules.nav.label",
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap_2()
-                            .child(
-                                Label::new(tr(cx, "gallery.molecules.nav.label.text"))
-                                    .secondary(tr(cx, "gallery.molecules.nav.label.secondary")),
-                            )
-                            .child(
-                                Label::new(tr(cx, "gallery.molecules.nav.label.masked"))
-                                    .masked(true)
-                                    .text_xl(),
-                            )
-                            .into_any_element(),
+                // Static text view primitive (Label, Icon, Kbd live in the ATOMS · 01
+                // section `atoms-button`, mirroring the design sheet).
+                demo_row([demo_card(
+                    cx,
+                    "gallery.molecules.nav.text_view",
+                    TextView::markdown(
+                        "nav-text-view",
+                        tr(cx, "gallery.molecules.nav.text_view.sample"),
                     )
                     .into_any_element(),
-                    demo_card(
-                        cx,
-                        "gallery.molecules.nav.icon",
-                        h_flex()
-                            .items_center()
-                            .gap_4()
-                            .child(Icon::new(IconName::Search).small())
-                            .child(Icon::new(IconName::Heart).text_color(cx.theme().red))
-                            .child(
-                                Icon::new(IconName::Star)
-                                    .large()
-                                    .text_color(cx.theme().yellow),
-                            )
-                            .child(
-                                Icon::new(IconName::CircleCheck)
-                                    .large()
-                                    .text_color(cx.theme().green),
-                            )
-                            .into_any_element(),
-                    )
-                    .into_any_element(),
-                    demo_card(
-                        cx,
-                        "gallery.molecules.nav.kbd",
-                        h_flex()
-                            .items_center()
-                            .gap_3()
-                            .child(tr(cx, "gallery.molecules.nav.kbd.save"))
-                            .child(Kbd::new(ctrl_stroke("s")))
-                            .child(tr(cx, "gallery.molecules.nav.kbd.search"))
-                            .child(Kbd::new(ctrl_stroke("f")))
-                            .into_any_element(),
-                    )
-                    .into_any_element(),
-                    demo_card(
-                        cx,
-                        "gallery.molecules.nav.text_view",
-                        TextView::markdown(
-                            "nav-text-view",
-                            tr(cx, "gallery.molecules.nav.text_view.sample"),
-                        )
-                        .into_any_element(),
-                    )
-                    .into_any_element(),
-                ])
+                )
+                .into_any_element()])
                 .into_any_element(),
                 // Navigation: step flow + carousel.
                 demo_row([

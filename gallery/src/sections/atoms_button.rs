@@ -1,33 +1,47 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Atoms — Button family (Button, ButtonGroup, Toggle, DropdownButton, Link, Clipboard):
-//! our wrappers' gpui-kit sources, showcased with every variant the design language uses
-//! (design sheet: "ATOMS · 01 button, link, icon, label, kbd").
+//! Atoms — ATOMS · 01 sheet: Button family (Button, ButtonGroup, DropdownButton, Link,
+//! Clipboard) plus the Icon, Label and Kbd primitives (moved here from molecules-nav so
+//! the section mirrors the design sheet one-to-one).
 
-use gpui_kit::component::button::{Button, ButtonGroup, ButtonVariants as _, Toggle};
+use gpui_kit::component::button::{Button, ButtonGroup, ButtonVariants as _};
 use gpui_kit::component::clipboard::Clipboard;
+use gpui_kit::component::kbd::Kbd;
+use gpui_kit::component::label::Label;
 use gpui_kit::component::link::Link;
-use gpui_kit::component::{Disableable as _, IconName, Selectable as _};
-use gpui_kit::{AnyView, AppContext as _, Context, IntoElement, ParentElement as _, Window};
+use gpui_kit::component::{
+    ActiveTheme as _, Disableable as _, Icon, IconName, Selectable as _, Sizable as _, h_flex,
+};
+use gpui_kit::{
+    AnyView, AppContext as _, Context, IntoElement, Keystroke, Modifiers, ParentElement as _,
+    Styled as _, Window, div,
+};
 
-use bookkeepy_ui::api::language::{ControlSize, button_size, solid_danger};
+use bookkeepy_ui::api::language::{ControlSize, button_size, controls, solid_danger};
 
 use crate::app::{Gallery, tr};
 use crate::sections::Layer;
 use crate::sections::layout::{demo_card, demo_row, section_page};
 
-/// The Button-family section.
+/// `Ctrl+<key>` keystroke for the kbd demos.
+fn ctrl_stroke(key: &str) -> Keystroke {
+    Keystroke {
+        modifiers: Modifiers {
+            control: true,
+            ..Default::default()
+        },
+        key: key.to_string(),
+        key_char: None,
+    }
+}
+
+/// The Button-family section (ATOMS · 01).
 pub struct Section {
     loading_btn: bool,
-    toggled: bool,
 }
 
 pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
     let _ = window;
-    cx.new(|_| Section {
-        loading_btn: false,
-        toggled: false,
-    })
-    .into()
+    cx.new(|_| Section { loading_btn: false }).into()
 }
 
 impl gpui_kit::Render for Section {
@@ -143,14 +157,6 @@ impl gpui_kit::Render for Section {
                             .ghost()
                             .icon(IconName::Search)
                             .into_any_element(),
-                        Toggle::new("b-toggle")
-                            .label(tr(cx, "gallery.atoms.button.toggle"))
-                            .checked(self.toggled)
-                            .on_click(cx.listener(|this, checked: &bool, _, cx| {
-                                this.toggled = *checked;
-                                cx.notify();
-                            }))
-                            .into_any_element(),
                         Clipboard::new("b-clipboard")
                             .value(tr(cx, "gallery.app.title").to_string())
                             .into_any_element(),
@@ -180,6 +186,62 @@ impl gpui_kit::Render for Section {
                         .href("https://github.com/aAndy03/bookkeepy-1")
                         .into_any_element()])
                     .into_any_element(),
+                )
+                .into_any_element(),
+                demo_card(
+                    cx,
+                    "gallery.molecules.nav.icon",
+                    // Icon ramp + color roles (ATOMS · 01): the hues ride the
+                    // functional seats set in the theme bridge (red/yellow/green).
+                    h_flex()
+                        .items_center()
+                        .gap_4()
+                        .child(Icon::new(IconName::Search).small())
+                        .child(Icon::new(IconName::Heart).text_color(cx.theme().red))
+                        .child(
+                            Icon::new(IconName::Star)
+                                .large()
+                                .text_color(cx.theme().yellow),
+                        )
+                        .child(
+                            Icon::new(IconName::CircleCheck)
+                                .large()
+                                .text_color(cx.theme().green),
+                        )
+                        .into_any_element(),
+                )
+                .into_any_element(),
+                demo_card(
+                    cx,
+                    "gallery.molecules.nav.label",
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_2()
+                        .child(
+                            Label::new(tr(cx, "gallery.molecules.nav.label.text"))
+                                .secondary(tr(cx, "gallery.molecules.nav.label.secondary")),
+                        )
+                        .child(
+                            Label::new(tr(cx, "gallery.molecules.nav.label.masked"))
+                                .masked(true)
+                                .text_xl(),
+                        )
+                        .into_any_element(),
+                )
+                .into_any_element(),
+                demo_card(
+                    cx,
+                    "gallery.molecules.nav.kbd",
+                    // Kbd keys as raised #1c1c1c rx4 chips (ATOMS · 01 kbd atom).
+                    h_flex()
+                        .items_center()
+                        .gap_3()
+                        .child(tr(cx, "gallery.molecules.nav.kbd.save"))
+                        .child(controls::kbd(Kbd::new(ctrl_stroke("s")), mode))
+                        .child(tr(cx, "gallery.molecules.nav.kbd.search"))
+                        .child(controls::kbd(Kbd::new(ctrl_stroke("f")), mode))
+                        .into_any_element(),
                 )
                 .into_any_element(),
             ]

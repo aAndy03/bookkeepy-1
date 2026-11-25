@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Molecules — the data-list family: List (selectable), searchable List,
-//! DescriptionList, Pagination, Breadcrumb, Clipboard, Attachment (design sheet:
-//! "MOLECULES · data list"). List content is i18n'd; list state is retained in this view.
+//! DescriptionList, Pagination, Breadcrumb, Clipboard (design sheet:
+//! "MOLECULES · data list"; Attachment lives in the MOL·03 section
+//! `molecules-calendar`). List content is i18n'd; list state is retained in this view.
 
-use gpui_kit::component::attachment::{
-    Attachment, AttachmentContent, AttachmentDescription, AttachmentGroup, AttachmentMedia,
-    AttachmentStatus, AttachmentTitle,
-};
 use gpui_kit::component::breadcrumb::Breadcrumb;
 use gpui_kit::component::clipboard::Clipboard;
 use gpui_kit::component::description_list::{DescriptionItem, DescriptionList};
 use gpui_kit::component::label::Label;
 use gpui_kit::component::list::{List, ListDelegate, ListItem, ListState};
 use gpui_kit::component::pagination::Pagination;
-use gpui_kit::component::{Icon, IconName, IndexPath, h_flex};
+use gpui_kit::component::{IndexPath, h_flex};
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, IntoElement, ParentElement as _, SharedString,
     Styled as _, Task, Window,
@@ -186,7 +183,6 @@ impl gpui_kit::Render for Section {
                                 cx,
                                 "gallery.molecules.data_list.searchable.placeholder",
                             ))
-
                             .into_any_element(),
                     )
                     .into_any_element(),
@@ -266,47 +262,6 @@ impl gpui_kit::Render for Section {
                             .child(
                                 Clipboard::new("data-list-clipboard")
                                     .value(tr(cx, "gallery.molecules.data_list.clipboard.value")),
-                            )
-                            .into_any_element(),
-                    )
-                    .into_any_element(),
-                    demo_card(
-                        cx,
-                        "gallery.molecules.data_list.attachment",
-                        AttachmentGroup::new("data-list-attachment-group")
-                            .child(
-                                Attachment::new()
-                                    .media(AttachmentMedia::new().child(Icon::new(
-                                        IconName::FileText,
-                                    )))
-                                    .content(
-                                        AttachmentContent::new()
-                                            .title(AttachmentTitle::new(tr(
-                                                cx,
-                                                "gallery.molecules.data_list.attachment.file_invoice",
-                                            )))
-                                            .description(AttachmentDescription::new(tr(
-                                                cx,
-                                                "gallery.molecules.data_list.attachment.meta_invoice",
-                                            ))),
-                                    ),
-                            )
-                            .child(
-                                Attachment::new()
-                                    .status(AttachmentStatus::Uploading)
-                                    .progress(45.)
-                                    .media(AttachmentMedia::new().child(Icon::new(IconName::File)))
-                                    .content(
-                                        AttachmentContent::new()
-                                            .title(AttachmentTitle::new(tr(
-                                                cx,
-                                                "gallery.molecules.data_list.attachment.file_receipt",
-                                            )))
-                                            .description(AttachmentDescription::new(tr(
-                                                cx,
-                                                "gallery.molecules.data_list.attachment.meta_receipt",
-                                            ))),
-                                    ),
                             )
                             .into_any_element(),
                     )
