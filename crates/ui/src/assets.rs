@@ -39,6 +39,7 @@ fn lucide_to_phosphor(path: &str) -> Option<&'static str> {
         "icons/trending-up.svg" => "chart-line-up",
         "icons/check.svg" => "check",
         "icons/chevron-down.svg" => "caret-down",
+        "icons/chevron-left.svg" => "caret-left",
         "icons/chevron-right.svg" => "caret-right",
         "icons/chevron-up.svg" => "caret-up",
         "icons/chevrons-up-down.svg" => "caret-up-down",
@@ -127,6 +128,7 @@ fn phosphor_regular_bytes(svg: &str) -> Option<&'static [u8]> {
                 include_str!("../../../references/phosphor/regular/calendar-blank.svg")
             }
             "caret-down" => include_str!("../../../references/phosphor/regular/caret-down.svg"),
+            "caret-left" => include_str!("../../../references/phosphor/regular/caret-left.svg"),
             "caret-right" => include_str!("../../../references/phosphor/regular/caret-right.svg"),
             "caret-up" => include_str!("../../../references/phosphor/regular/caret-up.svg"),
             "caret-up-down" => {
@@ -214,7 +216,9 @@ fn phosphor_duotone_bytes(name: &str) -> Option<&'static [u8]> {
     let svg = match name.strip_suffix(".svg").unwrap_or(name) {
         "arrow-up-right" => "arrow-up-right",
         "bell" => "bell",
+        "calendar-blank" => "calendar-blank",
         "caret-down" => "caret-down",
+        "caret-up-down" => "caret-up-down",
         "chart-line-up" => "chart-line-up",
         "check-circle" => "check-circle",
         "eye-closed" => "eye-closed",
@@ -238,7 +242,13 @@ fn phosphor_duotone_bytes(name: &str) -> Option<&'static [u8]> {
                 include_str!("../../../references/phosphor/duotone/arrow-up-right.svg")
             }
             "bell" => include_str!("../../../references/phosphor/duotone/bell.svg"),
+            "calendar-blank" => {
+                include_str!("../../../references/phosphor/duotone/calendar-blank.svg")
+            }
             "caret-down" => include_str!("../../../references/phosphor/duotone/caret-down.svg"),
+            "caret-up-down" => {
+                include_str!("../../../references/phosphor/duotone/caret-up-down.svg")
+            }
             "chart-line-up" => {
                 include_str!("../../../references/phosphor/duotone/chart-line-up.svg")
             }
@@ -278,6 +288,7 @@ const MAPPED: &[&str] = &[
     "icons/trending-up.svg",
     "icons/check.svg",
     "icons/chevron-down.svg",
+    "icons/chevron-left.svg",
     "icons/chevron-right.svg",
     "icons/chevron-up.svg",
     "icons/chevrons-up-down.svg",
@@ -339,7 +350,9 @@ const MAPPED: &[&str] = &[
 const DUOTONE_MAPPED: &[&str] = &[
     "icons/duotone/arrow-up-right.svg",
     "icons/duotone/bell.svg",
+    "icons/duotone/calendar-blank.svg",
     "icons/duotone/caret-down.svg",
+    "icons/duotone/caret-up-down.svg",
     "icons/duotone/chart-line-up.svg",
     "icons/duotone/check-circle.svg",
     "icons/duotone/eye-closed.svg",

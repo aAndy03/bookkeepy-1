@@ -2294,6 +2294,666 @@ pub mod media {
     pub type ColorOpt = Option<Hsla>;
 }
 
+// ── MOLECULES · 01 — popover / menu / select / combobox ──────────────────────
+/// Popup surfaces + menu rows (MOLECULES · 01). The floating panel: `popover`
+/// fill (#222 dark), hairline `border-subtle`, 0 8 24 black-a60 shadow, rx12,
+/// padding 4 for lists / 12 for popover cards.
+pub mod popups {
+    use super::atoms::{duotone_icon, icon};
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::component::StyledExt as _;
+    use gpui_kit::{
+        BoxShadow, Div, FontWeight, ParentElement as _, SharedString, StyleRefinement, Styled as _,
+        div, px,
+    };
+
+    /// The floating panel shadow (TOKENS §06: only popovers float).
+    pub fn popup_shadow() -> Vec<BoxShadow> {
+        vec![
+            BoxShadow::new(px(0.), px(8.), prim_hsla("black-a60").unwrap_or_default())
+                .blur_radius(px(12.)),
+        ]
+    }
+
+    /// A floating panel: popover fill, hairline border-subtle, rx12, shadow, padding.
+    pub fn popup_surface(w: f32, pad: f32, mode: Mode) -> Div {
+        let mut el = div()
+            .w(px(w))
+            .p(px(pad))
+            .rounded(px(radius_tier("xl")))
+            .border_1()
+            .bg(role_hsla(mode, "popover").unwrap_or_default())
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(popup_shadow()),
+                ..Default::default()
+            });
+        if let Some(b) = role_hsla(mode, "border-subtle") {
+            el = el.border_color(b);
+        }
+        el
+    }
+
+    /// Menu/popover row interaction state (MOLECULES · 01 row × interaction).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum MenuIx {
+        /// rest: transparent, regular glyph.
+        Rest,
+        /// hover/keyboard focus: white-a4 fill, duotone glyph.
+        Hover,
+        /// pressed: white-a8 fill, duotone glyph.
+        Pressed,
+        /// disabled: 40%, neutral-600 label.
+        Disabled,
+    }
+
+    /// One menu row: h28, rx6, padding 0 8, gap 8 — leading slot (icon / check),
+    /// label 12/400, trailing kbd 11/500 (#6b6b6b).
+    pub fn menu_item(
+        label: impl Into<SharedString>,
+        leading: Option<IconName>,
+        checked: bool,
+        kbd: Option<&'static str>,
+        ix: MenuIx,
+        mode: Mode,
+    ) -> Div {
+        let (bg, label_color, duotone) = match ix {
+            MenuIx::Rest => (None, prim_hsla("neutral-0"), false),
+            MenuIx::Hover => (prim_hsla("white-a4"), prim_hsla("neutral-0"), true),
+            MenuIx::Pressed => (prim_hsla("white-a8"), prim_hsla("neutral-0"), true),
+            MenuIx::Disabled => (None, prim_hsla("neutral-600"), false),
+        };
+        let glyph = if checked {
+            Some(if duotone {
+                duotone_icon(IconName::Check, 14.)
+            } else {
+                icon(IconName::Check, 14.)
+            })
+        } else {
+            leading.map(|n| {
+                if duotone {
+                    duotone_icon(n, 14.)
+                } else {
+                    icon(n, 14.)
+                }
+            })
+        };
+        let mut row = h_flex()
+            .w_full()
+            .h(px(28.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")));
+        if let Some(bg) = bg {
+            row = row.bg(bg);
+        }
+        if let Some(g) = glyph {
+            let c = role_hsla(mode, "icon").unwrap_or_default();
+            row = row.child(g.text_color(c));
+        } else {
+            row = row.child(div().size(px(14.)));
+        }
+        row = row.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .text_color(label_color.unwrap_or_default())
+                .child(label.into()),
+        );
+        if ix != MenuIx::Disabled {
+            row = row.child(div().flex_1());
+        }
+        if let Some(k) = kbd {
+            row = row.child(
+                div()
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(prim_hsla("neutral-500").unwrap_or_default())
+                    .child(k),
+            );
+        }
+        if ix == MenuIx::Disabled {
+            row = row.opacity(0.4);
+        }
+        row
+    }
+
+    /// Menu separator: 1px white-a8 line with 4px vertical padding.
+    pub fn menu_separator() -> Div {
+        v_flex().w_full().py(px(4.)).child(
+            div()
+                .w_full()
+                .h(px(1.))
+                .bg(prim_hsla("white-a8").unwrap_or_default()),
+        )
+    }
+
+    /// Menu group label: h24, padding 0 8, 10/500 muted overline.
+    pub fn menu_label(text: impl Into<SharedString>, mode: Mode) -> Div {
+        div()
+            .w_full()
+            .h(px(24.))
+            .px(px(8.))
+            .flex()
+            .items_center()
+            .text_size(px(10.))
+            .line_height(px(12.))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+            .child(text.into())
+    }
+
+    /// Select/Combobox/DatePicker trigger: rx8 2px ring wrapper (white-a16 when
+    /// open/focused) around the sunken 32px field (rx6, padding 0 10, gap 8).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TriggerIx {
+        /// rest.
+        Rest,
+        /// hover.
+        Hover,
+        /// open/focus: white-a16 ring, duotone caret, field hairline input-focus.
+        Open,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// Select/Combobox trigger field (also reused by the date picker).
+    pub fn select_trigger(
+        leading: Option<(IconName, bool)>, // (glyph, duotone)
+        value: Option<SharedString>,       // None = placeholder
+        w: f32,
+        ix: TriggerIx,
+        mode: Mode,
+    ) -> Div {
+        let mut field = h_flex()
+            .w_full()
+            .h(px(32.))
+            .px(px(10.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .bg(prim_hsla("neutral-950").unwrap_or_default());
+        if ix == TriggerIx::Open
+            && let Some(b) = role_hsla(mode, "input-focus")
+        {
+            field = field.border_1().border_color(b);
+        }
+        if let Some((name, duotone)) = leading {
+            let ic = if duotone {
+                duotone_icon(name, 14.)
+            } else {
+                icon(name, 14.)
+            };
+            field = field.child(ic.text_color(role_hsla(mode, "icon").unwrap_or_default()));
+        }
+        let text_color = if value.is_some() {
+            prim_hsla("neutral-0").unwrap_or_default()
+        } else {
+            prim_hsla("neutral-500").unwrap_or_default()
+        };
+        field = field.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .text_color(text_color)
+                .child(value.unwrap_or_default()),
+        );
+        field = field.child(div().flex_1());
+        let caret_duotone = ix == TriggerIx::Open || ix == TriggerIx::Hover;
+        let caret = if caret_duotone {
+            duotone_icon(IconName::ChevronsUpDown, 12.)
+        } else {
+            icon(IconName::ChevronsUpDown, 12.)
+        };
+        field = field.child(caret.text_color(role_hsla(mode, "icon").unwrap_or_default()));
+        let mut wrapper = div()
+            .w(px(w))
+            .p(px(2.))
+            .rounded(px(radius_tier("lg")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .child(field);
+        if ix == TriggerIx::Open
+            && let Some(c) = prim_hsla("white-a16")
+        {
+            wrapper = wrapper.border_color(c);
+        }
+        if ix == TriggerIx::Disabled {
+            wrapper = wrapper.opacity(0.4);
+        }
+        wrapper
+    }
+
+    /// Search row at the top of an open list: bottom hairline white-a8, magnifier +
+    /// query 12/400 + caret 1×14.
+    pub fn search_row(query: impl Into<SharedString>, mode: Mode) -> Div {
+        h_flex()
+            .w_full()
+            .h(px(32.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .border_b(px(1.))
+            .border_color(prim_hsla("white-a8").unwrap_or_default())
+            .child(
+                icon(IconName::Search, 14.).text_color(role_hsla(mode, "icon").unwrap_or_default()),
+            )
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(14.))
+                    .text_color(prim_hsla("neutral-0").unwrap_or_default())
+                    .child(query.into()),
+            )
+            .child(
+                div()
+                    .w(px(1.))
+                    .h(px(14.))
+                    .bg(prim_hsla("neutral-0").unwrap_or_default()),
+            )
+    }
+
+    /// Empty-list row: padding 12 8, 11/400 muted.
+    pub fn empty_row(text: impl Into<SharedString>, mode: Mode) -> Div {
+        div()
+            .w_full()
+            .p(px(12.))
+            .px(px(8.))
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+            .child(text.into())
+    }
+
+    /// Combobox chip inside the trigger: #1c1c1c rx4 h20 pad 0 6 gap 4, optional
+    /// 6px category dot, label 11/500 #a8a8a8.
+    pub fn chip(label: impl Into<SharedString>, dot: Option<gpui_kit::Hsla>, mode: Mode) -> Div {
+        let mut c = h_flex()
+            .h(px(20.))
+            .px(px(6.))
+            .gap(px(4.))
+            .items_center()
+            .rounded(px(4.))
+            .bg(prim_hsla("neutral-875").unwrap_or_default());
+        if let Some(d) = dot {
+            c = c.child(div().size(px(6.)).rounded_full().bg(d));
+        }
+        c.child(
+            div()
+                .text_size(px(11.))
+                .line_height(px(15.))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(role_hsla(mode, "secondary-foreground").unwrap_or_default())
+                .child(label.into()),
+        )
+    }
+
+    /// Popover card (info popover): w280, padding 12, gap 12 — head (title 12/500
+    /// white + desc 11/400 muted) and an actions row.
+    pub fn popover_card(head: Div, actions: Div, mode: Mode) -> Div {
+        popup_surface(280., 12., mode)
+            .flex()
+            .flex_col()
+            .gap(px(12.))
+            .child(head)
+            .child(actions)
+    }
+
+    /// Popover head: title 12/500 white, description 11/400 muted, gap 4.
+    pub fn popover_head(
+        title: impl Into<SharedString>,
+        desc: impl Into<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .w_full()
+            .gap(px(4.))
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(14.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                    .child(title.into()),
+            )
+            .child(
+                div()
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+                    .child(desc.into()),
+            )
+    }
+}
+
+// ── MOLECULES · 01 — date picker ──────────────────────────────────────────────
+/// Date-picker calendar pieces (MOLECULES · 01).
+pub mod pickers {
+    use super::atoms::icon;
+    use super::popups::{TriggerIx, popup_shadow};
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::h_flex;
+    use gpui_kit::component::StyledExt as _;
+    use gpui_kit::{
+        Div, FontWeight, ParentElement as _, SharedString, StyleRefinement, Styled as _, div, px,
+    };
+
+    /// Calendar day cell state (MOLECULES · 01 day-cell axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DayIx {
+        /// default day.
+        Default,
+        /// today: accent ring, white number.
+        Today,
+        /// selected/range end: primary fill, dark number.
+        Selected,
+        /// in-range middle: white-a8 fill.
+        RangeMiddle,
+        /// other-month day: muted.
+        Outside,
+        /// disabled: struck, neutral-600.
+        Disabled,
+        /// hover: white-a4 fill.
+        Hover,
+    }
+
+    /// One 32×32 day cell, rx6, 1px border, number 12/400.
+    pub fn day_cell(n: u32, ix: DayIx, _mode: Mode) -> Div {
+        let (bg, border, color) = match ix {
+            DayIx::Default => (None, None, prim_hsla("neutral-300")),
+            DayIx::Today => (None, prim_hsla("orange-500"), prim_hsla("neutral-0")),
+            DayIx::Selected => (prim_hsla("neutral-100"), None, prim_hsla("neutral-925")),
+            DayIx::RangeMiddle => (prim_hsla("white-a8"), None, prim_hsla("neutral-300")),
+            DayIx::Outside => (None, None, prim_hsla("neutral-500")),
+            DayIx::Disabled => (None, None, prim_hsla("neutral-600")),
+            DayIx::Hover => (prim_hsla("white-a4"), None, prim_hsla("neutral-300")),
+        };
+        let mut cell = div()
+            .size(px(32.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .border_color(border.unwrap_or_else(gpui_kit::transparent_white));
+        if let Some(bg) = bg {
+            cell = cell.bg(bg);
+        }
+        cell.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .text_color(color.unwrap_or_default())
+                .child(n.to_string()),
+        )
+    }
+
+    /// Calendar popup frame: popover fill, hairline, shadow, rx12, padding 12,
+    /// width 248 (single month).
+    pub fn calendar_popup(mode: Mode) -> Div {
+        let mut el = div()
+            .w(px(248.))
+            .p(px(12.))
+            .rounded(px(radius_tier("xl")))
+            .border_1()
+            .bg(role_hsla(mode, "popover").unwrap_or_default())
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(popup_shadow()),
+                ..Default::default()
+            })
+            .flex()
+            .flex_col()
+            .gap(px(4.));
+        if let Some(b) = role_hsla(mode, "border-subtle") {
+            el = el.border_color(b);
+        }
+        el
+    }
+
+    /// Calendar head: prev/next month icon-buttons 24×24 rx6 + month title 12/500.
+    pub fn calendar_head(month: impl Into<SharedString>, mode: Mode) -> Div {
+        let btn = |name: IconName| {
+            div()
+                .size(px(24.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(radius_tier("md")))
+                .child(icon(name, 14.).text_color(role_hsla(mode, "icon").unwrap_or_default()))
+        };
+        h_flex()
+            .w_full()
+            .pb(px(8.))
+            .items_center()
+            .justify_between()
+            .child(btn(IconName::ChevronLeft))
+            .child(
+                div()
+                    .text_size(px(12.))
+                    .line_height(px(14.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                    .child(month.into()),
+            )
+            .child(btn(IconName::ChevronRight))
+    }
+
+    /// Weekday header cell: 32×24, 10/500 muted.
+    pub fn weekday(label: &'static str, mode: Mode) -> Div {
+        div()
+            .w(px(32.))
+            .h(px(24.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(10.))
+            .line_height(px(12.))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+            .child(label)
+    }
+
+    /// Date-picker trigger: like a select trigger with the calendar glyph
+    /// (duotone when open) — reuses popups::select_trigger via leading icon.
+    pub fn date_trigger(value: Option<SharedString>, w: f32, ix: TriggerIx, mode: Mode) -> Div {
+        super::popups::select_trigger(
+            Some((IconName::Calendar, ix == TriggerIx::Open)),
+            value,
+            w,
+            ix,
+            mode,
+        )
+    }
+
+    /// Range-preset row in the left rail: h28 rx6 pad 0 8, label 12/400 white,
+    /// hover white-a4 (rail separated by a right hairline white-a8).
+    pub fn preset_row(label: impl Into<SharedString>, hover: bool, mode: Mode) -> Div {
+        let mut r = h_flex()
+            .w_full()
+            .h(px(28.))
+            .px(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")));
+        if hover {
+            r = r.bg(prim_hsla("white-a4").unwrap_or_default());
+        }
+        r.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                .child(label.into()),
+        )
+    }
+}
+
+// ── MOLECULES · 01 — tabs / empty ─────────────────────────────────────────────
+/// Tabs + empty states (MOLECULES · 01).
+pub mod structure {
+    use super::atoms::icon;
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::{Div, FontWeight, ParentElement as _, SharedString, Styled as _, div, px};
+
+    /// Underline-tab interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TabIx {
+        /// rest.
+        Rest,
+        /// hover: white-a16 line preview, white label.
+        Hover,
+        /// selected: 2px white line.
+        Selected,
+        /// disabled: neutral-600 label.
+        Disabled,
+    }
+
+    /// One underline tab: h31, padding 0 4, 2px bottom line (transparent / white-a16
+    /// hover / white selected), gap 6, icon 14, label 12/500, optional count badge.
+    pub fn tab_underline(
+        label: impl Into<SharedString>,
+        glyph: Option<IconName>,
+        count: Option<usize>,
+        ix: TabIx,
+        _mode: Mode,
+    ) -> Div {
+        let (line, label_color) = match ix {
+            TabIx::Rest => (prim_hsla("transparent"), prim_hsla("neutral-400")),
+            TabIx::Hover => (prim_hsla("white-a16"), prim_hsla("neutral-0")),
+            TabIx::Selected => (prim_hsla("neutral-0"), prim_hsla("neutral-0")),
+            TabIx::Disabled => (prim_hsla("transparent"), prim_hsla("neutral-600")),
+        };
+        let mut content = h_flex()
+            .h(px(31.))
+            .px(px(4.))
+            .gap(px(6.))
+            .items_center()
+            .border_b(px(2.))
+            .border_color(line.unwrap_or_else(gpui_kit::transparent_white));
+        if let Some(g) = glyph {
+            content = content.child(icon(g, 14.).text_color(label_color.unwrap_or_default()));
+        }
+        content = content.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(label_color.unwrap_or_default())
+                .child(label.into()),
+        );
+        if let Some(n) = count {
+            content = content.child(
+                div()
+                    .h(px(16.))
+                    .px(px(5.))
+                    .flex()
+                    .items_center()
+                    .rounded_full()
+                    .bg(prim_hsla("neutral-200").unwrap_or_default())
+                    .text_size(px(10.))
+                    .line_height(px(12.))
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(prim_hsla("neutral-925").unwrap_or_default())
+                    .child(n.to_string()),
+            );
+        }
+        content
+    }
+
+    /// Underline bar: bottom hairline white-a8, height 31.5, gap 24.
+    pub fn underline_bar(tabs: Div, w: f32) -> Div {
+        h_flex()
+            .w(px(w))
+            .h(px(31.5))
+            .gap(px(24.))
+            .items_end()
+            .border_b(px(1.))
+            .border_color(prim_hsla("white-a8").unwrap_or_default())
+            .child(tabs)
+    }
+
+    /// Segmented bar container: #1c1c1c rx6, padding 2, gap 2.
+    pub fn segmented_bar(segs: Div) -> Div {
+        h_flex()
+            .p(px(2.))
+            .gap(px(2.))
+            .rounded(px(radius_tier("md")))
+            .bg(prim_hsla("neutral-875").unwrap_or_default())
+            .child(segs)
+    }
+
+    /// One segmented tab: h24, padding 0 10, rx4 — rest transparent / hover white-a4 /
+    /// selected #2a2a2a; label 12/500.
+    pub fn tab_segment(label: impl Into<SharedString>, ix: TabIx, _mode: Mode) -> Div {
+        let (bg, label_color) = match ix {
+            TabIx::Rest => (None, prim_hsla("neutral-400")),
+            TabIx::Hover => (prim_hsla("white-a4"), prim_hsla("neutral-0")),
+            TabIx::Selected => (prim_hsla("neutral-800"), prim_hsla("neutral-0")),
+            TabIx::Disabled => (None, prim_hsla("neutral-600")),
+        };
+        let mut seg = h_flex()
+            .h(px(24.))
+            .px(px(10.))
+            .items_center()
+            .rounded(px(4.));
+        if let Some(bg) = bg {
+            seg = seg.bg(bg);
+        }
+        seg.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(label_color.unwrap_or_default())
+                .child(label.into()),
+        )
+    }
+
+    /// Empty state block: gap 12, padding 32 24 — 24px muted glyph, title 16/600,
+    /// description 12/400 muted, actions row (padding-top 8, gap 8).
+    pub fn empty_block(
+        w: f32,
+        glyph: IconName,
+        title: impl Into<SharedString>,
+        desc: impl Into<SharedString>,
+        actions: Div,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .w(px(w))
+            .p(px(32.))
+            .px(px(24.))
+            .gap(px(12.))
+            .child(icon(glyph, 24.).text_color(role_hsla(mode, "icon-muted").unwrap_or_default()))
+            .child(
+                v_flex()
+                    .gap(px(6.))
+                    .child(
+                        div()
+                            .text_size(px(16.))
+                            .line_height(px(21.))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                            .child(title.into()),
+                    )
+                    .child(
+                        div()
+                            .w(px(w - 80.))
+                            .text_size(px(12.))
+                            .line_height(px(18.))
+                            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+                            .child(desc.into()),
+                    ),
+            )
+            .child(actions.pt(px(8.)).flex().gap(px(8.)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

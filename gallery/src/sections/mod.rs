@@ -21,6 +21,9 @@ mod atoms_feedback;
 mod atoms_input;
 mod atoms_media;
 pub(crate) mod kit;
+mod molecules_pickers;
+mod molecules_popups;
+mod molecules_structure;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
 /// (references/designlanguage): ATOMS · 01–04, MOLECULES · 01–03, ORGANISMS · 01–02,
@@ -97,6 +100,9 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(atoms_input, "atoms-input", Atoms),
     section!(atoms_feedback, "atoms-feedback", Atoms),
     section!(atoms_media, "atoms-media", Atoms),
+    section!(molecules_popups, "molecules-popups", Molecules),
+    section!(molecules_pickers, "molecules-pickers", Molecules),
+    section!(molecules_structure, "molecules-structure", Molecules),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).

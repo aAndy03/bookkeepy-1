@@ -23,6 +23,7 @@ bookkeepy-ui.workspace = true
 bookkeepy-i18n.workspace = true
 bookkeepy-primary-data.workspace = true
 gpui-kit.workspace = true
+jiff.workspace = true
 # Parsing the ui crate's widget `meta.toml` for the version-history panel (RULE-UI-008).
 serde.workspace = true
 toml.workspace = true

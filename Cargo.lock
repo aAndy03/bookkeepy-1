@@ -765,6 +765,7 @@ dependencies = [
  "bookkeepy-primary-data",
  "bookkeepy-ui",
  "gpui-kit",
+ "jiff",
  "serde",
  "toml 1.2.2+spec-1.1.0",
 ]
