@@ -614,6 +614,11 @@ fn painted_table(mode: bookkeepy_primary_data::theme::Mode) -> gpui_kit::Div {
                 amt_color: w,
             },
         ))
+        .child(organisms::day_header(
+            "17 OCT · SATURDAY".into(),
+            "−440,99".into(),
+            mode,
+        ))
         .child(painted_row(
             mode,
             &RowSpec {
