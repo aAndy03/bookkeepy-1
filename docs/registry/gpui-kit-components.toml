@@ -273,8 +273,8 @@ id = "image"
 title = "Image"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/image/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
 
 [[component]]
 id = "input"
@@ -321,8 +321,8 @@ id = "marker"
 title = "Marker"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/marker/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
 
 [[component]]
 id = "menu"
@@ -377,8 +377,8 @@ id = "otp-input"
 title = "OTP Input"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/otp-input/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
 
 [[component]]
 id = "pagination"
@@ -433,8 +433,8 @@ id = "rating"
 title = "Rating"
 section = "atoms-media"
 docs = "https://gpui-kit.com/component/rating/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
 
 [[component]]
 id = "resizable"

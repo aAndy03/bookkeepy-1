@@ -2017,6 +2017,283 @@ pub mod feedback2 {
     pub type Shared = SharedString;
 }
 
+/// Media & misc atoms — ATOMS · 04 sheet: OTP cells, image frames, rating stars,
+/// marker rows. Painted specimens pin the sheet-exact geometry from the tokens; the
+/// gallery's rest cells use the live stock `OtpInput` / `img()` / `Rating` / `Marker`.
+pub mod media {
+    use super::atoms::{duotone_icon, icon};
+    use super::{Mode, prim_hsla, radius_role, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::h_flex;
+    use gpui_kit::component::marker::{Marker, MarkerVariant};
+    use gpui_kit::{
+        Div, FontWeight, Hsla, ParentElement as _, SharedString, StyleRefinement, Styled as _, div,
+        px,
+    };
+
+    /// OTP cell interaction state (ATOMS · 04 otp matrix).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum OtpIx {
+        /// rest: wrapper border transparent, box hairline `input`.
+        Rest,
+        /// active (focused) cell: wrapper border white-a16, box hairline `input-focus`.
+        Active,
+        /// invalid: box hairline danger on every cell.
+        Invalid,
+    }
+
+    /// What the cell's box shows.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum OtpContent {
+        /// Nothing yet.
+        Empty,
+        /// A typed digit (16/600 white).
+        Digit(char),
+        /// Masked digit (dot).
+        Masked,
+        /// The caret (1.5×18 white) in the active cell.
+        Caret,
+    }
+
+    /// One OTP cell: rx8 wrapper (2px border, 2px padding) around the 36×40 sunken box
+    /// (rx6, hairline outline) — the field ring the sheet reuses for OTP (ATOMS · 04).
+    pub fn otp_cell(content: OtpContent, ix: OtpIx, mode: Mode) -> Div {
+        let (wrap_border, box_border) = match ix {
+            OtpIx::Rest => (None, role_hsla(mode, "input")),
+            OtpIx::Active => (prim_hsla("white-a16"), role_hsla(mode, "input-focus")),
+            OtpIx::Invalid => (None, role_hsla(mode, "danger")),
+        };
+        let inner = match content {
+            OtpContent::Empty => div(),
+            OtpContent::Digit(c) => div()
+                .text_size(px(16.))
+                .line_height(px(21.))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(prim_hsla("neutral-0").unwrap_or_default())
+                .child(c.to_string()),
+            OtpContent::Masked => div()
+                .text_size(px(16.))
+                .line_height(px(21.))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(prim_hsla("neutral-0").unwrap_or_default())
+                .child("•"),
+            OtpContent::Caret => div()
+                .w(px(1.5))
+                .h(px(18.))
+                .bg(prim_hsla("neutral-0").unwrap_or_default()),
+        };
+        let mut cell_box = h_flex()
+            .w(px(36.))
+            .h(px(40.))
+            .items_center()
+            .justify_center()
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .bg(prim_hsla("neutral-950").unwrap_or_default())
+            .child(inner);
+        if let Some(b) = box_border {
+            cell_box = cell_box.border_color(b);
+        }
+        let mut wrapper = div()
+            .p(px(2.))
+            .rounded(px(radius_tier("lg")))
+            .border_2()
+            .child(cell_box);
+        if let Some(b) = wrap_border {
+            wrapper = wrapper.border_color(b);
+        } else {
+            wrapper = wrapper.border_color(gpui_kit::transparent_white());
+        }
+        wrapper
+    }
+
+    /// The dash between OTP groups ("3 + 3 with a dash") — 16/600 muted.
+    pub fn otp_dash() -> Div {
+        div()
+            .text_size(px(16.))
+            .line_height(px(21.))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(prim_hsla("neutral-400").unwrap_or_default())
+            .child("–")
+    }
+
+    /// One OTP row: three cells, dash, three cells — gap 6px (ATOMS · 04).
+    pub fn otp_row(a: [Div; 3], b: [Div; 3]) -> Div {
+        h_flex()
+            .items_center()
+            .gap(px(6.))
+            .children(a)
+            .child(otp_dash())
+            .children(b)
+    }
+
+    /// OTP help text under an invalid row — 11/400 danger (ATOMS · 04 invalid state).
+    pub fn otp_help(text: impl Into<SharedString>, mode: Mode) -> Div {
+        div()
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .text_color(role_hsla(mode, "danger-foreground").unwrap_or_default())
+            .child(text.into())
+    }
+
+    /// The image frame: raised surface, card radius (ATOMS · 04 image, 160×120 master).
+    pub fn image_frame(w: f32, h: f32, mode: Mode) -> Div {
+        div()
+            .relative()
+            .w(px(w))
+            .h(px(h))
+            .rounded(px(radius_role("card")))
+            .bg(role_hsla(mode, "surface-raised").unwrap_or_default())
+    }
+
+    /// Loading image: skeleton fill over the whole frame (ATOMS · 04 loading state).
+    pub fn image_loading(w: f32, h: f32, mode: Mode) -> Div {
+        image_frame(w, h, mode).child(
+            div()
+                .absolute()
+                .size_full()
+                .rounded(px(radius_role("card")))
+                .bg(prim_hsla("neutral-850").unwrap_or_default()),
+        )
+    }
+
+    /// Error image: glyph + "Can't load" caption centered on the raised frame
+    /// (ATOMS · 04 error state).
+    pub fn image_error(w: f32, h: f32, label: impl Into<SharedString>, mode: Mode) -> Div {
+        image_frame(w, h, mode).child(
+            div()
+                .absolute()
+                .size_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .justify_center()
+                .gap(px(8.))
+                .child(
+                    icon(IconName::Image, 20.)
+                        .text_color(role_hsla(mode, "icon-muted").unwrap_or_default()),
+                )
+                .child(
+                    div()
+                        .text_size(px(11.))
+                        .line_height(px(15.))
+                        .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+                        .child(label.into()),
+                ),
+        )
+    }
+
+    /// One rating star (20px): on = duotone star in `warning`, off = regular star in
+    /// `icon-muted` (ATOMS · 04 rating states).
+    pub fn rating_star(on: bool, mode: Mode) -> Div {
+        let star = if on {
+            duotone_icon(IconName::Star, 20.)
+        } else {
+            icon(IconName::Star, 20.)
+        };
+        let color = if on {
+            role_hsla(mode, "warning")
+        } else {
+            role_hsla(mode, "icon-muted")
+        };
+        div()
+            .size(px(20.))
+            .child(star.text_color(color.unwrap_or_default()))
+    }
+
+    /// Rating interaction state (ATOMS · 04 value × interaction row).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum RatingIx {
+        /// rest: transparent ring.
+        Rest,
+        /// focus: 2px `ring` outline around the group (faked as a border, gpui has no outline).
+        Focus,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// A painted rating group: padding 2px, rx4, 2px ring on focus, gap 2px stars,
+    /// `on` duotone stars then off stars (ATOMS · 04).
+    pub fn rating_group(on: usize, max: usize, ix: RatingIx, mode: Mode) -> Div {
+        let stars = h_flex()
+            .gap(px(2.))
+            .children((1..=max).map(|i| rating_star(i <= on, mode)));
+        let mut group = div()
+            .p(px(2.))
+            .rounded(px(4.))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .child(stars);
+        if ix == RatingIx::Focus
+            && let Some(c) = role_hsla(mode, "ring")
+        {
+            group = group.border_color(c);
+        }
+        if ix == RatingIx::Disabled {
+            group = group.opacity(0.4);
+        }
+        group
+    }
+
+    /// Marker row base: fit-content pill, 2px vertical padding, 8px gap, 11/400/15
+    /// muted caption (ATOMS · 04 marker plain).
+    pub fn marker_plain(m: Marker, mode: Mode) -> Marker {
+        let mut m = m
+            .w_auto()
+            .min_h(px(0.))
+            .py(px(2.))
+            .px(px(0.))
+            .gap(px(8.))
+            .rounded_full()
+            .text_size(px(11.))
+            .line_height(px(15.));
+        if let Some(c) = role_hsla(mode, "muted-foreground") {
+            m = m.text_color(c);
+        }
+        m
+    }
+
+    /// Marker border variant as the sheet draws it: pill outline 1px `border-subtle`,
+    /// 10px horizontal padding (ATOMS · 04 border — stock Border is a bottom rule, so
+    /// the pill look is a Plain marker with a refined frame).
+    pub fn marker_pill(m: Marker, mode: Mode) -> Marker {
+        let mut m = marker_plain(m, mode).px(px(10.)).border_1();
+        if let Some(c) = role_hsla(mode, "border-subtle") {
+            m = m.border_color(c);
+        }
+        m
+    }
+
+    /// Marker separator variant: hairlines either side, centered, 480px wide, rule in
+    /// white-a8 (ATOMS · 04 separator = day breaks in the ledger).
+    pub fn marker_separator(m: Marker, mode: Mode) -> Marker {
+        let mut style = StyleRefinement::default();
+        if let Some(c) = prim_hsla("white-a8") {
+            style = style.bg(c);
+        }
+        marker_plain(m, mode)
+            .with_variant(MarkerVariant::Separator)
+            .w(px(480.))
+            .separator_style(style)
+    }
+
+    /// Time/meta ink inside a marker — 11/400 `subtle-foreground` (ATOMS · 04).
+    pub fn marker_meta(text: impl Into<SharedString>, mode: Mode) -> Div {
+        div()
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .text_color(
+                role_hsla(mode, "subtle-foreground")
+                    .or_else(|| prim_hsla("neutral-500"))
+                    .unwrap_or_default(),
+            )
+            .child(text.into())
+    }
+
+    /// Re-export so call sites can name the color type.
+    pub type ColorOpt = Option<Hsla>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

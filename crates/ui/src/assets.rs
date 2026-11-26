@@ -63,6 +63,8 @@ fn lucide_to_phosphor(path: &str) -> Option<&'static str> {
         "icons/help-circle.svg" => "question",
         "icons/history.svg" => "clock-counter-clockwise",
         "icons/home.svg" => "house",
+        "icons/image.svg" => "image",
+        "icons/star-fill.svg" => "star-fill",
         "icons/house.svg" => "house",
         "icons/inbox.svg" => "tray",
         "icons/landmark.svg" => "bank",
@@ -156,6 +158,10 @@ fn phosphor_regular_bytes(svg: &str) -> Option<&'static [u8]> {
             "gear-six" => include_str!("../../../references/phosphor/regular/gear-six.svg"),
             "house" => include_str!("../../../references/phosphor/regular/house.svg"),
             "hard-drive" => include_str!("../../../references/phosphor/regular/hard-drive.svg"),
+            "image" => include_str!("../../../references/phosphor/regular/image.svg"),
+            // The design's filled star IS the Phosphor duotone master (solid line +
+            // 20% fill), so lucide's `star-fill` serves that glyph at rest.
+            "star-fill" => include_str!("../../../references/phosphor/duotone/star.svg"),
             "heart" => include_str!("../../../references/phosphor/regular/heart.svg"),
             "magnifying-glass" => {
                 include_str!("../../../references/phosphor/regular/magnifying-glass.svg")
@@ -215,9 +221,12 @@ fn phosphor_duotone_bytes(name: &str) -> Option<&'static [u8]> {
         "export" => "export",
         "funnel" => "funnel",
         "gear-six" => "gear-six",
+        "image" => "image",
         "magnifying-glass" => "magnifying-glass",
         "plus" => "plus",
         "spinner-gap" => "spinner-gap",
+        "star" => "star",
+        "star-fill" => "star-fill",
         "wallet" => "wallet",
         "warning-circle" => "warning-circle",
         "x" => "x",
@@ -240,11 +249,13 @@ fn phosphor_duotone_bytes(name: &str) -> Option<&'static [u8]> {
             "export" => include_str!("../../../references/phosphor/duotone/export.svg"),
             "funnel" => include_str!("../../../references/phosphor/duotone/funnel.svg"),
             "gear-six" => include_str!("../../../references/phosphor/duotone/gear-six.svg"),
+            "image" => include_str!("../../../references/phosphor/duotone/image.svg"),
             "magnifying-glass" => {
                 include_str!("../../../references/phosphor/duotone/magnifying-glass.svg")
             }
             "plus" => include_str!("../../../references/phosphor/duotone/plus.svg"),
             "spinner-gap" => include_str!("../../../references/phosphor/duotone/spinner-gap.svg"),
+            "star" | "star-fill" => include_str!("../../../references/phosphor/duotone/star.svg"),
             "wallet" => include_str!("../../../references/phosphor/duotone/wallet.svg"),
             "warning-circle" => {
                 include_str!("../../../references/phosphor/duotone/warning-circle.svg")
@@ -291,6 +302,7 @@ const MAPPED: &[&str] = &[
     "icons/history.svg",
     "icons/home.svg",
     "icons/house.svg",
+    "icons/image.svg",
     "icons/inbox.svg",
     "icons/landmark.svg",
     "icons/layout-dashboard.svg",
@@ -310,6 +322,7 @@ const MAPPED: &[&str] = &[
     "icons/search.svg",
     "icons/settings.svg",
     "icons/square.svg",
+    "icons/star-fill.svg",
     "icons/star.svg",
     "icons/sticky-note.svg",
     "icons/sun.svg",
@@ -333,9 +346,12 @@ const DUOTONE_MAPPED: &[&str] = &[
     "icons/duotone/export.svg",
     "icons/duotone/funnel.svg",
     "icons/duotone/gear-six.svg",
+    "icons/duotone/image.svg",
     "icons/duotone/magnifying-glass.svg",
     "icons/duotone/plus.svg",
     "icons/duotone/spinner-gap.svg",
+    "icons/duotone/star-fill.svg",
+    "icons/duotone/star.svg",
     "icons/duotone/wallet.svg",
     "icons/duotone/warning-circle.svg",
     "icons/duotone/x.svg",

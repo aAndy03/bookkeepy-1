@@ -19,6 +19,7 @@ mod atoms_button;
 mod atoms_choice;
 mod atoms_feedback;
 mod atoms_input;
+mod atoms_media;
 pub(crate) mod kit;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
@@ -95,6 +96,7 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(atoms_choice, "atoms-choice", Atoms),
     section!(atoms_input, "atoms-input", Atoms),
     section!(atoms_feedback, "atoms-feedback", Atoms),
+    section!(atoms_media, "atoms-media", Atoms),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).
