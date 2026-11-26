@@ -116,6 +116,7 @@ impl gpui_kit::Render for MoleculesPopups {
         let open_sub = tr(cx, "gallery.m01.popover.open_sub");
         let live_popover = Popover::new("pop-live")
             .open(true)
+            .appearance(false) // the painted card below is the surface — no double card
             .on_open_change(|_, _, _| {})
             .trigger(atoms::button(
                 "pop-trigger",
@@ -153,11 +154,7 @@ impl gpui_kit::Render for MoleculesPopups {
             cx,
             "gallery.m01.popover.title_group",
             "gallery.m01.popover.hint",
-            v_flex().gap_6().child(masters).child(kit::cell(
-                cx,
-                "gallery.m01.popover.live",
-                live_popover,
-            )),
+            v_flex().gap_6().child(masters),
         );
 
         // ── menu ─────────────────────────────────────────────────────────────
@@ -291,6 +288,7 @@ impl gpui_kit::Render for MoleculesPopups {
         let menu_trigger = tr(cx, "gallery.m01.menu.live_trigger");
         let live_menu = Popover::new("menu-pop")
             .open(true)
+            .appearance(false) // the PopupMenu panel is the surface — no double card
             .on_open_change(|_, _, _| {})
             .trigger(atoms::button(
                 "menu-trigger",
@@ -311,10 +309,7 @@ impl gpui_kit::Render for MoleculesPopups {
                 .gap_6()
                 .child(menu_masters)
                 .child(menu_states)
-                .child(kit::row([
-                    kit::cell(cx, "gallery.m01.menu.open", painted_menu),
-                    kit::cell(cx, "gallery.m01.menu.live", live_menu),
-                ])),
+                .child(kit::cell(cx, "gallery.m01.menu.open", painted_menu)),
         );
 
         // ── page ─────────────────────────────────────────────────────────────
@@ -327,5 +322,12 @@ impl gpui_kit::Render for MoleculesPopups {
             .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
             .child(popover_group)
             .child(menu_group)
+            // Live popovers float over the overlay layer — keep them in the last
+            // row with reserved space beneath so they never cover other specimens.
+            .child(kit::row([
+                kit::cell(cx, "gallery.m01.popover.live", live_popover),
+                kit::cell(cx, "gallery.m01.menu.live", live_menu),
+            ]))
+            .child(div().h(px(230.)))
     }
 }

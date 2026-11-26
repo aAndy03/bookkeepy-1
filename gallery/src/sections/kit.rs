@@ -59,8 +59,11 @@ pub fn group_title(cx: &App, text: impl Into<SharedString>) -> Div {
 }
 
 /// One specimen cell: state/variant caption above the live component.
+/// `items_start` keeps the component hugging its intrinsic width at the leading
+/// edge (design frames left-align; without it the cell stretches full-width).
 pub fn cell(cx: &App, state_key: &str, el: impl gpui_kit::IntoElement) -> Div {
     v_flex()
+        .items_start()
         .gap_2()
         .child(overline(cx, tr(cx, state_key)))
         .child(el)

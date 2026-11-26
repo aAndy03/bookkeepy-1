@@ -6,7 +6,7 @@
 //! ladder is painted from `language::structure`.
 
 use bookkeepy_ui::api::language::{
-    atoms, controls::ControlSize, prim_hsla, structure, structure::TabIx,
+    atoms, controls::ControlSize, prim_hsla, role_hsla, structure, structure::TabIx,
 };
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
@@ -247,11 +247,12 @@ impl gpui_kit::Render for MoleculesStructure {
 
         // ── empty ────────────────────────────────────────────────────────────
         let live_empty = Empty::new()
+            .w(px(360.))
             .header(
                 EmptyHeader::new()
                     .media(
                         EmptyMedia::new()
-                            .with_variant(EmptyMediaVariant::Icon)
+                            .with_variant(EmptyMediaVariant::Default)
                             .child(atoms::icon(IconName::Receipt, 24.)),
                     )
                     .title(EmptyTitle::new().child(tr(cx, "gallery.m01.empty.title")))
@@ -288,6 +289,7 @@ impl gpui_kit::Render for MoleculesStructure {
                 variant_frame(structure::empty_block(
                     300.,
                     IconName::Receipt,
+                    None,
                     tr(cx, "gallery.m01.empty.first_run_t"),
                     tr(cx, "gallery.m01.empty.first_run_d"),
                     h_flex()
@@ -314,6 +316,7 @@ impl gpui_kit::Render for MoleculesStructure {
                 variant_frame(structure::empty_block(
                     300.,
                     IconName::Search,
+                    None,
                     tr(cx, "gallery.m01.empty.no_matches_t"),
                     tr(cx, "gallery.m01.empty.no_matches_d"),
                     h_flex().child(atoms::button(
@@ -332,6 +335,7 @@ impl gpui_kit::Render for MoleculesStructure {
                 variant_frame(structure::empty_block(
                     300.,
                     IconName::CircleCheck,
+                    role_hsla(mode, "success"),
                     tr(cx, "gallery.m01.empty.caught_t"),
                     tr(cx, "gallery.m01.empty.caught_d"),
                     h_flex(),
@@ -344,6 +348,7 @@ impl gpui_kit::Render for MoleculesStructure {
                 variant_frame(structure::empty_block(
                     300.,
                     IconName::CloudOff,
+                    None,
                     tr(cx, "gallery.m01.empty.offline_t"),
                     tr(cx, "gallery.m01.empty.offline_d"),
                     h_flex(),
@@ -356,6 +361,7 @@ impl gpui_kit::Render for MoleculesStructure {
                 variant_frame(structure::empty_block(
                     300.,
                     IconName::CircleAlert,
+                    role_hsla(mode, "danger"),
                     tr(cx, "gallery.m01.empty.error_t"),
                     tr(cx, "gallery.m01.empty.error_d"),
                     h_flex().child(atoms::button(

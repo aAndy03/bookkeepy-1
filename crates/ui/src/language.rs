@@ -2919,17 +2919,21 @@ pub mod structure {
     pub fn empty_block(
         w: f32,
         glyph: IconName,
+        icon_color: Option<gpui_kit::Hsla>,
         title: impl Into<SharedString>,
         desc: impl Into<SharedString>,
         actions: Div,
         mode: Mode,
     ) -> Div {
+        let icon_ink = icon_color
+            .or_else(|| role_hsla(mode, "icon-muted"))
+            .unwrap_or_default();
         v_flex()
             .w(px(w))
             .p(px(32.))
             .px(px(24.))
             .gap(px(12.))
-            .child(icon(glyph, 24.).text_color(role_hsla(mode, "icon-muted").unwrap_or_default()))
+            .child(icon(glyph, 24.).text_color(icon_ink))
             .child(
                 v_flex()
                     .gap(px(6.))

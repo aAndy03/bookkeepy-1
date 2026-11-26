@@ -13,7 +13,6 @@ use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::IndexPath;
 use gpui_kit::component::StyledExt as _;
-use gpui_kit::component::calendar::{Calendar, CalendarState};
 use gpui_kit::component::combobox::{Combobox, ComboboxState};
 use gpui_kit::component::date_picker::{DatePicker, DatePickerState};
 use gpui_kit::component::searchable_list::SearchableListItem;
@@ -105,27 +104,10 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
     date_state.update(cx, |s, cx| {
         s.set_date(jiff::civil::date(2026, 10, 21), window, cx);
     });
-    let cal_single = cx.new(|cx| CalendarState::new(window, cx));
-    cal_single.update(cx, |s, cx| {
-        s.set_date(jiff::civil::date(2026, 10, 21), window, cx);
-    });
-    let cal_range = cx.new(|cx| CalendarState::new(window, cx));
-    cal_range.update(cx, |s, cx| {
-        s.set_date(
-            (
-                jiff::civil::date(2026, 10, 10),
-                jiff::civil::date(2026, 10, 20),
-            ),
-            window,
-            cx,
-        );
-    });
     cx.new(|_cx| MoleculesPickers {
         select_state,
         combo_state,
         date_state,
-        cal_single,
-        cal_range,
     })
     .into()
 }
@@ -134,8 +116,6 @@ pub struct MoleculesPickers {
     select_state: Entity<SelectState<SearchableVec<Account>>>,
     combo_state: Entity<ComboboxState<SearchableVec<Account>>>,
     date_state: Entity<DatePickerState>,
-    cal_single: Entity<CalendarState>,
-    cal_range: Entity<CalendarState>,
 }
 
 impl gpui_kit::Render for MoleculesPickers {
@@ -461,8 +441,9 @@ impl gpui_kit::Render for MoleculesPickers {
                 DatePicker::new(&self.date_state).w(px(240.)),
             ),
         ]);
-        // Live calendars inside the painted popup frame; range gets a presets rail.
-        let cal_single = pickers::calendar_popup(mode).child(Calendar::new(&self.cal_single));
+        // Painted calendars, sheet-exact (stock Calendar cells don't match the
+        // 32px day-cell axis); the DatePicker trigger above stays live.
+        let cal_single = painted_calendar(mode, CalendarKind::Single);
         let presets_rail = v_flex()
             .h(px(148.))
             .p(px(4.))
@@ -504,9 +485,9 @@ impl gpui_kit::Render for MoleculesPickers {
             })
             .child(presets_rail)
             .child(
-                pickers::calendar_popup(mode)
+                painted_calendar(mode, CalendarKind::Range)
                     .border_0()
-                    .child(Calendar::new(&self.cal_range)),
+                    .rounded(px(0.)),
             );
         let dp_group = kit::group(
             cx,
@@ -574,4 +555,111 @@ fn combo_row(
             .text_color(prim_hsla("neutral-0").unwrap_or_default())
             .child(label),
     )
+}
+
+/// Which selection the painted October 2026 calendar shows.
+enum CalendarKind {
+    Single,
+    Range,
+}
+
+/// Painted October 2026 calendar (Mon-start) in the sheet's popup frame:
+/// head with month nav, weekday header, 6 weeks of 32×32 day cells.
+/// Sundays 4/11/25 disabled, 18 = today (accent ring), single marks 21,
+/// range marks 10–20 (ends primary, middle white-a8).
+fn painted_calendar(
+    mode: bookkeepy_primary_data::theme::Mode,
+    kind: CalendarKind,
+) -> gpui_kit::Div {
+    let day = |n: u32, ix: DayIx| pickers::day_cell(n, ix, mode);
+    let weeks: [[(u32, DayIx); 7]; 6] = [
+        [
+            (28, DayIx::Outside),
+            (29, DayIx::Outside),
+            (30, DayIx::Outside),
+            (1, DayIx::Default),
+            (2, DayIx::Default),
+            (3, DayIx::Default),
+            (4, DayIx::Disabled),
+        ],
+        [
+            (5, DayIx::Default),
+            (6, DayIx::Default),
+            (7, DayIx::Default),
+            (8, DayIx::Default),
+            (9, DayIx::Default),
+            (10, DayIx::Default),
+            (11, DayIx::Disabled),
+        ],
+        [
+            (12, DayIx::Default),
+            (13, DayIx::Default),
+            (14, DayIx::Default),
+            (15, DayIx::Default),
+            (16, DayIx::Default),
+            (17, DayIx::Default),
+            (18, DayIx::Today),
+        ],
+        [
+            (19, DayIx::Default),
+            (20, DayIx::Default),
+            (21, DayIx::Default),
+            (22, DayIx::Default),
+            (23, DayIx::Default),
+            (24, DayIx::Default),
+            (25, DayIx::Disabled),
+        ],
+        [
+            (26, DayIx::Default),
+            (27, DayIx::Default),
+            (28, DayIx::Default),
+            (29, DayIx::Default),
+            (30, DayIx::Default),
+            (31, DayIx::Default),
+            (1, DayIx::Outside),
+        ],
+        [
+            (2, DayIx::Outside),
+            (3, DayIx::Outside),
+            (4, DayIx::Outside),
+            (5, DayIx::Outside),
+            (6, DayIx::Outside),
+            (7, DayIx::Outside),
+            (8, DayIx::Outside),
+        ],
+    ];
+    // apply the selection kind
+    let weeks = match kind {
+        CalendarKind::Single => weeks.map(|w| {
+            w.map(|(n, ix)| {
+                if n == 21 {
+                    (n, DayIx::Selected)
+                } else {
+                    (n, ix)
+                }
+            })
+        }),
+        CalendarKind::Range => weeks.map(|w| {
+            w.map(|(n, ix)| {
+                if n == 10 || n == 20 {
+                    (n, DayIx::Selected)
+                } else if (11..=19).contains(&n) {
+                    (n, DayIx::RangeMiddle)
+                } else {
+                    (n, ix)
+                }
+            })
+        }),
+    };
+    let weekday_row = h_flex()
+        .children(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(|d| pickers::weekday(d, mode)));
+    let grid = v_flex().gap(px(0.)).children(
+        weeks
+            .into_iter()
+            .map(|w| h_flex().children(w.map(|(n, ix)| day(n, ix)))),
+    );
+    pickers::calendar_popup(mode)
+        .child(pickers::calendar_head("October 2026", mode))
+        .child(weekday_row)
+        .child(grid)
 }
