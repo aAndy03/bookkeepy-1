@@ -21,6 +21,7 @@ mod atoms_feedback;
 mod atoms_input;
 mod atoms_media;
 pub(crate) mod kit;
+mod molecules_calendar;
 mod molecules_groups;
 mod molecules_pickers;
 mod molecules_popups;
@@ -105,6 +106,7 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(molecules_pickers, "molecules-pickers", Molecules),
     section!(molecules_structure, "molecules-structure", Molecules),
     section!(molecules_groups, "molecules-groups", Molecules),
+    section!(molecules_calendar, "molecules-calendar", Molecules),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).

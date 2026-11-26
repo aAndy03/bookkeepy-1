@@ -4242,6 +4242,603 @@ pub mod groups {
     }
 }
 
+// ── MOLECULES · 03 — calendar, time field, color picker, attachment ───────────
+/// M20–M23 sheet presets (references/designlanguage MOLECULES · 03). Day cells
+/// reuse [`super::pickers::day_cell`] — its state colors match this sheet 1:1.
+pub mod temporal {
+    use super::atoms::icon;
+    use super::popups::popup_shadow;
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::component::StyledExt as _;
+    use gpui_kit::{
+        Div, FontWeight, Hsla, ParentElement as _, SharedString, StyleRefinement, Styled as _, div,
+        px,
+    };
+
+    fn c(alias: &str) -> Hsla {
+        prim_hsla(alias).unwrap_or_default()
+    }
+
+    fn r(mode: Mode, role: &str) -> Hsla {
+        role_hsla(mode, role).unwrap_or_default()
+    }
+
+    fn txt(size: f32, lh: f32, w: FontWeight, color: Hsla, s: SharedString) -> Div {
+        div()
+            .text_size(px(size))
+            .line_height(px(lh))
+            .font_weight(w)
+            .text_color(color)
+            .child(s)
+    }
+
+    // ── M20 · Calendar ───────────────────────────────────────────────────────
+
+    /// The standalone calendar card: 260px, popover fill, hairline, rx12, p12,
+    /// 8px between head / weekday row / grid (sheet M20 master).
+    pub fn cal_card(mode: Mode) -> Div {
+        div()
+            .w(px(260.))
+            .p(px(12.))
+            .flex()
+            .flex_col()
+            .gap(px(8.))
+            .rounded(px(radius_tier("xl")))
+            .border_1()
+            .border_color(r(mode, "border-subtle"))
+            .bg(r(mode, "popover"))
+    }
+
+    /// Calendar head: 28×28 rx6 nav buttons (transparent 2px ring slot) flanking a
+    /// centered 12/500 title (M20: "October 2026" day view, "2026" months view).
+    pub fn cal_head(title: impl Into<SharedString>, mode: Mode) -> Div {
+        let btn = |name: IconName| {
+            div()
+                .size(px(28.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(radius_tier("md")))
+                .border_2()
+                .border_color(gpui_kit::transparent_white())
+                .child(icon(name, 14.).text_color(r(mode, "icon")))
+        };
+        h_flex()
+            .w_full()
+            .items_center()
+            .child(btn(IconName::ChevronLeft))
+            .child(div().flex_1())
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                title.into(),
+            ))
+            .child(div().flex_1())
+            .child(btn(IconName::ChevronRight))
+    }
+
+    /// Weekday header cell: 32×20, 11/400 neutral-500 (M20 weekday axis).
+    pub fn cal_weekday(label: &'static str) -> Div {
+        div()
+            .w(px(32.))
+            .h(px(20.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(11.))
+            .line_height(px(15.))
+            .text_color(c("neutral-500"))
+            .child(label)
+    }
+
+    /// Weekday header row: Mo–Su (Monday first), gap 2.
+    pub fn cal_weekday_row() -> Div {
+        h_flex()
+            .gap(px(2.))
+            .children(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(cal_weekday))
+    }
+
+    /// Months-view cell state (M20 "calendar · months").
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum MonthIx {
+        /// default month: transparent, neutral-300 label.
+        Default,
+        /// current month: primary fill, dark label.
+        Current,
+        /// selected month: accent ring, white label.
+        Selected,
+    }
+
+    /// One month cell: 76×36, rx6, 1px transparent border, 12/400 label.
+    pub fn month_cell(label: &'static str, ix: MonthIx) -> Div {
+        let (bg, border, color) = match ix {
+            MonthIx::Default => (None, None, c("neutral-300")),
+            MonthIx::Current => (Some(c("neutral-100")), None, c("neutral-925")),
+            MonthIx::Selected => (None, Some(c("orange-500")), c("neutral-0")),
+        };
+        let mut cell = div()
+            .w(px(76.))
+            .h(px(36.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .border_color(border.unwrap_or_else(gpui_kit::transparent_white));
+        if let Some(bg) = bg {
+            cell = cell.bg(bg);
+        }
+        cell.child(
+            div()
+                .text_size(px(12.))
+                .line_height(px(14.))
+                .text_color(color)
+                .child(label),
+        )
+    }
+
+    // ── M21 · Time field ─────────────────────────────────────────────────────
+
+    /// Time-field interaction state (M21 instance axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TfIx {
+        /// rest: transparent ring, `input` outline, plain segments.
+        Rest,
+        /// hover: transparent ring, `input-hover` outline.
+        Hover,
+        /// focus on the hours segment: white-a16 ring, `input-focus` outline,
+        /// hours segment on control-selected.
+        FocusHours,
+        /// focus on the minutes segment.
+        FocusMinutes,
+        /// invalid: `danger` outline, danger label + warning glyph.
+        Invalid,
+        /// disabled: 40% opacity, neutral-600 label.
+        Disabled,
+        /// 12 h cycle: extra PM segment, rest chrome.
+        H12,
+    }
+
+    /// One painted time-field instance: label + 2px ring wrapper + sunken field
+    /// with segments, separator, trailing clock/warning glyph (M21, w160).
+    pub fn time_field(ix: TfIx, mode: Mode) -> Div {
+        let focused = matches!(ix, TfIx::FocusHours | TfIx::FocusMinutes);
+        let label_color = match ix {
+            TfIx::Invalid => r(mode, "danger-foreground"),
+            TfIx::Disabled => c("neutral-600"),
+            _ => r(mode, "foreground"),
+        };
+        let ring = if focused {
+            c("white-a16")
+        } else {
+            gpui_kit::transparent_white()
+        };
+        let outline = match ix {
+            TfIx::Hover => r(mode, "input-hover"),
+            TfIx::FocusHours | TfIx::FocusMinutes => r(mode, "input-focus"),
+            TfIx::Invalid => r(mode, "danger"),
+            _ => r(mode, "input"),
+        };
+        let segment = |text: &str, active: bool| {
+            let mut s = div()
+                .h(px(22.))
+                .px(px(3.))
+                .flex()
+                .items_center()
+                .rounded(px(radius_tier("sm")));
+            if active {
+                s = s.bg(r(mode, "control-selected"));
+            }
+            s.child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                r(mode, "foreground"),
+                text.into(),
+            ))
+        };
+        let (seg_a, seg_b) = match ix {
+            TfIx::FocusHours => (segment("14", true), segment("32", false)),
+            TfIx::FocusMinutes => (segment("14", false), segment("32", true)),
+            _ => (segment("14", false), segment("32", false)),
+        };
+        let mut field = h_flex()
+            .w_full()
+            .h(px(32.))
+            .px(px(8.))
+            .gap(px(1.))
+            .items_center()
+            .bg(r(mode, "surface-sunken"))
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .border_color(outline)
+            .child(seg_a)
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                c("neutral-400"),
+                ":".into(),
+            ))
+            .child(seg_b);
+        if ix == TfIx::H12 {
+            field = field.child(segment("PM", false));
+        }
+        field = field.child(div().flex_1()).child(if ix == TfIx::Invalid {
+            icon(IconName::CircleAlert, 14.).text_color(r(mode, "danger-foreground"))
+        } else {
+            icon(IconName::Clock, 14.).text_color(r(mode, "icon"))
+        });
+        let mut inst = v_flex()
+            .w(px(160.))
+            .gap(px(6.))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                label_color,
+                "Time".into(),
+            ))
+            .child(
+                div()
+                    .w_full()
+                    .p(px(2.))
+                    .rounded(px(radius_tier("lg")))
+                    .border_2()
+                    .border_color(ring)
+                    .child(field),
+            );
+        if ix == TfIx::Disabled {
+            inst = inst.opacity(0.4);
+        }
+        inst
+    }
+
+    // ── M22 · Color picker ───────────────────────────────────────────────────
+
+    /// Swatch interaction state (M22: "checked × interaction ring").
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum SwIx {
+        /// rest: 2px transparent ring around the 16px disc.
+        Rest,
+        /// hover: border-strong ring.
+        Hover,
+        /// focus: `ring` ring.
+        Focus,
+        /// selected/checked: foreground ring (1px gap).
+        Selected,
+        /// disabled: transparent ring, 40% opacity.
+        Disabled,
+    }
+
+    /// One 24×24 swatch: 2px ring wrapper + 16px color disc (M22).
+    pub fn swatch(color: Hsla, ix: SwIx) -> Div {
+        let ring = match ix {
+            SwIx::Hover => c("neutral-700"),
+            SwIx::Focus => c("neutral-200"),
+            SwIx::Selected => c("neutral-0"),
+            _ => gpui_kit::transparent_white(),
+        };
+        let mut el = div()
+            .size(px(24.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded_full()
+            .border_2()
+            .border_color(ring)
+            .child(div().size(px(16.)).rounded_full().bg(color));
+        if ix == SwIx::Disabled {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    /// The picker popover card: 252px, popover fill, hairline, rx12, popover
+    /// shadow, p12 (M22 "color-picker" master).
+    pub fn cp_card(mode: Mode) -> Div {
+        div()
+            .w(px(252.))
+            .p(px(12.))
+            .flex()
+            .flex_col()
+            .gap(px(12.))
+            .rounded(px(radius_tier("xl")))
+            .border_1()
+            .border_color(r(mode, "border-subtle"))
+            .bg(r(mode, "popover"))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(popup_shadow()),
+                ..Default::default()
+            })
+    }
+
+    /// Featured-swatch row: the 8 data colors, data-1 selected (white ring).
+    pub fn cp_featured(mode: Mode) -> Div {
+        let sw = |i: u8, ix: SwIx| swatch(r(mode, &format!("data-{i}")), ix);
+        h_flex().gap(px(4.)).children([
+            sw(1, SwIx::Selected),
+            sw(2, SwIx::Rest),
+            sw(3, SwIx::Rest),
+            sw(4, SwIx::Rest),
+            sw(5, SwIx::Rest),
+            sw(6, SwIx::Rest),
+            sw(7, SwIx::Rest),
+            sw(8, SwIx::Rest),
+        ])
+    }
+
+    /// Custom row: 32×32 color preview + hex input well (M22 "custom").
+    pub fn cp_custom(hex: impl Into<SharedString>, mode: Mode) -> Div {
+        h_flex()
+            .w_full()
+            .gap(px(8.))
+            .items_center()
+            .child(
+                div()
+                    .size(px(32.))
+                    .rounded(px(radius_tier("md")))
+                    .bg(r(mode, "data-1")),
+            )
+            .child(
+                h_flex()
+                    .flex_1()
+                    .h(px(32.))
+                    .px(px(10.))
+                    .items_center()
+                    .bg(r(mode, "surface-sunken"))
+                    .rounded(px(radius_tier("md")))
+                    .border_1()
+                    .border_color(r(mode, "input"))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::NORMAL,
+                        r(mode, "foreground"),
+                        hex.into(),
+                    )),
+            )
+    }
+
+    /// ColorSelect field-trigger interaction state (M22 "color-select").
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum CsIx {
+        /// rest: transparent ring, `input` outline.
+        Rest,
+        /// open: white-a16 ring, `input-focus` outline.
+        Open,
+        /// disabled: transparent ring, 40% opacity.
+        Disabled,
+    }
+
+    /// ColorSelect trigger: 200px, 2px ring wrapper (rx8, p2) around the sunken
+    /// field with dot + name + caret (M22).
+    pub fn color_select(name: impl Into<SharedString>, ix: CsIx, mode: Mode) -> Div {
+        let ring = if ix == CsIx::Open {
+            c("white-a16")
+        } else {
+            gpui_kit::transparent_white()
+        };
+        let outline = if ix == CsIx::Open {
+            r(mode, "input-focus")
+        } else {
+            r(mode, "input")
+        };
+        let mut el = div()
+            .w(px(200.))
+            .p(px(2.))
+            .rounded(px(radius_tier("lg")))
+            .border_2()
+            .border_color(ring)
+            .child(
+                h_flex()
+                    .w_full()
+                    .h(px(32.))
+                    .px(px(10.))
+                    .gap(px(8.))
+                    .items_center()
+                    .bg(r(mode, "surface-sunken"))
+                    .rounded(px(radius_tier("md")))
+                    .border_1()
+                    .border_color(outline)
+                    .child(div().size(px(10.)).rounded_full().bg(r(mode, "data-1")))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::NORMAL,
+                        r(mode, "foreground"),
+                        name.into(),
+                    ))
+                    .child(div().flex_1())
+                    .child(icon(IconName::ChevronDown, 12.).text_color(r(mode, "icon"))),
+            );
+        if ix == CsIx::Disabled {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    // ── M23 · Attachment ─────────────────────────────────────────────────────
+
+    /// Attachment-row lifecycle state (M23 axis: queued · uploading · done · failed).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum AttIx {
+        /// queued: muted name, "Waiting to upload", remove button.
+        Queued,
+        /// uploading: white name, progress track 64%, spinner + remove.
+        Uploading,
+        /// done: white name, meta line, remove.
+        Done,
+        /// done under hover: white-a4 row fill.
+        DoneHover,
+        /// failed: danger name + reason, retry + remove.
+        Failed,
+    }
+
+    /// One attachment row: 340×52, hairline outline, rx6, thumb + name/meta +
+    /// trailing actions (M23).
+    pub fn att_row(name: SharedString, meta: SharedString, ix: AttIx, mode: Mode) -> Div {
+        let name_color = match ix {
+            AttIx::Queued => c("neutral-400"),
+            AttIx::Failed => r(mode, "danger-foreground"),
+            _ => r(mode, "foreground"),
+        };
+        let meta_color = if ix == AttIx::Failed {
+            r(mode, "danger-foreground")
+        } else {
+            c("neutral-400")
+        };
+        let x_btn = || {
+            div()
+                .size(px(20.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(radius_tier("md")))
+                .child(icon(IconName::X, 14.).text_color(r(mode, "icon")))
+        };
+        let content = v_flex().flex_1().min_w_0().gap(px(4.)).child(txt(
+            12.,
+            14.,
+            FontWeight::MEDIUM,
+            name_color,
+            name,
+        ));
+        let content = if ix == AttIx::Uploading {
+            content.child(
+                h_flex()
+                    .w_full()
+                    .gap(px(8.))
+                    .items_center()
+                    .child(
+                        h_flex()
+                            .flex_1()
+                            .h(px(4.))
+                            .rounded_full()
+                            .bg(c("white-a8"))
+                            .child(
+                                div()
+                                    .w(px(140.))
+                                    .h(px(4.))
+                                    .rounded_full()
+                                    .bg(c("neutral-100")),
+                            ),
+                    )
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        c("neutral-400"),
+                        "64 %".into(),
+                    )),
+            )
+        } else {
+            content.child(txt(11., 15., FontWeight::NORMAL, meta_color, meta))
+        };
+        let mut row = h_flex()
+            .w(px(340.))
+            .h(px(52.))
+            .px(px(8.))
+            .gap(px(12.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .border_1()
+            .border_color(r(mode, "border-subtle"))
+            .child(
+                div()
+                    .size(px(36.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(radius_tier("sm")))
+                    .bg(r(mode, "surface-raised"))
+                    .child(icon(IconName::Receipt, 16.).text_color(c("neutral-400"))),
+            )
+            .child(content);
+        if ix == AttIx::Uploading {
+            row = row
+                .child(icon(IconName::LoaderCircle, 16.).text_color(r(mode, "icon")))
+                .child(x_btn());
+        } else if ix == AttIx::Failed {
+            row = row
+                .child(
+                    div()
+                        .size(px(20.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(radius_tier("md")))
+                        .child(icon(IconName::RotateCcw, 14.).text_color(r(mode, "icon"))),
+                )
+                .child(x_btn());
+        } else {
+            row = row.child(x_btn());
+        }
+        if ix == AttIx::DoneHover {
+            row = row.bg(c("white-a4"));
+        }
+        row
+    }
+
+    /// Drop-zone interaction state (M23: rest · drag over · focus).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DzIx {
+        /// rest: 1px border-strong outline, transparent fill.
+        Rest,
+        /// drag over: accent-subtle fill, accent @40% outline, duotone glyph.
+        DragOver,
+        /// focus: 1px `ring` outline.
+        Focus,
+    }
+
+    /// The drop zone: 340×76, rx16, solid 1px outline (never dashed), upload
+    /// glyph + title + hint (M23).
+    pub fn dropzone(ix: DzIx, mode: Mode, title: SharedString, hint: SharedString) -> Div {
+        let (bg, outline, glyph) = match ix {
+            DzIx::Rest => (None, r(mode, "border-strong"), r(mode, "icon")),
+            DzIx::DragOver => {
+                let mut accent = c("orange-500");
+                accent.a = 0.4;
+                (Some(r(mode, "accent-subtle")), accent, r(mode, "accent"))
+            }
+            DzIx::Focus => (None, r(mode, "ring"), r(mode, "icon")),
+        };
+        let mut el = div()
+            .w(px(340.))
+            .h(px(76.))
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .gap(px(4.))
+            .rounded(px(radius_tier("2xl")))
+            .border_1()
+            .border_color(outline)
+            .child(
+                h_flex()
+                    .gap(px(8.))
+                    .items_center()
+                    .child(icon(IconName::Upload, 16.).text_color(glyph))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "foreground"),
+                        title,
+                    )),
+            )
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), hint));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        el
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

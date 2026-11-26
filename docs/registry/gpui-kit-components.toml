@@ -49,8 +49,8 @@ id = "attachment"
 title = "Attachment"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/attachment/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
 
 [[component]]
 id = "avatar"
@@ -89,8 +89,8 @@ id = "calendar"
 title = "Calendar"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/calendar/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
 
 [[component]]
 id = "carousel"
@@ -137,8 +137,8 @@ id = "color-picker"
 title = "ColorPicker"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/color-picker/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
 
 [[component]]
 id = "combobox"
@@ -606,8 +606,8 @@ id = "time-field"
 title = "TimeField"
 section = "molecules-calendar"
 docs = "https://gpui-kit.com/component/time-field/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
 
 [[component]]
 id = "title-bar"
