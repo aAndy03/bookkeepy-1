@@ -4839,6 +4839,846 @@ pub mod temporal {
     }
 }
 
+// ── ORGANISMS · 01 — title bar, sidebar, dialog, alert, notification, table ───
+/// O1–O8 sheet presets (references/designlanguage ORGANISMS · 01).
+pub mod organisms {
+    use super::atoms::icon;
+    use super::popups::popup_shadow;
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::component::StyledExt as _;
+    use gpui_kit::{
+        BoxShadow, Div, FontWeight, Hsla, ParentElement as _, SharedString, StyleRefinement,
+        Styled as _, div, px,
+    };
+
+    fn c(alias: &str) -> Hsla {
+        prim_hsla(alias).unwrap_or_default()
+    }
+
+    fn r(mode: Mode, role: &str) -> Hsla {
+        role_hsla(mode, role).unwrap_or_default()
+    }
+
+    fn txt(size: f32, lh: f32, w: FontWeight, color: Hsla, s: SharedString) -> Div {
+        div()
+            .text_size(px(size))
+            .line_height(px(lh))
+            .font_weight(w)
+            .text_color(color)
+            .child(s)
+    }
+
+    /// The dialog shadow (TOKENS §06: 0 16 48, black @ 60%).
+    pub fn dialog_shadow() -> Vec<BoxShadow> {
+        vec![BoxShadow::new(px(0.), px(16.), c("black-a60")).blur_radius(px(24.))]
+    }
+
+    /// A 28×28 icon button with the transparent 2px focus-ring slot (O1/O3/O5).
+    pub fn icon_btn(name: IconName, glyph: f32, color: Hsla, mode: Mode) -> Div {
+        let _ = mode;
+        div()
+            .size(px(28.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(radius_tier("md")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .child(icon(name, glyph).text_color(color))
+    }
+
+    // ── O1 · Title bar ───────────────────────────────────────────────────────
+
+    /// The title bar's right cluster: tools (search/help/hide) + divider + window
+    /// controls (min/max/close). `dim` = the unfocused-window 50% group.
+    pub fn title_bar_right(dim: bool, close_danger: bool, mode: Mode) -> Div {
+        let ink = r(mode, "icon");
+        let tool = |name: IconName| icon_btn(name, 16., ink, mode);
+        let mut el = h_flex()
+            .gap(px(8.))
+            .items_center()
+            .child(h_flex().gap(px(2.)).children([
+                tool(IconName::Search),
+                tool(IconName::CircleQuestionMark),
+                tool(IconName::EyeOff),
+            ]))
+            .child(div().w(px(1.)).h(px(16.)).bg(c("neutral-800")))
+            .child(h_flex().gap(px(2.)).children([
+                icon_btn(IconName::Minus, 18., ink, mode),
+                icon_btn(IconName::Square, 16., ink, mode),
+                icon_btn(
+                    IconName::X,
+                    18.,
+                    if close_danger { r(mode, "danger") } else { ink },
+                    mode,
+                ),
+            ]));
+        if dim {
+            el = el.opacity(0.5);
+        }
+        el
+    }
+
+    /// The master title bar: 940×48, transparent, px16 — overline + page title left,
+    /// drag region middle, tool/window cluster right (O1).
+    pub fn title_bar(kicker: SharedString, title: SharedString, focused: bool, mode: Mode) -> Div {
+        let title_color = if focused {
+            r(mode, "foreground")
+        } else {
+            c("neutral-500")
+        };
+        h_flex()
+            .w(px(940.))
+            .h(px(48.))
+            .px(px(16.))
+            .gap(px(16.))
+            .items_center()
+            .child(
+                v_flex()
+                    .gap(px(2.))
+                    .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), kicker))
+                    .child(txt(20., 24., FontWeight::SEMIBOLD, title_color, title)),
+            )
+            .child(div().flex_1().h(px(48.)))
+            .child(title_bar_right(!focused, false, mode))
+    }
+
+    /// The in-main-view window chrome: #171717 rx40 hairline container (O1 "window
+    /// states" demo shell).
+    pub fn window_chrome(mode: Mode) -> Div {
+        div()
+            .bg(r(mode, "surface"))
+            .rounded(px(radius_tier("viewport")))
+            .border_1()
+            .border_color(r(mode, "border-strong"))
+            .p(px(4.))
+            .flex()
+            .flex_col()
+    }
+
+    // ── O2 · Sidebar ─────────────────────────────────────────────────────────
+
+    /// Sidebar nav-item interaction state (O2 axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum NavIx {
+        /// rest: transparent, muted icon + label.
+        Rest,
+        /// hover: white-a4 plate.
+        Hover,
+        /// active: white-a8 plate, white duotone icon + label.
+        Active,
+        /// disabled: 40% opacity.
+        Disabled,
+    }
+
+    /// One sidebar nav item: h24, rx6, 2px transparent ring, px8, icon 14 + label 12
+    /// + optional accent count badge (O2).
+    pub fn nav_item(
+        glyph: Option<IconName>,
+        label: Option<SharedString>,
+        badge: Option<SharedString>,
+        ix: NavIx,
+        mode: Mode,
+    ) -> Div {
+        let (plate, icon_c, label_c) = match ix {
+            NavIx::Active => (Some(c("white-a8")), c("neutral-0"), c("neutral-0")),
+            NavIx::Hover => (Some(c("white-a4")), c("neutral-300"), c("neutral-300")),
+            NavIx::Disabled => (None, c("neutral-500"), c("neutral-500")),
+            NavIx::Rest => (None, c("neutral-400"), c("neutral-300")),
+        };
+        let mut el = h_flex()
+            .w_full()
+            .h(px(24.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white());
+        if let Some(plate) = plate {
+            el = el.bg(plate);
+        }
+        if let Some(glyph) = glyph {
+            el = el.child(icon(glyph, 14.).text_color(icon_c));
+        }
+        if let Some(label) = label {
+            el = el.child(txt(12., 14., FontWeight::NORMAL, label_c, label));
+        }
+        if let Some(badge) = badge {
+            el = el.child(div().flex_1()).child(
+                h_flex()
+                    .h(px(16.))
+                    .px(px(5.))
+                    .items_center()
+                    .rounded_full()
+                    .bg(r(mode, "accent"))
+                    .child(txt(10., 12., FontWeight::SEMIBOLD, c("neutral-925"), badge)),
+            );
+        }
+        if ix == NavIx::Disabled {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    /// A profile/workspace switcher plate: overline caption + avatar dot + value +
+    /// caret (O2 "switchers").
+    pub fn sb_switcher(
+        caption: SharedString,
+        initials: &str,
+        av_bg: &str,
+        av_ink: &str,
+        value: SharedString,
+        _mode: Mode,
+    ) -> Div {
+        v_flex()
+            .gap(px(2.))
+            .rounded(px(radius_tier("md")))
+            .border_2()
+            .border_color(gpui_kit::transparent_white())
+            .p(px(4.))
+            .px(px(6.))
+            .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), caption))
+            .child(
+                h_flex()
+                    .gap(px(4.))
+                    .items_center()
+                    .child(
+                        div()
+                            .size(px(16.))
+                            .rounded_full()
+                            .bg(c(av_bg))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(txt(
+                                7.,
+                                8.,
+                                FontWeight::SEMIBOLD,
+                                c(av_ink),
+                                initials.into(),
+                            )),
+                    )
+                    .child(txt(12., 14., FontWeight::SEMIBOLD, c("neutral-300"), value))
+                    .child(icon(IconName::ChevronsUpDown, 12.).text_color(c("neutral-300"))),
+            )
+    }
+
+    /// A sidebar group label: px8 overline muted (O2 "money"/"plan"/"review").
+    pub fn sb_group_label(label: SharedString) -> Div {
+        div()
+            .px(px(8.))
+            .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), label))
+    }
+
+    /// The offline sync line in the sidebar footer (O2).
+    pub fn sb_sync_line(text: SharedString, collapsed: bool) -> Div {
+        let line = h_flex()
+            .h(px(20.))
+            .px(px(8.))
+            .gap(px(4.))
+            .items_center()
+            .child(icon(IconName::CloudOff, 12.).text_color(c("neutral-500")));
+        if collapsed {
+            line.justify_center()
+        } else {
+            line.child(txt(11., 15., FontWeight::NORMAL, c("neutral-500"), text))
+        }
+    }
+
+    /// The painted expanded sidebar frame: 284×700, page bg, 32/32/16 padding (O2).
+    pub fn sidebar_expanded_frame(mode: Mode) -> Div {
+        div()
+            .w(px(284.))
+            .h(px(700.))
+            .bg(r(mode, "background"))
+            .p(px(32.))
+            .pb(px(16.))
+            .flex()
+            .flex_col()
+            .justify_between()
+    }
+
+    /// The painted collapsed sidebar frame: 72×700 (O2).
+    pub fn sidebar_collapsed_frame(mode: Mode) -> Div {
+        div()
+            .w(px(72.))
+            .h(px(700.))
+            .bg(r(mode, "background"))
+            .p(px(32.))
+            .pb(px(16.))
+            .px(px(16.))
+            .flex()
+            .flex_col()
+            .justify_between()
+    }
+
+    /// The resize demo: 300px outer with the 2px border-strong trailing line and the
+    /// light "296" width tip (O2 "resizing").
+    pub fn sidebar_resize(w: u32, mode: Mode) -> Div {
+        div()
+            .relative()
+            .w(px(300.))
+            .h(px(700.))
+            .child(div().w(px(w as f32)).h_full().bg(r(mode, "background")))
+            .child(
+                div()
+                    .absolute()
+                    .right(px(0.))
+                    .w(px(2.))
+                    .h_full()
+                    .bg(r(mode, "border-strong")),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .right(px(6.))
+                    .top(px(340.))
+                    .bg(c("neutral-100"))
+                    .rounded(px(radius_tier("sm")))
+                    .px(px(6.))
+                    .py(px(2.))
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        c("neutral-925"),
+                        w.to_string().into(),
+                    )),
+            )
+    }
+
+    // ── O3/O4 · Dialog & alert dialog ────────────────────────────────────────
+
+    /// Dialog panel frame: surface-raised, rx20, hairline `border`, dialog shadow,
+    /// p24 (O3: 440px wide; O4: 380px).
+    pub fn dlg_frame(w: f32, mode: Mode) -> Div {
+        div()
+            .w(px(w))
+            .p(px(24.))
+            .flex()
+            .flex_col()
+            .gap(px(24.))
+            .rounded(px(radius_tier("3xl")))
+            .border_1()
+            .border_color(r(mode, "border"))
+            .bg(r(mode, "surface-raised"))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(dialog_shadow()),
+                ..Default::default()
+            })
+    }
+
+    /// Dialog header: titles col (title 20/600 + description 12/18 muted) + close
+    /// icon-button (O3/O4).
+    pub fn dlg_header(title: SharedString, desc: Option<SharedString>, mode: Mode) -> Div {
+        let mut titles = v_flex().flex_1().gap(px(8.)).child(txt(
+            20.,
+            24.,
+            FontWeight::SEMIBOLD,
+            r(mode, "foreground"),
+            title,
+        ));
+        if let Some(desc) = desc {
+            titles = titles.child(txt(12., 18., FontWeight::NORMAL, c("neutral-400"), desc));
+        }
+        h_flex()
+            .gap(px(16.))
+            .items_start()
+            .child(titles)
+            .child(icon_btn(IconName::X, 16., r(mode, "icon"), mode))
+    }
+
+    /// A dialog form field: label 12/500 + 2px ring wrapper (rx8, p2) around the
+    /// sunken well (#0d0d0d, rx6, h32, `input` outline) (O3 body fields).
+    pub fn dlg_field(
+        label: SharedString,
+        ring: Hsla,
+        outline: Hsla,
+        field: Div,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .gap(px(6.))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                label,
+            ))
+            .child(
+                div()
+                    .w_full()
+                    .p(px(2.))
+                    .rounded(px(radius_tier("lg")))
+                    .border_2()
+                    .border_color(ring)
+                    .child(
+                        field
+                            .w_full()
+                            .h(px(32.))
+                            .bg(r(mode, "surface-sunken"))
+                            .rounded(px(radius_tier("md")))
+                            .border_1()
+                            .border_color(outline),
+                    ),
+            )
+    }
+
+    /// A footer button: h32 rx6 px12, label 12/500 (O3/O4 footers).
+    pub fn dlg_btn(
+        label: SharedString,
+        bg: Hsla,
+        fg: Hsla,
+        leading: Option<IconName>,
+        leading_c: Hsla,
+    ) -> Div {
+        let mut el = h_flex()
+            .h(px(32.))
+            .px(px(12.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .bg(bg);
+        if let Some(g) = leading {
+            el = el.child(icon(g, 14.).text_color(leading_c));
+        }
+        el.child(txt(12., 14., FontWeight::MEDIUM, fg, label))
+    }
+
+    // ── O5 · Notification ────────────────────────────────────────────────────
+
+    /// Toast tone (O5 tone axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum NoteTone {
+        /// info duotone cyan-500, neutral countdown.
+        Info,
+        /// check-circle green-500.
+        Success,
+        /// warning-circle amber-500.
+        Warning,
+        /// x-circle danger.
+        Danger,
+    }
+
+    /// One toast card: 360px, popover fill, rx12, hairline, popover shadow, tone
+    /// glyph + title/message + optional action + close, 2px countdown line (O5).
+    pub fn toast(
+        tone: NoteTone,
+        title: SharedString,
+        message: SharedString,
+        action: Option<SharedString>,
+        countdown: f32,
+        mode: Mode,
+    ) -> Div {
+        let (glyph, tone_c) = match tone {
+            NoteTone::Info => (IconName::Info, r(mode, "info")),
+            NoteTone::Success => (IconName::CircleCheck, r(mode, "success")),
+            NoteTone::Warning => (IconName::CircleAlert, r(mode, "warning")),
+            NoteTone::Danger => (IconName::CircleX, r(mode, "danger")),
+        };
+        let countdown_c = match tone {
+            NoteTone::Info => c("neutral-200"),
+            NoteTone::Success => r(mode, "success"),
+            NoteTone::Warning => r(mode, "warning"),
+            NoteTone::Danger => r(mode, "danger"),
+        };
+        let mut body = h_flex()
+            .gap(px(12.))
+            .p(px(12.))
+            .pl(px(16.))
+            .items_center()
+            .child(icon(glyph, 16.).text_color(tone_c))
+            .child(
+                v_flex()
+                    .flex_1()
+                    .min_w_0()
+                    .gap(px(2.))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "foreground"),
+                        title,
+                    ))
+                    .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), message)),
+            );
+        if let Some(action) = action {
+            body = body.child(
+                h_flex()
+                    .h(px(24.))
+                    .px(px(8.))
+                    .items_center()
+                    .rounded(px(radius_tier("md")))
+                    .child(txt(11., 15., FontWeight::NORMAL, c("neutral-300"), action)),
+            );
+        }
+        div()
+            .w(px(360.))
+            .flex()
+            .flex_col()
+            .rounded(px(radius_tier("xl")))
+            .border_1()
+            .border_color(r(mode, "border-subtle"))
+            .bg(r(mode, "popover"))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(popup_shadow()),
+                ..Default::default()
+            })
+            .overflow_hidden()
+            .child(
+                body.child(
+                    div()
+                        .size(px(20.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(radius_tier("md")))
+                        .border_2()
+                        .border_color(gpui_kit::transparent_white())
+                        .child(icon(IconName::X, 12.).text_color(r(mode, "icon"))),
+                ),
+            )
+            .child(div().h(px(2.)).w(px(countdown)).bg(countdown_c))
+    }
+
+    // ── O6 · Data table ──────────────────────────────────────────────────────
+
+    /// Sort indicator on a column header (O6 sort axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum SortIx {
+        /// no sort: muted label, no icon.
+        None,
+        /// ascending: white label + caret-up.
+        Asc,
+        /// descending: white label + caret-down.
+        Desc,
+    }
+
+    /// A table head cell: h32 px4, label 11/500 + sort caret (O6).
+    pub fn th(label: SharedString, sort: SortIx, _mode: Mode) -> Div {
+        let (color, glyph) = match sort {
+            SortIx::None => (c("neutral-400"), None),
+            SortIx::Asc => (c("neutral-0"), Some(IconName::ChevronUp)),
+            SortIx::Desc => (c("neutral-0"), Some(IconName::ChevronDown)),
+        };
+        let mut el = h_flex()
+            .h(px(32.))
+            .px(px(4.))
+            .gap(px(4.))
+            .items_center()
+            .child(txt(11., 15., FontWeight::MEDIUM, color, label));
+        if let Some(g) = glyph {
+            el = el.child(icon(g, 10.).text_color(c("neutral-0")));
+        }
+        el
+    }
+
+    /// The table frame: bg surface, rx16, clipped (O6: 960px master).
+    pub fn table_frame(w: f32, mode: Mode) -> Div {
+        div()
+            .w(px(w))
+            .bg(r(mode, "surface"))
+            .rounded(px(radius_tier("2xl")))
+            .overflow_hidden()
+            .flex()
+            .flex_col()
+    }
+
+    /// A day group header row: h28, surface-raised fill, overline date + day total (O6).
+    pub fn day_header(date: SharedString, total: SharedString, mode: Mode) -> Div {
+        h_flex()
+            .h(px(28.))
+            .px(px(12.))
+            .pl(px(16.))
+            .items_center()
+            .justify_between()
+            .bg(r(mode, "surface-raised"))
+            .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), date))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), total))
+    }
+
+    /// Table row interaction state (O6 row axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TrIx {
+        /// rest: transparent, actions hidden.
+        Rest,
+        /// hover: white-a4, actions shown.
+        Hover,
+        /// selected: white-a12, actions shown.
+        Selected,
+        /// focus: 2px ring left bar, actions shown.
+        Focus,
+    }
+
+    /// One data row: h36 px12, hairline bottom, checkbox + cells; `focus` draws the
+    /// 2×36 ring bar at the leading edge (O6).
+    pub fn tr_base(ix: TrIx, _mode: Mode) -> Div {
+        let bg = match ix {
+            TrIx::Hover => Some(c("white-a4")),
+            TrIx::Selected => Some(c("white-a12")),
+            _ => None,
+        };
+        let mut el = div()
+            .relative()
+            .w_full()
+            .h(px(36.))
+            .px(px(12.))
+            .flex()
+            .items_center()
+            .gap(px(12.))
+            .border_b(px(1.))
+            .border_color(c("white-a8"));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        if ix == TrIx::Focus {
+            el = el.child(
+                div()
+                    .absolute()
+                    .left(px(0.))
+                    .top(px(0.))
+                    .w(px(2.))
+                    .h(px(36.))
+                    .bg(c("neutral-200")),
+            );
+        }
+        el
+    }
+
+    /// Row actions cell: dots-three in a 24×24 button, hidden at rest (O6).
+    pub fn tr_actions(visible: bool, mode: Mode) -> Div {
+        let mut el = div()
+            .size(px(24.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(radius_tier("md")))
+            .child(icon(IconName::EllipsisVertical, 14.).text_color(c("neutral-0")));
+        if !visible {
+            el = el.opacity(0.);
+        }
+        let _ = mode;
+        el
+    }
+
+    /// The "loading more" row (O6).
+    pub fn load_more_row(text: SharedString, _mode: Mode) -> Div {
+        h_flex()
+            .h(px(36.))
+            .px(px(16.))
+            .gap(px(8.))
+            .items_center()
+            .child(icon(IconName::LoaderCircle, 14.).text_color(c("neutral-300")))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), text))
+    }
+
+    /// The table footer: selection count + net total (O6).
+    pub fn table_footer(left: SharedString, net: SharedString, mode: Mode) -> Div {
+        h_flex()
+            .h(px(36.))
+            .px(px(16.))
+            .items_center()
+            .justify_between()
+            .bg(r(mode, "surface-raised"))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), left))
+            .child(
+                h_flex()
+                    .gap(px(4.))
+                    .items_baseline()
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        c("neutral-500"),
+                        "net".into(),
+                    ))
+                    .child(txt(13., 16., FontWeight::MEDIUM, r(mode, "money-in"), net))
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        c("neutral-400"),
+                        "RON".into(),
+                    )),
+            )
+    }
+
+    /// An empty-table block: glyph + title + description centered (O6).
+    pub fn table_empty(
+        glyph: IconName,
+        title: SharedString,
+        desc: SharedString,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .w(px(360.))
+            .p(px(32.))
+            .px(px(24.))
+            .gap(px(12.))
+            .items_center()
+            .child(icon(glyph, 24.).text_color(c("neutral-200")))
+            .child(txt(
+                16.,
+                21.,
+                FontWeight::SEMIBOLD,
+                r(mode, "foreground"),
+                title,
+            ))
+            .child(
+                div()
+                    .w(px(280.))
+                    .text_align(gpui_kit::TextAlign::Center)
+                    .child(txt(12., 18., FontWeight::NORMAL, c("neutral-400"), desc)),
+            )
+    }
+
+    // ── O7 · List ────────────────────────────────────────────────────────────
+
+    /// List item interaction state (O7 axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum LiIx {
+        /// rest.
+        Rest,
+        /// hover: white-a4.
+        Hover,
+        /// selected: white-a12.
+        Selected,
+        /// focus: 2×24 ring left bar.
+        Focus,
+        /// disabled: 40% opacity.
+        Disabled,
+    }
+
+    /// The list container: w420, surface, rx16, p4 (O7).
+    pub fn list_frame(mode: Mode) -> Div {
+        div()
+            .w(px(420.))
+            .p(px(4.))
+            .bg(r(mode, "surface"))
+            .rounded(px(radius_tier("2xl")))
+            .flex()
+            .flex_col()
+    }
+
+    /// A list section header: px "8 12", overline label + count (O7).
+    pub fn list_section_header(label: SharedString, count: SharedString) -> Div {
+        h_flex()
+            .px(px(12.))
+            .py(px(8.))
+            .items_center()
+            .justify_between()
+            .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), label))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-500"), count))
+    }
+
+    /// One list item: h48 radius6 px12 gap12 — leading tile, two-line text, trailing
+    /// amount or check (O7).
+    pub fn list_item(
+        leading: Div,
+        title: SharedString,
+        subtitle: SharedString,
+        trailing: gpui_kit::AnyElement,
+        ix: LiIx,
+        mode: Mode,
+    ) -> Div {
+        let bg = match ix {
+            LiIx::Hover => Some(c("white-a4")),
+            LiIx::Selected => Some(c("white-a12")),
+            _ => None,
+        };
+        let mut el = div()
+            .relative()
+            .w_full()
+            .h(px(48.))
+            .px(px(12.))
+            .flex()
+            .items_center()
+            .gap(px(12.))
+            .rounded(px(radius_tier("md")));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        if ix == LiIx::Focus {
+            el = el.child(
+                div()
+                    .absolute()
+                    .left(px(0.))
+                    .top(px(12.))
+                    .w(px(2.))
+                    .h(px(24.))
+                    .rounded(px(1.))
+                    .bg(c("neutral-200")),
+            );
+        }
+        let _ = mode;
+        let mut el = el
+            .child(leading)
+            .child(
+                v_flex()
+                    .flex_1()
+                    .min_w_0()
+                    .gap(px(2.))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "foreground"),
+                        title,
+                    ))
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        c("neutral-400"),
+                        subtitle,
+                    )),
+            )
+            .child(trailing);
+        if ix == LiIx::Disabled {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    /// The search row on top of a searchable list (O7).
+    pub fn list_search(placeholder: SharedString, _mode: Mode) -> Div {
+        h_flex()
+            .h(px(36.))
+            .px(px(12.))
+            .gap(px(8.))
+            .items_center()
+            .border_b(px(1.))
+            .border_color(c("white-a8"))
+            .child(icon(IconName::Search, 14.).text_color(c("neutral-200")))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                c("neutral-500"),
+                placeholder,
+            ))
+    }
+
+    /// A money trailing cell: digits 13/500 + currency 11 muted (O7/O6).
+    pub fn amount_trailing(digits: SharedString, currency: &str, color: Hsla) -> Div {
+        h_flex()
+            .gap(px(3.))
+            .items_baseline()
+            .child(txt(13., 16., FontWeight::MEDIUM, color, digits))
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                c("neutral-400"),
+                currency.into(),
+            ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;
