@@ -72,7 +72,7 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // Input: sunken-well fill is applied per-control by the language presets; the `input`
     // seat is the border role (#333 at rest), focus ring is the accent (ring 2, offset 2).
     config.colors.input = role("input");
-    config.colors.ring = role("ring-accent");
+    config.colors.ring = role("ring");
     config.colors.selection = role("selection");
     config.colors.overlay = role("scrim");
     // `primary` is the INVERTED neutral (light fill + dark ink on dark), not the brand
@@ -80,7 +80,7 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // orange lives on ring-accent / indicators only.
     config.colors.primary = role("primary");
     config.colors.primary_hover = role("primary-hover");
-    config.colors.primary_active = role("primary-hover");
+    config.colors.primary_active = role("primary-active");
     config.colors.primary_foreground = role("primary-foreground");
     // `accent` = the white @ 8% overlay: menu item hover/selected, sidebar active plate.
     config.colors.accent = role("sidebar-selected");
@@ -130,7 +130,7 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.info_active = role("info");
     config.colors.info_foreground = role("on-solid");
     config.colors.button_danger = role("danger-subtle");
-    config.colors.button_danger_hover = role("danger");
+    config.colors.button_danger_hover = role("danger-subtle");
     config.colors.button_danger_active = role("danger");
     config.colors.button_danger_foreground = role("danger-foreground");
     config.colors.button_success = role("success-subtle");

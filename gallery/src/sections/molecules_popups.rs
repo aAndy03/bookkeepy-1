@@ -323,11 +323,22 @@ impl gpui_kit::Render for MoleculesPopups {
             .child(popover_group)
             .child(menu_group)
             // Live popovers float over the overlay layer — keep them in the last
-            // row with reserved space beneath so they never cover other specimens.
-            .child(kit::row([
-                kit::cell(cx, "gallery.m01.popover.live", live_popover),
-                kit::cell(cx, "gallery.m01.menu.live", live_menu),
-            ]))
-            .child(div().h(px(230.)))
+            // rows (one per row) with reserved space beneath so the opened panels
+            // never cover other specimens.
+            .child(
+                v_flex()
+                    .gap_6()
+                    // each live trigger gets its own block with room for its opened panel
+                    .child(
+                        v_flex()
+                            .child(kit::cell(cx, "gallery.m01.popover.live", live_popover))
+                            .child(div().h(px(170.))),
+                    )
+                    .child(
+                        v_flex()
+                            .child(kit::cell(cx, "gallery.m01.menu.live", live_menu))
+                            .child(div().h(px(230.))),
+                    ),
+            )
     }
 }
