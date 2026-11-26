@@ -8,8 +8,9 @@
 //! are painted from `language::groups` — same tokens, same geometry.
 
 use bookkeepy_ui::api::language::groups::{
-    self, AlertTone, CbIx, ClIx, DdIx, IgIx, PgIx, RgIx, StIx, TgIx,
+    self, AlertTone, CbIx, ClIx, DdIx, DdVariant, IgIx, PgIx, RgIx, StIx, TgIx,
 };
+use bookkeepy_ui::api::language::popups::{self, MenuIx};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::accordion::Accordion;
@@ -88,7 +89,7 @@ fn live_toggle_group(view: &MoleculesGroups, cx: &mut Context<'_, MoleculesGroup
         )
 }
 
-/// Painted toggle group with one item forced into a state.
+/// Painted toggle group with items forced into states.
 fn painted_tg(cx: &Context<'_, MoleculesGroups>, ix: [TgIx; 3], icons: bool) -> gpui_kit::Div {
     let item = |label: Option<&str>, glyph: Option<IconName>, ix: TgIx| {
         groups::toggle_item(label.map(|l| tr(cx, l)), glyph, ix)
@@ -132,6 +133,314 @@ fn painted_tg(cx: &Context<'_, MoleculesGroups>, ix: [TgIx; 3], icons: bool) -> 
     ]))
 }
 
+/// One collapsible body row: colored dot + label + meta, amount at the end.
+fn cl_row(
+    cx: &Context<'_, MoleculesGroups>,
+    dot: &str,
+    name_key: &str,
+    meta_key: &str,
+    amount_key: &str,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let amber = bookkeepy_ui::api::language::prim_hsla("amber-500").unwrap_or_default();
+    let fg = bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default();
+    let muted =
+        bookkeepy_ui::api::language::role_hsla(mode, "muted-foreground").unwrap_or_default();
+    let ron = tr(cx, "gallery.m02.dl.ron");
+    h_flex()
+        .h(px(24.))
+        .gap(px(8.))
+        .items_center()
+        .w_full()
+        .child(
+            div()
+                .size(px(6.))
+                .rounded_full()
+                .bg(bookkeepy_ui::api::language::prim_hsla(dot).unwrap_or_default()),
+        )
+        .child(
+            div()
+                .text_size(px(12.))
+                .text_color(fg)
+                .child(tr(cx, name_key)),
+        )
+        .child(
+            div()
+                .text_size(px(11.))
+                .text_color(muted)
+                .child(tr(cx, meta_key)),
+        )
+        .child(div().flex_1())
+        .child(groups::dl_amount(
+            tr(cx, "gallery.m02.dl.minus"),
+            tr(cx, amount_key),
+            ron,
+            amber,
+            mode,
+        ))
+}
+
+/// The collapsible body (shared by the live and the painted open cell).
+fn cl_body(
+    cx: &Context<'_, MoleculesGroups>,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    v_flex()
+        .gap(px(4.))
+        .p(px(8.))
+        .pl(px(24.))
+        .w_full()
+        .child(cl_row(
+            cx,
+            "cyan-500",
+            "gallery.m02.cl.rent",
+            "gallery.m02.cl.in2",
+            "gallery.m02.cl.a_rent",
+            mode,
+        ))
+        .child(cl_row(
+            cx,
+            "pink-500",
+            "gallery.m02.cl.electricity",
+            "gallery.m02.cl.in4",
+            "gallery.m02.cl.a_elec",
+            mode,
+        ))
+        .child(cl_row(
+            cx,
+            "orange-500",
+            "gallery.m02.cl.gym",
+            "gallery.m02.cl.in6",
+            "gallery.m02.cl.a_gym",
+            mode,
+        ))
+}
+
+/// Localized hover-card copy, captured so the live card's `content` closure can
+/// be `'static`.
+#[derive(Clone)]
+struct HcCopy {
+    bank: gpui_kit::SharedString,
+    account: gpui_kit::SharedString,
+    balance: gpui_kit::SharedString,
+    amt_bal: gpui_kit::SharedString,
+    in_month: gpui_kit::SharedString,
+    in_amt: gpui_kit::SharedString,
+    out_month: gpui_kit::SharedString,
+    out_amt: gpui_kit::SharedString,
+    synced: gpui_kit::SharedString,
+    ron: gpui_kit::SharedString,
+}
+
+/// The hover-card panel content (shared by live content and painted open cell).
+fn hc_panel(c: &HcCopy, mode: bookkeepy_primary_data::theme::Mode) -> gpui_kit::Div {
+    let fg = bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default();
+    let green = bookkeepy_ui::api::language::prim_hsla("green-500").unwrap_or_default();
+    let stat =
+        |label: gpui_kit::SharedString, digits: gpui_kit::SharedString, ink: gpui_kit::Hsla| {
+            groups::hc_stat(label, digits, c.ron.clone(), ink, mode)
+        };
+    groups::hover_card(
+        v_flex()
+            .gap(px(12.))
+            .child(groups::hc_head(
+                IconName::Landmark,
+                c.bank.clone(),
+                c.account.clone(),
+                mode,
+            ))
+            .child(stat(c.balance.clone(), c.amt_bal.clone(), fg))
+            .child(h_flex().gap(px(24.)).children([
+                stat(c.in_month.clone(), c.in_amt.clone(), green),
+                stat(c.out_month.clone(), c.out_amt.clone(), fg),
+            ]))
+            .child(groups::hc_foot(c.synced.clone())),
+        mode,
+    )
+}
+
+/// Hover-card trigger text with optional underline (hover/open states).
+fn hc_trigger(
+    cx: &Context<'_, MoleculesGroups>,
+    underline: bool,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let fg = bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default();
+    let mut t = div()
+        .text_size(px(12.))
+        .font_weight(gpui_kit::FontWeight::MEDIUM)
+        .text_color(fg)
+        .child(tr(cx, "gallery.m02.hc.bank"));
+    if underline {
+        t = t.border_b(px(1.)).border_color(fg);
+    }
+    t
+}
+
+/// One painted description-list row at fixed width.
+fn dl_row_w(
+    cx: &Context<'_, MoleculesGroups>,
+    label_key: &str,
+    value: gpui_kit::Div,
+    w: f32,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let muted =
+        bookkeepy_ui::api::language::role_hsla(mode, "muted-foreground").unwrap_or_default();
+    h_flex()
+        .w(px(w))
+        .py(px(8.))
+        .gap(px(16.))
+        .border_b(px(1.))
+        .border_color(bookkeepy_ui::api::language::prim_hsla("white-a8").unwrap_or_default())
+        .child(
+            div()
+                .w(px(120.))
+                .text_size(px(12.))
+                .text_color(muted)
+                .child(tr(cx, label_key)),
+        )
+        .child(value)
+}
+
+/// A plain white 12/400 value cell.
+fn dl_value(
+    text: gpui_kit::SharedString,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    div()
+        .text_size(px(12.))
+        .text_color(bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default())
+        .child(text)
+}
+
+/// The full 6-row horizontal master (design M16).
+fn dl_master_rows(
+    cx: &Context<'_, MoleculesGroups>,
+    w: f32,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let fg = bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default();
+    v_flex().children([
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.payee",
+            dl_value(tr(cx, "gallery.m02.dl.lidl"), mode),
+            w,
+            mode,
+        ),
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.account",
+            dl_value(tr(cx, "gallery.m02.dl.btpay"), mode),
+            w,
+            mode,
+        ),
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.category",
+            groups::dl_tag(tr(cx, "gallery.m02.dl.tag"), mode),
+            w,
+            mode,
+        ),
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.amount",
+            groups::dl_amount(
+                tr(cx, "gallery.m02.dl.minus"),
+                tr(cx, "gallery.m02.dl.amount_v"),
+                tr(cx, "gallery.m02.dl.ron"),
+                fg,
+                mode,
+            ),
+            w,
+            mode,
+        ),
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.date",
+            dl_value(tr(cx, "gallery.m02.dl.date_v"), mode),
+            w,
+            mode,
+        ),
+        dl_row_w(
+            cx,
+            "gallery.m02.dl.note",
+            dl_value(tr(cx, "gallery.m02.dl.note_v"), mode),
+            w,
+            mode,
+        ),
+    ])
+}
+
+/// The vertical 3-column grid (design M16): two rows of three cells, row gap 32.
+fn dl_vertical_grid(
+    cx: &Context<'_, MoleculesGroups>,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let cell = |l: &str, v: &str| groups::dl_cell(tr(cx, l), tr(cx, v), mode);
+    v_flex()
+        .w(px(520.))
+        .gap(px(32.))
+        .child(h_flex().gap(px(16.)).children([
+            cell("gallery.m02.dl.opened", "gallery.m02.dl.opened_v"),
+            cell("gallery.m02.dl.type", "gallery.m02.dl.type_v"),
+            cell("gallery.m02.dl.currency", "gallery.m02.dl.ron"),
+        ]))
+        .child(h_flex().gap(px(16.)).children([
+            cell("gallery.m02.dl.iban", "gallery.m02.dl.iban_v"),
+            cell("gallery.m02.dl.transactions", "gallery.m02.dl.count"),
+            cell("gallery.m02.dl.last_import", "gallery.m02.dl.last_import_v"),
+        ]))
+}
+
+/// Painted "open" dropdown button with its menu popup beneath (design M11).
+const CTRL_I: &str = "Ctrl+I";
+
+fn dd_open_menu(
+    cx: &Context<'_, MoleculesGroups>,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    v_flex()
+        .gap(px(8.))
+        .items_start()
+        .child(groups::dropdown_button(
+            tr(cx, "gallery.m02.dd.import"),
+            IconName::Upload,
+            DdVariant::Secondary,
+            DdIx::Open,
+            mode,
+        ))
+        .child(
+            popups::popup_surface(232., 4., mode).child(v_flex().children([
+                popups::menu_item(
+                    tr(cx, "gallery.m02.dd.bank"),
+                    None,
+                    false,
+                    Some(CTRL_I),
+                    MenuIx::Rest,
+                    mode,
+                ),
+                popups::menu_item(
+                    tr(cx, "gallery.m02.dd.ofx"),
+                    None,
+                    false,
+                    None,
+                    MenuIx::Rest,
+                    mode,
+                ),
+                popups::menu_item(
+                    tr(cx, "gallery.m02.dd.bk"),
+                    None,
+                    false,
+                    None,
+                    MenuIx::Rest,
+                    mode,
+                ),
+            ])),
+        )
+}
+
 impl gpui_kit::Render for MoleculesGroups {
     fn render(
         &mut self,
@@ -141,6 +450,7 @@ impl gpui_kit::Render for MoleculesGroups {
         let mode = cx.global::<Prefs>().mode;
 
         // ── M8 · toggle group ────────────────────────────────────────────────
+        let live_tg = live_toggle_group(self, cx);
         let tg_states = kit::row([
             kit::cell(
                 cx,
@@ -178,7 +488,6 @@ impl gpui_kit::Render for MoleculesGroups {
                 painted_tg(cx, [TgIx::On, TgIx::Rest, TgIx::Rest], true),
             ),
         ]);
-        let live_tg = live_toggle_group(self, cx);
         let tg_group = kit::group(
             cx,
             "gallery.m02.tg.title",
@@ -206,6 +515,13 @@ impl gpui_kit::Render for MoleculesGroups {
                 groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), c),
             ])
         };
+        let rg_col = |a: RgIx, b: RgIx, c: RgIx| {
+            v_flex().gap_2().children([
+                groups::radio_option(tr(cx, "gallery.m02.rg.never"), a),
+                groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), b),
+                groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), c),
+            ])
+        };
         let rg_states = kit::row([
             kit::cell(
                 cx,
@@ -214,11 +530,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     tr(cx, "gallery.m02.rg.label"),
                     Some(tr(cx, "gallery.m02.rg.help")),
                     None,
-                    v_flex().gap_2().children([
-                        groups::radio_option(tr(cx, "gallery.m02.rg.never"), RgIx::Rest),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), RgIx::Checked),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), RgIx::Rest),
-                    ]),
+                    rg_col(RgIx::Rest, RgIx::Checked, RgIx::Rest),
                     false,
                     mode,
                 ),
@@ -230,11 +542,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     tr(cx, "gallery.m02.rg.label"),
                     Some(tr(cx, "gallery.m02.rg.help")),
                     None,
-                    v_flex().gap_2().children([
-                        groups::radio_option(tr(cx, "gallery.m02.rg.never"), RgIx::Rest),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), RgIx::Checked),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), RgIx::Hover),
-                    ]),
+                    rg_col(RgIx::Rest, RgIx::Checked, RgIx::Hover),
                     false,
                     mode,
                 ),
@@ -246,11 +554,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     tr(cx, "gallery.m02.rg.label"),
                     Some(tr(cx, "gallery.m02.rg.help")),
                     None,
-                    v_flex().gap_2().children([
-                        groups::radio_option(tr(cx, "gallery.m02.rg.never"), RgIx::Rest),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), RgIx::Focus),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), RgIx::Rest),
-                    ]),
+                    rg_col(RgIx::Rest, RgIx::Focus, RgIx::Rest),
                     false,
                     mode,
                 ),
@@ -262,11 +566,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     tr(cx, "gallery.m02.rg.label"),
                     Some(tr(cx, "gallery.m02.rg.help_invalid")),
                     Some(bookkeepy_ui::api::language::prim_hsla("red-300").unwrap_or_default()),
-                    v_flex().gap_2().children([
-                        groups::radio_option(tr(cx, "gallery.m02.rg.never"), RgIx::Rest),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), RgIx::Invalid),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), RgIx::Rest),
-                    ]),
+                    rg_col(RgIx::Rest, RgIx::Invalid, RgIx::Rest),
                     false,
                     mode,
                 ),
@@ -290,11 +590,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     tr(cx, "gallery.m02.rg.label"),
                     Some(tr(cx, "gallery.m02.rg.help")),
                     None,
-                    v_flex().gap_2().children([
-                        groups::radio_option(tr(cx, "gallery.m02.rg.never"), RgIx::Disabled),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.monthly"), RgIx::Disabled),
-                        groups::radio_option(tr(cx, "gallery.m02.rg.yearly"), RgIx::Disabled),
-                    ]),
+                    rg_col(RgIx::Disabled, RgIx::Disabled, RgIx::Disabled),
                     false,
                     mode,
                 ),
@@ -314,7 +610,10 @@ impl gpui_kit::Render for MoleculesGroups {
         let live_ig = InputGroup::new("m2-ig")
             .w(px(280.))
             .input(InputGroupInput::new(&self.amount))
-            .addon(InputGroupAddon::new("m2-ig-pre").child(InputGroupText::new().child("RON")))
+            .addon(
+                InputGroupAddon::new("m2-ig-pre")
+                    .child(InputGroupText::new().child(tr(cx, "gallery.m02.dl.ron"))),
+            )
             .addon(
                 InputGroupAddon::new("m2-ig-suf")
                     .align(InputGroupAddonAlignment::InlineEnd)
@@ -345,7 +644,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     groups::ig_field(
                         {
                             let row = h_flex()
-                                .child(groups::ig_prefix("RON", ix, mode))
+                                .child(groups::ig_prefix(tr(cx, "gallery.m02.dl.ron"), ix, mode))
                                 .child(groups::ig_text(tr(cx, "gallery.m02.ig.value"), ix, mode));
                             let mut suffix = h_flex();
                             if ix == IgIx::Invalid {
@@ -443,95 +742,79 @@ impl gpui_kit::Render for MoleculesGroups {
                         .on_click(|_, _, _| {}),
                 )
             });
-        let dd_states = kit::row([
+        let imp = |v: DdVariant, ix: DdIx| {
+            groups::dropdown_button(
+                tr(cx, "gallery.m02.dd.import"),
+                IconName::Upload,
+                v,
+                ix,
+                mode,
+            )
+        };
+        let dd_primary = kit::row([
             kit::cell(
                 cx,
                 "gallery.atoms.state.rest",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::Rest,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::Rest),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.dd.hover_main",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::HoverMain,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::HoverMain),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.dd.hover_caret",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::HoverCaret,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::HoverCaret),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.open",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::Open,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::Open),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.loading",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::Loading,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::Loading),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.focus",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::FocusMain,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::FocusMain),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.disabled",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    true,
-                    DdIx::Disabled,
-                    mode,
-                ),
+                imp(DdVariant::Primary, DdIx::Disabled),
             ),
+        ]);
+        let dd_variants = kit::row([
             kit::cell(
                 cx,
                 "gallery.m02.dd.secondary",
-                groups::dropdown_button(
-                    tr(cx, "gallery.m02.dd.import"),
-                    IconName::Upload,
-                    false,
-                    DdIx::Rest,
-                    mode,
-                ),
+                imp(DdVariant::Secondary, DdIx::Rest),
             ),
+            kit::cell(
+                cx,
+                "gallery.m02.dd.outline",
+                imp(DdVariant::Outline, DdIx::Rest),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m02.dd.outline_hover",
+                imp(DdVariant::Outline, DdIx::HoverMain),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m02.dd.ghost",
+                imp(DdVariant::Ghost, DdIx::Rest),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m02.dd.ghost_hover",
+                imp(DdVariant::Ghost, DdIx::HoverMain),
+            ),
+            kit::cell(cx, "gallery.m02.dd.open_menu", dd_open_menu(cx, mode)),
         ]);
         let dd_group = kit::group(
             cx,
@@ -540,85 +823,44 @@ impl gpui_kit::Render for MoleculesGroups {
             v_flex()
                 .gap_6()
                 .child(kit::cell(cx, "gallery.m02.dd.live", live_dd))
-                .child(dd_states),
+                .child(dd_primary)
+                .child(dd_variants),
         );
 
         // ── M12 · hover card ─────────────────────────────────────────────────
-        let hc_card = groups::hover_card(
-            v_flex()
-                .gap(px(12.))
-                .child(groups::hc_head(
-                    IconName::Landmark,
-                    tr(cx, "gallery.m02.hc.bank"),
-                    tr(cx, "gallery.m02.hc.account"),
-                    mode,
-                ))
-                .child(
-                    h_flex()
-                        .gap(px(12.))
-                        .child(groups::hc_stat(
-                            tr(cx, "gallery.m02.hc.balance"),
-                            "12.480,55",
-                            "RON",
-                            bookkeepy_ui::api::language::role_hsla(mode, "foreground")
-                                .unwrap_or_default(),
-                            mode,
-                        ))
-                        .child(groups::hc_stat(
-                            tr(cx, "gallery.m02.hc.in_month"),
-                            "+4.210,00",
-                            "RON",
-                            bookkeepy_ui::api::language::prim_hsla("green-500").unwrap_or_default(),
-                            mode,
-                        ))
-                        .child(groups::hc_stat(
-                            tr(cx, "gallery.m02.hc.out_month"),
-                            "-2.980,25",
-                            "RON",
-                            bookkeepy_ui::api::language::role_hsla(mode, "foreground")
-                                .unwrap_or_default(),
-                            mode,
-                        )),
-                )
-                .child(groups::hc_foot(tr(cx, "gallery.m02.hc.synced"))),
-            mode,
-        );
+        let hc_copy = HcCopy {
+            bank: tr(cx, "gallery.m02.hc.bank"),
+            account: tr(cx, "gallery.m02.hc.account"),
+            balance: tr(cx, "gallery.m02.hc.balance"),
+            amt_bal: tr(cx, "gallery.m02.hc.amount_balance"),
+            in_month: tr(cx, "gallery.m02.hc.in_month"),
+            in_amt: tr(cx, "gallery.m02.hc.in_amount"),
+            out_month: tr(cx, "gallery.m02.hc.out_month"),
+            out_amt: tr(cx, "gallery.m02.hc.out_amount"),
+            synced: tr(cx, "gallery.m02.hc.synced"),
+            ron: tr(cx, "gallery.m02.dl.ron"),
+        };
         let live_hc = HoverCard::new("m2-hc")
             .open_delay(std::time::Duration::from_millis(500))
             .close_delay(std::time::Duration::from_millis(300))
-            .trigger(
-                div()
-                    .text_size(px(12.))
-                    .font_weight(gpui_kit::FontWeight::MEDIUM)
-                    .text_color(
-                        bookkeepy_ui::api::language::role_hsla(mode, "foreground")
-                            .unwrap_or_default(),
-                    )
-                    .child(tr(cx, "gallery.m02.hc.bank")),
-            )
-            .content(move |_state, _window, _cx| {
-                groups::hover_card(
-                    v_flex()
-                        .gap(px(12.))
-                        .child(groups::hc_head(
-                            IconName::Landmark,
-                            "BT Pay",
-                            "current account · …4021",
-                            mode,
-                        ))
-                        .child(
-                            h_flex().gap(px(12.)).child(groups::hc_stat(
-                                "Balance",
-                                "12.480,55",
-                                "RON",
-                                bookkeepy_ui::api::language::role_hsla(mode, "foreground")
-                                    .unwrap_or_default(),
-                                mode,
-                            )),
-                        ),
-                    mode,
-                )
+            .trigger(hc_trigger(cx, false, mode))
+            .content({
+                let hc_copy = hc_copy.clone();
+                move |_state, _window, _cx| hc_panel(&hc_copy, mode)
             });
+        let hc_flow = kit::row([
+            kit::cell(cx, "gallery.m02.hc.closed", hc_trigger(cx, false, mode)),
+            kit::cell(cx, "gallery.m02.hc.hovering", hc_trigger(cx, true, mode)),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.open",
+                v_flex()
+                    .gap_2()
+                    .items_start()
+                    .child(hc_trigger(cx, true, mode))
+                    .child(hc_panel(&hc_copy, mode)),
+            ),
+        ]);
         let hc_group = kit::group(
             cx,
             "gallery.m02.hc.title",
@@ -626,42 +868,10 @@ impl gpui_kit::Render for MoleculesGroups {
             v_flex()
                 .gap_6()
                 .child(kit::cell(cx, "gallery.m02.hc.live", live_hc))
-                .child(kit::cell(cx, "gallery.atoms.state.open", hc_card)),
+                .child(hc_flow),
         );
 
         // ── M13 · collapsible ────────────────────────────────────────────────
-        let cl_body = v_flex()
-            .gap(px(4.))
-            .p(px(8.))
-            .pl(px(24.))
-            .w_full()
-            .children(
-                [
-                    tr(cx, "gallery.m02.cl.rent"),
-                    tr(cx, "gallery.m02.cl.electricity"),
-                    tr(cx, "gallery.m02.cl.gym"),
-                ]
-                .into_iter()
-                .map(|name| {
-                    h_flex()
-                        .h(px(24.))
-                        .gap(px(8.))
-                        .items_center()
-                        .w_full()
-                        .child(div().size(px(6.)).rounded_full().bg(
-                            bookkeepy_ui::api::language::prim_hsla("amber-500").unwrap_or_default(),
-                        ))
-                        .child(
-                            div()
-                                .text_size(px(12.))
-                                .text_color(
-                                    bookkeepy_ui::api::language::role_hsla(mode, "foreground")
-                                        .unwrap_or_default(),
-                                )
-                                .child(name),
-                        )
-                }),
-            );
         let live_coll = Collapsible::new()
             .open(self.coll_open)
             .motion_id("m2-coll")
@@ -684,7 +894,7 @@ impl gpui_kit::Render for MoleculesGroups {
                         mode,
                     )),
             )
-            .content(cl_body);
+            .content(cl_body(cx, mode));
         let cl_states = kit::row([
             kit::cell(
                 cx,
@@ -704,7 +914,15 @@ impl gpui_kit::Render for MoleculesGroups {
             kit::cell(
                 cx,
                 "gallery.atoms.state.open",
-                groups::cl_trigger(tr(cx, "gallery.m02.cl.title"), Some(3), ClIx::Open, mode),
+                v_flex()
+                    .w(px(300.))
+                    .child(groups::cl_trigger(
+                        tr(cx, "gallery.m02.cl.title"),
+                        Some(3),
+                        ClIx::Open,
+                        mode,
+                    ))
+                    .child(cl_body(cx, mode)),
             ),
             kit::cell(
                 cx,
@@ -728,6 +946,16 @@ impl gpui_kit::Render for MoleculesGroups {
         );
 
         // ── M14 · accordion ──────────────────────────────────────────────────
+        let acc_body = |key: &str| {
+            div()
+                .text_size(px(12.))
+                .line_height(px(18.))
+                .text_color(
+                    bookkeepy_ui::api::language::role_hsla(mode, "secondary-foreground")
+                        .unwrap_or_default(),
+                )
+                .child(tr(cx, key))
+        };
         let live_acc = Accordion::new("m2-acc")
             .w(px(360.))
             .on_toggle_click(cx.listener(|v, open: &[usize], _window, cx| {
@@ -737,50 +965,17 @@ impl gpui_kit::Render for MoleculesGroups {
             .item(|i| {
                 i.title(tr(cx, "gallery.m02.acc.q1"))
                     .open(self.acc == 0)
-                    .child(
-                        div()
-                            .text_size(px(12.))
-                            .text_color(
-                                bookkeepy_ui::api::language::role_hsla(
-                                    mode,
-                                    "secondary-foreground",
-                                )
-                                .unwrap_or_default(),
-                            )
-                            .child(tr(cx, "gallery.m02.acc.a1")),
-                    )
+                    .child(acc_body("gallery.m02.acc.a1"))
             })
             .item(|i| {
                 i.title(tr(cx, "gallery.m02.acc.q2"))
                     .open(self.acc == 1)
-                    .child(
-                        div()
-                            .text_size(px(12.))
-                            .text_color(
-                                bookkeepy_ui::api::language::role_hsla(
-                                    mode,
-                                    "secondary-foreground",
-                                )
-                                .unwrap_or_default(),
-                            )
-                            .child(tr(cx, "gallery.m02.acc.a2")),
-                    )
+                    .child(acc_body("gallery.m02.acc.a2"))
             })
             .item(|i| {
                 i.title(tr(cx, "gallery.m02.acc.q3"))
                     .open(self.acc == 2)
-                    .child(
-                        div()
-                            .text_size(px(12.))
-                            .text_color(
-                                bookkeepy_ui::api::language::role_hsla(
-                                    mode,
-                                    "secondary-foreground",
-                                )
-                                .unwrap_or_default(),
-                            )
-                            .child(tr(cx, "gallery.m02.acc.a3")),
-                    )
+                    .child(acc_body("gallery.m02.acc.a3"))
             });
         let acc_states = kit::row([
             kit::cell(
@@ -834,6 +1029,39 @@ impl gpui_kit::Render for MoleculesGroups {
                 ),
             ),
         ]);
+        // Bordered mode: card frame with hairline rows inside (design M14 modes).
+        let acc_bordered = kit::cell(
+            cx,
+            "gallery.m02.acc.bordered",
+            v_flex()
+                .w(px(380.))
+                .rounded(px(16.))
+                .border(px(1.))
+                .border_color(
+                    bookkeepy_ui::api::language::prim_hsla("white-a8").unwrap_or_default(),
+                )
+                .p(px(12.))
+                .children([
+                    groups::acc_item(
+                        tr(cx, "gallery.m02.acc.q1"),
+                        Some(tr(cx, "gallery.m02.acc.a1")),
+                        ClIx::Open,
+                        mode,
+                    ),
+                    groups::acc_item(
+                        tr(cx, "gallery.m02.acc.q2"),
+                        None::<&str>,
+                        ClIx::Closed,
+                        mode,
+                    ),
+                    groups::acc_item(
+                        tr(cx, "gallery.m02.acc.q3"),
+                        None::<&str>,
+                        ClIx::Closed,
+                        mode,
+                    ),
+                ]),
+        );
         let acc_group = kit::group(
             cx,
             "gallery.m02.acc.title",
@@ -841,7 +1069,8 @@ impl gpui_kit::Render for MoleculesGroups {
             v_flex()
                 .gap_6()
                 .child(kit::cell(cx, "gallery.m02.acc.live", live_acc))
-                .child(acc_states),
+                .child(acc_states)
+                .child(acc_bordered),
         );
 
         // ── M15 · alert ──────────────────────────────────────────────────────
@@ -849,92 +1078,85 @@ impl gpui_kit::Render for MoleculesGroups {
             .gap(px(12.))
             .items_start()
             .child(
-                Alert::info("m2-al-info", tr(cx, "gallery.m02.alert.msg"))
-                    .title(tr(cx, "gallery.m02.alert.title"))
+                Alert::info("m2-al-info", tr(cx, "gallery.m02.alert.m_info"))
+                    .title(tr(cx, "gallery.m02.alert.t_info"))
                     .on_close(|_, _, _| {}),
             )
             .child(
-                Alert::error("m2-al-danger", tr(cx, "gallery.m02.alert.msg_err"))
-                    .title(tr(cx, "gallery.m02.alert.title_err"))
+                Alert::error("m2-al-danger", tr(cx, "gallery.m02.alert.m_danger"))
+                    .title(tr(cx, "gallery.m02.alert.t_danger"))
                     .on_close(|_, _, _| {}),
             );
+        let al = |tone: AlertTone, glyph: IconName, t: &str, m: &str| {
+            groups::alert_card(
+                tone,
+                glyph,
+                tr(cx, t),
+                tr(cx, m),
+                Some(tr(cx, "gallery.m02.alert.review")),
+                false,
+                mode,
+            )
+        };
         let al_tones = kit::row([
             kit::cell(
                 cx,
                 "gallery.m02.alert.neutral",
-                groups::alert_card(
+                al(
                     AlertTone::Neutral,
                     IconName::CloudOff,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_neutral",
+                    "gallery.m02.alert.m_neutral",
                 ),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.alert.info",
-                groups::alert_card(
+                al(
                     AlertTone::Info,
                     IconName::Info,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_info",
+                    "gallery.m02.alert.m_info",
                 ),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.alert.success",
-                groups::alert_card(
+                al(
                     AlertTone::Success,
                     IconName::CircleCheck,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_success",
+                    "gallery.m02.alert.m_success",
                 ),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.alert.warning",
-                groups::alert_card(
+                al(
                     AlertTone::Warning,
                     IconName::CircleAlert,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_warning",
+                    "gallery.m02.alert.m_warning",
                 ),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.alert.danger",
-                groups::alert_card(
+                al(
                     AlertTone::Danger,
                     IconName::CircleX,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg_err"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_danger",
+                    "gallery.m02.alert.m_danger",
                 ),
             ),
             kit::cell(
                 cx,
                 "gallery.m02.alert.accent",
-                groups::alert_card(
+                al(
                     AlertTone::Accent,
                     IconName::Info,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
-                    Some(tr(cx, "gallery.m02.alert.review")),
-                    false,
-                    mode,
+                    "gallery.m02.alert.t_accent",
+                    "gallery.m02.alert.m_accent",
                 ),
             ),
             kit::cell(
@@ -943,8 +1165,8 @@ impl gpui_kit::Render for MoleculesGroups {
                 groups::alert_card(
                     AlertTone::Warning,
                     IconName::CircleAlert,
-                    tr(cx, "gallery.m02.alert.title"),
-                    tr(cx, "gallery.m02.alert.msg"),
+                    tr(cx, "gallery.m02.alert.t_banner"),
+                    tr(cx, "gallery.m02.alert.m_banner"),
                     None::<&str>,
                     true,
                     mode,
@@ -962,19 +1184,9 @@ impl gpui_kit::Render for MoleculesGroups {
         );
 
         // ── M16 · description list ───────────────────────────────────────────
-        fn dl_value(
-            text: gpui_kit::SharedString,
-            mode: bookkeepy_primary_data::theme::Mode,
-        ) -> gpui_kit::Div {
-            div()
-                .text_size(px(12.))
-                .text_color(
-                    bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default(),
-                )
-                .child(text)
-        }
         let live_dl = DescriptionList::new()
             .bordered(false)
+            .columns(1)
             .item(
                 tr(cx, "gallery.m02.dl.payee"),
                 tr(cx, "gallery.m02.dl.lidl"),
@@ -1022,47 +1234,24 @@ impl gpui_kit::Render for MoleculesGroups {
                 tr(cx, "gallery.m02.dl.transactions"),
                 tr(cx, "gallery.m02.dl.count"),
                 1,
+            )
+            .item(
+                tr(cx, "gallery.m02.dl.last_import"),
+                tr(cx, "gallery.m02.dl.last_import_v"),
+                1,
             );
-        let fg = bookkeepy_ui::api::language::role_hsla(mode, "foreground").unwrap_or_default();
-        let dl_painted = kit::row([
+        let dl_modes = kit::row([
             kit::cell(
                 cx,
                 "gallery.m02.dl.horizontal",
-                v_flex().children([
-                    groups::dl_row(
-                        tr(cx, "gallery.m02.dl.payee"),
-                        dl_value(tr(cx, "gallery.m02.dl.lidl"), mode),
-                        mode,
-                    ),
-                    groups::dl_row(
-                        tr(cx, "gallery.m02.dl.amount"),
-                        groups::dl_amount(
-                            tr(cx, "gallery.m02.dl.minus"),
-                            tr(cx, "gallery.m02.dl.amount_v"),
-                            tr(cx, "gallery.m02.dl.ron"),
-                            fg,
-                            mode,
-                        ),
-                        mode,
-                    ),
-                ]),
+                dl_master_rows(cx, 440., mode),
             ),
             kit::cell(
                 cx,
-                "gallery.m02.dl.vertical",
-                h_flex().gap(px(12.)).children([
-                    groups::dl_cell(
-                        tr(cx, "gallery.m02.dl.opened"),
-                        tr(cx, "gallery.m02.dl.opened_v"),
-                        mode,
-                    ),
-                    groups::dl_cell(
-                        tr(cx, "gallery.m02.dl.currency"),
-                        tr(cx, "gallery.m02.dl.ron"),
-                        mode,
-                    ),
-                ]),
+                "gallery.m02.dl.bordered",
+                groups::dl_bordered_frame(dl_master_rows(cx, 442., mode)),
             ),
+            kit::cell(cx, "gallery.m02.dl.vertical", dl_vertical_grid(cx, mode)),
         ]);
         let dl_group = kit::group(
             cx,
@@ -1072,23 +1261,22 @@ impl gpui_kit::Render for MoleculesGroups {
                 .gap_6()
                 .child(kit::cell(cx, "gallery.m02.dl.live_h", live_dl))
                 .child(kit::cell(cx, "gallery.m02.dl.live_v", live_dlv))
-                .child(dl_painted),
+                .child(dl_modes),
         );
 
         // ── M17 · clipboard ─────────────────────────────────────────────────
-        let live_cb = Clipboard::new("m2-cb")
-            .value("RO49 BTRL 0000 1234 5678 4021")
-            .label(tr(cx, "gallery.m02.cb.iban"));
+        let iban = "RO49 BTRL 0000 1234 5678 4021";
+        let live_cb = Clipboard::new("m2-cb").value(iban).label(iban);
         let cb_states = kit::row([
             kit::cell(
                 cx,
                 "gallery.atoms.state.rest",
-                groups::clipboard_chip("RO49 BTRL 0000 1234 5678 4021", CbIx::Idle, mode),
+                groups::clipboard_chip(iban, CbIx::Idle, mode),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.hover",
-                groups::clipboard_chip("RO49 BTRL 0000 1234 5678 4021", CbIx::Hover, mode),
+                groups::clipboard_chip(iban, CbIx::Hover, mode),
             ),
             kit::cell(
                 cx,
@@ -1096,11 +1284,7 @@ impl gpui_kit::Render for MoleculesGroups {
                 v_flex()
                     .gap_2()
                     .items_end()
-                    .child(groups::clipboard_chip(
-                        "RO49 BTRL 0000 1234 5678 4021",
-                        CbIx::Copied,
-                        mode,
-                    ))
+                    .child(groups::clipboard_chip(iban, CbIx::Copied, mode))
                     .child(groups::clipboard_tooltip(tr(
                         cx,
                         "gallery.m02.cb.copied_tt",
@@ -1109,12 +1293,12 @@ impl gpui_kit::Render for MoleculesGroups {
             kit::cell(
                 cx,
                 "gallery.atoms.state.focus",
-                groups::clipboard_chip("RO49 BTRL 0000 1234 5678 4021", CbIx::Focus, mode),
+                groups::clipboard_chip(iban, CbIx::Focus, mode),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.disabled",
-                groups::clipboard_chip("RO49 BTRL 0000 1234 5678 4021", CbIx::Disabled, mode),
+                groups::clipboard_chip(iban, CbIx::Disabled, mode),
             ),
         ]);
         let cb_group = kit::group(
@@ -1156,13 +1340,18 @@ impl gpui_kit::Render for MoleculesGroups {
             ),
             kit::cell(
                 cx,
-                "gallery.m02.pg.current",
-                groups::page_item(5, PgIx::Current),
+                "gallery.atoms.state.pressed",
+                groups::page_item(3, PgIx::Pressed),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.focus",
                 groups::page_item(3, PgIx::Focus),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m02.pg.current",
+                groups::page_item(5, PgIx::Current),
             ),
             kit::cell(
                 cx,
@@ -1174,7 +1363,7 @@ impl gpui_kit::Render for MoleculesGroups {
                 "gallery.m02.pg.nav",
                 h_flex()
                     .gap_1()
-                    .child(groups::page_nav(IconName::ChevronLeft, PgIx::Rest))
+                    .child(groups::page_nav(IconName::ChevronLeft, PgIx::Disabled))
                     .child(groups::page_nav(IconName::ChevronRight, PgIx::Rest)),
             ),
             kit::cell(cx, "gallery.m02.pg.ellipsis", groups::page_ellipsis()),
@@ -1227,6 +1416,17 @@ impl gpui_kit::Render for MoleculesGroups {
             .item(StepperItem::new().child(step_text("gallery.m02.st.s2", "gallery.m02.st.s2d")))
             .item(StepperItem::new().child(step_text("gallery.m02.st.s3", "gallery.m02.st.s3d")))
             .item(StepperItem::new().child(step_text("gallery.m02.st.s4", "gallery.m02.st.s4d")));
+        let live_stepper_v = Stepper::new("m2-stv")
+            .vertical()
+            .selected_index(self.step)
+            .on_click(cx.listener(|v, ix: &usize, _window, cx| {
+                v.step = *ix;
+                cx.notify();
+            }))
+            .item(StepperItem::new().child(step_text("gallery.m02.st.s1", "gallery.m02.st.s1d")))
+            .item(StepperItem::new().child(step_text("gallery.m02.st.s2", "gallery.m02.st.s2d")))
+            .item(StepperItem::new().child(step_text("gallery.m02.st.s3", "gallery.m02.st.s3d")))
+            .item(StepperItem::new().child(step_text("gallery.m02.st.s4", "gallery.m02.st.s4d")));
         let st_states = kit::row([
             kit::cell(
                 cx,
@@ -1267,7 +1467,7 @@ impl gpui_kit::Render for MoleculesGroups {
                 groups::step(
                     3,
                     tr(cx, "gallery.m02.st.s3"),
-                    tr(cx, "gallery.m02.st.s3d"),
+                    tr(cx, "gallery.m02.st.s3err"),
                     StIx::Error,
                     mode,
                 ),
@@ -1295,6 +1495,7 @@ impl gpui_kit::Render for MoleculesGroups {
                     "gallery.m02.st.live",
                     div().w(px(720.)).child(live_stepper),
                 ))
+                .child(kit::cell(cx, "gallery.m02.st.live_v", live_stepper_v))
                 .child(st_states),
         );
 

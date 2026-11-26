@@ -102,9 +102,9 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(atoms_feedback, "atoms-feedback", Atoms),
     section!(atoms_media, "atoms-media", Atoms),
     section!(molecules_popups, "molecules-popups", Molecules),
-    section!(molecules_groups, "molecules-groups", Molecules),
     section!(molecules_pickers, "molecules-pickers", Molecules),
     section!(molecules_structure, "molecules-structure", Molecules),
+    section!(molecules_groups, "molecules-groups", Molecules),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).

@@ -3331,6 +3331,19 @@ pub mod groups {
 
     // ── M11 · Dropdown button ───────────────────────────────────────────────
 
+    /// Dropdown-button visual variant.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DdVariant {
+        /// light inverted fill (neutral-100).
+        Primary,
+        /// dark control fill (neutral-875).
+        Secondary,
+        /// transparent + 1px neutral-700 outline.
+        Outline,
+        /// transparent, no outline.
+        Ghost,
+    }
+
     /// Dropdown-button interaction state.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum DdIx {
@@ -3351,25 +3364,90 @@ pub mod groups {
     }
 
     /// Split button: two halves share one surface with a 1px seam — main half
-    /// (px12, icon 14, label 12/500) + caret half (px8, caret 12). `primary`
-    /// flips the fills to the inverted light scheme.
+    /// (px12, icon 14, label 12/500) + caret half (px8, caret 12). `variant`
+    /// picks the fill scheme (primary light / secondary dark / outline / ghost).
     pub fn dropdown_button(
         label: impl Into<SharedString>,
         glyph: IconName,
-        primary: bool,
+        variant: DdVariant,
         ix: DdIx,
         _mode: Mode,
     ) -> Div {
-        let (main_bg, caret_bg, ink) = match (primary, ix) {
-            (_, DdIx::Disabled) => (c("neutral-100"), c("neutral-100"), c("neutral-925")),
-            (true, DdIx::HoverMain) => (c("neutral-0"), c("neutral-100"), c("neutral-925")),
-            (true, DdIx::HoverCaret) => (c("neutral-100"), c("neutral-0"), c("neutral-925")),
-            (true, DdIx::Open) => (c("neutral-100"), c("neutral-200"), c("neutral-925")),
-            (true, _) => (c("neutral-100"), c("neutral-100"), c("neutral-925")),
-            (false, DdIx::HoverMain) => (c("neutral-850"), c("neutral-875"), c("neutral-0")),
-            (false, DdIx::HoverCaret) => (c("neutral-875"), c("neutral-850"), c("neutral-0")),
-            (false, DdIx::Open) => (c("neutral-875"), c("neutral-800"), c("neutral-0")),
-            (false, _) => (c("neutral-875"), c("neutral-875"), c("neutral-0")),
+        let (main_bg, caret_bg, ink, outline) = match (variant, ix) {
+            (DdVariant::Primary, DdIx::Disabled) => (
+                Some(c("neutral-100")),
+                Some(c("neutral-100")),
+                c("neutral-925"),
+                None,
+            ),
+            (DdVariant::Primary, DdIx::HoverMain) => (
+                Some(c("neutral-0")),
+                Some(c("neutral-100")),
+                c("neutral-925"),
+                None,
+            ),
+            (DdVariant::Primary, DdIx::HoverCaret) => (
+                Some(c("neutral-100")),
+                Some(c("neutral-0")),
+                c("neutral-925"),
+                None,
+            ),
+            (DdVariant::Primary, DdIx::Open) => (
+                Some(c("neutral-100")),
+                Some(c("neutral-200")),
+                c("neutral-925"),
+                None,
+            ),
+            (DdVariant::Primary, _) => (
+                Some(c("neutral-100")),
+                Some(c("neutral-100")),
+                c("neutral-925"),
+                None,
+            ),
+            (DdVariant::Secondary, DdIx::HoverMain) => (
+                Some(c("neutral-850")),
+                Some(c("neutral-875")),
+                c("neutral-0"),
+                None,
+            ),
+            (DdVariant::Secondary, DdIx::HoverCaret) => (
+                Some(c("neutral-875")),
+                Some(c("neutral-850")),
+                c("neutral-0"),
+                None,
+            ),
+            (DdVariant::Secondary, DdIx::Open) => (
+                Some(c("neutral-875")),
+                Some(c("neutral-800")),
+                c("neutral-0"),
+                None,
+            ),
+            (DdVariant::Secondary, _) => (
+                Some(c("neutral-875")),
+                Some(c("neutral-875")),
+                c("neutral-0"),
+                None,
+            ),
+            (DdVariant::Outline, DdIx::HoverMain) => (
+                Some(c("white-a4")),
+                None,
+                c("neutral-0"),
+                Some(c("neutral-650")),
+            ),
+            (DdVariant::Outline, DdIx::HoverCaret) => (
+                None,
+                Some(c("white-a8")),
+                c("neutral-0"),
+                Some(c("neutral-650")),
+            ),
+            (DdVariant::Outline, _) => (None, None, c("neutral-0"), Some(c("neutral-700"))),
+            (DdVariant::Ghost, DdIx::HoverMain) => {
+                (Some(c("white-a4")), None, c("neutral-0"), None)
+            }
+            (DdVariant::Ghost, DdIx::HoverCaret) => {
+                (None, Some(c("white-a4")), c("neutral-0"), None)
+            }
+            (DdVariant::Ghost, _) => (None, None, c("neutral-0"), None),
         };
         let opacity = if ix == DdIx::Disabled { 0.4 } else { 1.0 };
         let main_icon = if ix == DdIx::Loading {
@@ -3382,12 +3460,29 @@ pub mod groups {
             .px(px(12.))
             .gap(px(6.))
             .items_center()
-            .bg(main_bg)
             .opacity(opacity)
             .child(main_icon)
             .child(txt(12., 14., FontWeight::MEDIUM, ink, label.into()));
+        if let Some(bg) = main_bg {
+            main = main.bg(bg);
+        }
+        if let Some(line) = outline {
+            main = main.border(px(1.)).border_color(line);
+        }
         if ix == DdIx::FocusMain {
             main = main.border(px(2.)).border_color(c("neutral-200"));
+        }
+        let mut caret = h_flex()
+            .h(px(32.))
+            .px(px(8.))
+            .items_center()
+            .opacity(opacity)
+            .child(icon(IconName::ChevronsUpDown, 12.).text_color(ink));
+        if let Some(bg) = caret_bg {
+            caret = caret.bg(bg);
+        }
+        if let Some(line) = outline {
+            caret = caret.border(px(1.)).border_color(line);
         }
         // Outer clip gives the exact 6px-0-0-6 / 0-6-6-0 corner split.
         h_flex()
@@ -3395,15 +3490,7 @@ pub mod groups {
             .rounded(px(6.))
             .overflow_hidden()
             .child(main)
-            .child(
-                h_flex()
-                    .h(px(32.))
-                    .px(px(8.))
-                    .items_center()
-                    .bg(caret_bg)
-                    .opacity(opacity)
-                    .child(icon(IconName::ChevronsUpDown, 12.).text_color(ink)),
-            )
+            .child(caret)
     }
 
     // ── M12 · Hover card ─────────────────────────────────────────────────────
@@ -3586,19 +3673,52 @@ pub mod groups {
         row
     }
 
-    /// Accordion item: hairline bottom border; header = `cl_trigger` at h40;
-    /// open body: padding 8 8 12, 12/400 neutral-300, line-height 18.
+    /// Accordion item: hairline bottom border; header h40 with the caret at the
+    /// trailing edge; open body: padding 8 8 12, 12/400 neutral-300, lh 18.
     pub fn acc_item(
         title: impl Into<SharedString>,
         body: Option<impl Into<SharedString>>,
         ix: ClIx,
         mode: Mode,
     ) -> Div {
+        let (bg, ring, caret) = match ix {
+            ClIx::Closed => (None, None, IconName::ChevronDown),
+            ClIx::Hover => (Some(c("white-a4")), None, IconName::ChevronDown),
+            ClIx::Focus => (
+                Some(c("white-a4")),
+                Some(c("neutral-200")),
+                IconName::ChevronDown,
+            ),
+            ClIx::Open => (None, None, IconName::ChevronUp),
+            ClIx::Disabled => (None, None, IconName::ChevronDown),
+        };
+        let op = if ix == ClIx::Disabled { 0.4 } else { 1.0 };
+        let mut header = h_flex()
+            .w_full()
+            .h(px(40.))
+            .px(px(8.))
+            .items_center()
+            .rounded(px(6.))
+            .border(px(2.))
+            .border_color(ring.unwrap_or_else(|| c("transparent")))
+            .opacity(op)
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                title.into(),
+            ))
+            .child(div().flex_1())
+            .child(icon(caret, 14.).text_color(r(mode, "foreground")));
+        if let Some(bg) = bg {
+            header = header.bg(bg);
+        }
         let mut item = v_flex()
             .w_full()
             .border_b(px(1.))
             .border_color(c("white-a8"))
-            .child(cl_trigger(title, None, ix, mode).h(px(40.)));
+            .child(header);
         if let Some(body) = body {
             item = item.child(div().w_full().p(px(8.)).pb(px(12.)).child(txt(
                 12.,
@@ -3655,36 +3775,9 @@ pub mod groups {
             AlertTone::Danger => (c("red-900"), c("red-500"), c("red-300")),
             AlertTone::Accent => (c("orange-900"), c("orange-500"), c("orange-300")),
         };
-        let mut card = v_flex().gap(px(12.)).p(px(12.)).bg(well).child(
-            h_flex()
-                .gap(px(12.))
-                .items_center()
-                .child(icon(glyph, 16.).text_color(tone500))
-                .child(
-                    v_flex()
-                        .gap(px(2.))
-                        .child(txt(12., 14., FontWeight::MEDIUM, tone_text, title.into()))
-                        .child(div().w(px(300.)).child(txt(
-                            11.,
-                            15.,
-                            FontWeight::NORMAL,
-                            r(mode, "secondary-foreground"),
-                            message.into(),
-                        ))),
-                ),
-        );
-        if banner {
-            card = card
-                .w_full()
-                .rounded(px(0.))
-                .border_b(px(1.))
-                .border_color(c("neutral-825"));
-        } else {
-            card = card.w(px(460.)).rounded(px(16.));
-        }
-        let mut row = h_flex().gap(px(8.)).items_center();
+        let mut actions = h_flex().gap(px(8.)).items_center();
         if let Some(action) = action {
-            row = row.child(
+            actions = actions.child(
                 h_flex()
                     .h(px(24.))
                     .px(px(8.))
@@ -3699,7 +3792,7 @@ pub mod groups {
                     )),
             );
         }
-        row = row.child(
+        actions = actions.child(
             div()
                 .size(px(20.))
                 .rounded(px(6.))
@@ -3708,7 +3801,36 @@ pub mod groups {
                 .justify_center()
                 .child(icon(IconName::X, 14.).text_color(r(mode, "secondary-foreground"))),
         );
-        card.child(row)
+        let mut card = h_flex()
+            .gap(px(12.))
+            .p(px(12.))
+            .bg(well)
+            .items_start()
+            .child(icon(glyph, 16.).text_color(tone500))
+            .child(
+                v_flex()
+                    .flex_1()
+                    .gap(px(2.))
+                    .child(txt(12., 14., FontWeight::MEDIUM, tone_text, title.into()))
+                    .child(div().w(px(300.)).child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        r(mode, "secondary-foreground"),
+                        message.into(),
+                    ))),
+            )
+            .child(actions);
+        if banner {
+            card = card
+                .w_full()
+                .rounded(px(0.))
+                .border_b(px(1.))
+                .border_color(c("neutral-825"));
+        } else {
+            card = card.w(px(460.)).rounded(px(16.));
+        }
+        card
     }
 
     // ── M16 · Description list ───────────────────────────────────────────────
@@ -3776,6 +3898,42 @@ pub mod groups {
                 r(mode, "muted-foreground"),
                 currency.into(),
             )))
+    }
+
+    /// Tag value chip: neutral-875 fill, rx4, h20, px6, gap 4 — 6px muted dot +
+    /// 11/500 neutral-300 label.
+    pub fn dl_tag(label: impl Into<SharedString>, mode: Mode) -> Div {
+        h_flex()
+            .h(px(20.))
+            .px(px(6.))
+            .gap(px(4.))
+            .items_center()
+            .rounded(px(4.))
+            .bg(c("neutral-875"))
+            .child(
+                div()
+                    .size(px(6.))
+                    .rounded_full()
+                    .bg(r(mode, "muted-foreground")),
+            )
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::MEDIUM,
+                r(mode, "secondary-foreground"),
+                label.into(),
+            ))
+    }
+
+    /// Bordered list frame: 1px hairline border, rx16, px12.
+    pub fn dl_bordered_frame(content: Div) -> Div {
+        v_flex()
+            .w(px(466.))
+            .rounded(px(16.))
+            .border(px(1.))
+            .border_color(c("white-a8"))
+            .px(px(12.))
+            .child(content)
     }
 
     // ── M17 · Clipboard ──────────────────────────────────────────────────────
@@ -3880,8 +4038,10 @@ pub mod groups {
     pub enum PgIx {
         /// rest: transparent, neutral-300 number.
         Rest,
-        /// hover/pressed: white-a4/a8 fill, white number.
+        /// hover: white-a4 fill, white number.
         Hover,
+        /// pressed: white-a8 fill, white number.
+        Pressed,
         /// current: white-a12 fill, white number.
         Current,
         /// focus: 2px neutral-200 ring.
@@ -3895,6 +4055,7 @@ pub mod groups {
         let (bg, ring, ink, opacity) = match ix {
             PgIx::Rest => (None, None, c("neutral-300"), 1.0),
             PgIx::Hover => (Some(c("white-a4")), None, c("neutral-0"), 1.0),
+            PgIx::Pressed => (Some(c("white-a8")), None, c("neutral-0"), 1.0),
             PgIx::Current => (Some(c("white-a12")), None, c("neutral-0"), 1.0),
             PgIx::Focus => (None, Some(c("neutral-200")), c("neutral-300"), 1.0),
             PgIx::Disabled => (None, None, c("neutral-300"), 0.4),
@@ -3921,6 +4082,7 @@ pub mod groups {
         let (bg, opacity) = match ix {
             PgIx::Rest => (None, 1.0),
             PgIx::Hover => (Some(c("white-a4")), 1.0),
+            PgIx::Pressed => (Some(c("white-a8")), 1.0),
             PgIx::Current => (Some(c("white-a12")), 1.0),
             PgIx::Focus => (None, 1.0),
             PgIx::Disabled => (None, 0.4),
