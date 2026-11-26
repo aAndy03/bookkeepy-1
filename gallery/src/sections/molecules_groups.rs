@@ -13,6 +13,7 @@ use bookkeepy_ui::api::language::groups::{
 use bookkeepy_ui::api::language::popups::{self, MenuIx};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::Sizable as _;
 use gpui_kit::component::accordion::Accordion;
 use gpui_kit::component::alert::Alert;
 use gpui_kit::component::button::{Button, DropdownButton, Toggle, ToggleGroup};
@@ -941,7 +942,11 @@ impl gpui_kit::Render for MoleculesGroups {
             "gallery.m02.cl.hint",
             v_flex()
                 .gap_6()
-                .child(kit::cell(cx, "gallery.m02.cl.live", live_coll))
+                .child(kit::cell(
+                    cx,
+                    "gallery.m02.cl.live",
+                    div().w(px(300.)).child(live_coll),
+                ))
                 .child(cl_states),
         );
 
@@ -958,6 +963,7 @@ impl gpui_kit::Render for MoleculesGroups {
         };
         let live_acc = Accordion::new("m2-acc")
             .w(px(360.))
+            .bordered(false)
             .on_toggle_click(cx.listener(|v, open: &[usize], _window, cx| {
                 v.acc = open.first().copied().unwrap_or(usize::MAX);
                 cx.notify();
@@ -1074,17 +1080,26 @@ impl gpui_kit::Render for MoleculesGroups {
         );
 
         // ── M15 · alert ──────────────────────────────────────────────────────
+        let well = |alias: &str| bookkeepy_ui::api::language::prim_hsla(alias).unwrap_or_default();
         let live_alerts = h_flex()
             .gap(px(12.))
             .items_start()
             .child(
                 Alert::info("m2-al-info", tr(cx, "gallery.m02.alert.m_info"))
                     .title(tr(cx, "gallery.m02.alert.t_info"))
+                    .w(px(460.))
+                    .rounded(px(16.))
+                    .bg(well("cyan-900"))
+                    .border_color(well("cyan-900"))
                     .on_close(|_, _, _| {}),
             )
             .child(
                 Alert::error("m2-al-danger", tr(cx, "gallery.m02.alert.m_danger"))
                     .title(tr(cx, "gallery.m02.alert.t_danger"))
+                    .w(px(460.))
+                    .rounded(px(16.))
+                    .bg(well("red-900"))
+                    .border_color(well("red-900"))
                     .on_close(|_, _, _| {}),
             );
         let al = |tone: AlertTone, glyph: IconName, t: &str, m: &str| {
@@ -1210,6 +1225,7 @@ impl gpui_kit::Render for MoleculesGroups {
         let live_dlv = DescriptionList::vertical()
             .bordered(false)
             .columns(3)
+            .with_size(gpui_kit::component::Size::Large)
             .item(
                 tr(cx, "gallery.m02.dl.opened"),
                 tr(cx, "gallery.m02.dl.opened_v"),
@@ -1260,7 +1276,11 @@ impl gpui_kit::Render for MoleculesGroups {
             v_flex()
                 .gap_6()
                 .child(kit::cell(cx, "gallery.m02.dl.live_h", live_dl))
-                .child(kit::cell(cx, "gallery.m02.dl.live_v", live_dlv))
+                .child(kit::cell(
+                    cx,
+                    "gallery.m02.dl.live_v",
+                    div().w(px(660.)).child(live_dlv),
+                ))
                 .child(dl_modes),
         );
 
