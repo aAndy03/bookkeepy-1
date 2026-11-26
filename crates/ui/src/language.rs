@@ -2958,6 +2958,1128 @@ pub mod structure {
     }
 }
 
+/// Group/disclosure/feedback molecule presets — MOLECULES · 02 sheet
+/// (toggle group, radio group, input group, dropdown button, hover card,
+/// collapsible, accordion, alert, description list, clipboard, pagination,
+/// stepper). Painted cells pin the sheet-exact geometry; rest cells in the
+/// gallery are the live stock components.
+pub mod groups {
+    use super::atoms::icon;
+    use super::{Mode, prim_hsla, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::component::StyledExt as _;
+    use gpui_kit::{
+        Div, FontWeight, ParentElement as _, SharedString, StyleRefinement, Styled as _, div, px,
+    };
+
+    fn c(alias: &str) -> gpui_kit::Hsla {
+        prim_hsla(alias).unwrap_or_default()
+    }
+
+    fn r(mode: Mode, role: &str) -> gpui_kit::Hsla {
+        role_hsla(mode, role).unwrap_or_default()
+    }
+
+    fn txt(size: f32, lh: f32, w: FontWeight, color: gpui_kit::Hsla, s: SharedString) -> Div {
+        div()
+            .text_size(px(size))
+            .line_height(px(lh))
+            .font_weight(w)
+            .text_color(color)
+            .child(s)
+    }
+
+    // ── M8 · Toggle group ────────────────────────────────────────────────────
+
+    /// Toggle-group interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TgIx {
+        /// rest: transparent fill, neutral-300 label.
+        Rest,
+        /// hover: white-a4 fill, white label.
+        Hover,
+        /// pressed: white-a8 fill, white label.
+        Pressed,
+        /// on: white-a12 fill, white label.
+        On,
+        /// focus: on-fill + 2px neutral-200 ring.
+        Focus,
+        /// disabled: 40% opacity.
+        Disabled,
+    }
+
+    /// Segmented track: transparent, rx8, padding 2, gap 2.
+    pub fn toggle_track(items: Div) -> Div {
+        h_flex().p(px(2.)).gap(px(2.)).rounded(px(8.)).child(items)
+    }
+
+    /// One toggle item: h28, rx6, gap 6 — px12 with a label, px7 icon-only.
+    pub fn toggle_item(
+        label: Option<impl Into<SharedString>>,
+        glyph: Option<IconName>,
+        ix: TgIx,
+    ) -> Div {
+        let (bg, label_color, opacity) = match ix {
+            TgIx::Rest => (None, c("neutral-300"), 1.0),
+            TgIx::Hover => (Some(c("white-a4")), c("neutral-0"), 1.0),
+            TgIx::Pressed => (Some(c("white-a8")), c("neutral-0"), 1.0),
+            TgIx::On | TgIx::Focus => (Some(c("white-a12")), c("neutral-0"), 1.0),
+            TgIx::Disabled => (None, c("neutral-300"), 0.4),
+        };
+        let mut item = h_flex()
+            .h(px(28.))
+            .gap(px(6.))
+            .items_center()
+            .rounded(px(6.))
+            .opacity(opacity);
+        item = if label.is_some() {
+            item.px(px(12.))
+        } else {
+            item.px(px(7.))
+        };
+        if let Some(bg) = bg {
+            item = item.bg(bg);
+        }
+        if ix == TgIx::Focus {
+            item = item.border(px(2.)).border_color(c("neutral-200"));
+        }
+        if let Some(glyph) = glyph {
+            item = item.child(icon(glyph, 14.).text_color(label_color));
+        }
+        if let Some(label) = label {
+            item = item.child(txt(12., 14., FontWeight::MEDIUM, label_color, label.into()));
+        }
+        item
+    }
+
+    // ── M9 · Radio group ─────────────────────────────────────────────────────
+
+    /// Radio-option interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum RgIx {
+        /// rest: 1px neutral-750 ring, empty circle.
+        Rest,
+        /// checked: neutral-100 fill + neutral-925 6px dot.
+        Checked,
+        /// hover: white-a4 fill, neutral-650 ring.
+        Hover,
+        /// focus: 1.5px neutral-200 outer ring around a checked circle.
+        Focus,
+        /// invalid: 1.5px danger outer ring.
+        Invalid,
+        /// disabled: 40% opacity.
+        Disabled,
+    }
+
+    /// One radio option: 20px ring (1px pad) + 16px circle + 12/400 label, gap 8.
+    pub fn radio_option(label: impl Into<SharedString>, ix: RgIx) -> Div {
+        let (ring_out, circle_bg, circle_line, dot, opacity) = match ix {
+            RgIx::Rest => (
+                c("transparent"),
+                c("transparent"),
+                c("neutral-750"),
+                false,
+                1.0,
+            ),
+            RgIx::Checked => (
+                c("transparent"),
+                c("neutral-100"),
+                c("neutral-100"),
+                true,
+                1.0,
+            ),
+            RgIx::Hover => (
+                c("transparent"),
+                c("white-a4"),
+                c("neutral-650"),
+                false,
+                1.0,
+            ),
+            RgIx::Focus => (
+                c("neutral-200"),
+                c("neutral-100"),
+                c("neutral-100"),
+                true,
+                1.0,
+            ),
+            RgIx::Invalid => (c("red-500"), c("transparent"), c("neutral-750"), false, 1.0),
+            RgIx::Disabled => (
+                c("transparent"),
+                c("transparent"),
+                c("neutral-750"),
+                false,
+                0.4,
+            ),
+        };
+        let mut circle = div()
+            .size(px(16.))
+            .rounded_full()
+            .bg(circle_bg)
+            .border(px(1.))
+            .border_color(circle_line)
+            .flex()
+            .items_center()
+            .justify_center();
+        if dot {
+            circle = circle.child(div().size(px(6.)).rounded_full().bg(c("neutral-925")));
+        }
+        h_flex()
+            .gap(px(8.))
+            .items_center()
+            .opacity(opacity)
+            .child(
+                div()
+                    .size(px(20.))
+                    .rounded_full()
+                    .p(px(1.))
+                    .border(px(1.5))
+                    .border_color(ring_out)
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(circle),
+            )
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                c("neutral-0"),
+                label.into(),
+            ))
+    }
+
+    /// Radio group stack: 12/500 group label, options column (gap 8) or row
+    /// (gap 16), optional 11/400 help line (w240).
+    pub fn radio_group(
+        label: impl Into<SharedString>,
+        help: Option<impl Into<SharedString>>,
+        help_color: Option<gpui_kit::Hsla>,
+        options: Div,
+        horizontal: bool,
+        mode: Mode,
+    ) -> Div {
+        let opts = if horizontal {
+            h_flex().gap(px(16.)).child(options)
+        } else {
+            v_flex().gap(px(8.)).child(options)
+        };
+        let mut g = v_flex()
+            .gap(px(8.))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                label.into(),
+            ))
+            .child(opts);
+        if let Some(help) = help {
+            g = g.child(
+                div()
+                    .w(px(240.))
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .text_color(help_color.unwrap_or_else(|| r(mode, "muted-foreground")))
+                    .child(help.into()),
+            );
+        }
+        g
+    }
+
+    // ── M10 · Input group ────────────────────────────────────────────────────
+
+    /// Input-group interaction state for the painted ladder.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum IgIx {
+        /// rest: transparent 2px ring, neutral-750 prefix divider.
+        Rest,
+        /// hover: neutral-650 prefix divider.
+        Hover,
+        /// focus: white-a16 2px ring, neutral-300 divider.
+        Focus,
+        /// invalid: danger divider, danger label + warning glyph, danger help.
+        Invalid,
+        /// readonly: transparent field fill, neutral-825 divider, lock glyph.
+        Readonly,
+        /// disabled: whole group at 40%.
+        Disabled,
+    }
+
+    /// Group label (12/500 foreground) + optional help (11/400, w270).
+    pub fn ig_label(
+        label: impl Into<SharedString>,
+        help: Option<(SharedString, gpui_kit::Hsla)>,
+        mode: Mode,
+    ) -> Div {
+        let mut col = v_flex().gap(px(6.)).child(txt(
+            12.,
+            14.,
+            FontWeight::MEDIUM,
+            r(mode, "foreground"),
+            label.into(),
+        ));
+        if let Some((help, color)) = help {
+            col = col.child(
+                div()
+                    .w(px(270.))
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .text_color(color)
+                    .child(help),
+            );
+        }
+        col
+    }
+
+    /// One frame around field + addons: rx8, border 2px (transparent rest /
+    /// white-a16 focus), padding 2, full width.
+    pub fn ig_frame(content: Div, ix: IgIx) -> Div {
+        let ring = if ix == IgIx::Focus {
+            c("white-a16")
+        } else {
+            c("transparent")
+        };
+        let opacity = if ix == IgIx::Disabled { 0.4 } else { 1.0 };
+        div()
+            .w_full()
+            .rounded(px(8.))
+            .border(px(2.))
+            .border_color(ring)
+            .p(px(2.))
+            .opacity(opacity)
+            .child(content)
+    }
+
+    /// Sunken field: neutral-950 fill, rx6, h32 (transparent when readonly).
+    pub fn ig_field(content: Div, ix: IgIx) -> Div {
+        let bg = if ix == IgIx::Readonly {
+            c("transparent")
+        } else {
+            c("neutral-950")
+        };
+        h_flex()
+            .h(px(32.))
+            .rounded(px(6.))
+            .bg(bg)
+            .overflow_hidden()
+            .child(content)
+    }
+
+    /// Prefix addon: sunken fill, 1px right divider, px10, 12/400 muted text.
+    pub fn ig_prefix(text: impl Into<SharedString>, ix: IgIx, mode: Mode) -> Div {
+        let divider = match ix {
+            IgIx::Rest | IgIx::Disabled => c("neutral-750"),
+            IgIx::Hover => c("neutral-650"),
+            IgIx::Focus => c("neutral-300"),
+            IgIx::Invalid => c("red-500"),
+            IgIx::Readonly => c("neutral-825"),
+        };
+        h_flex()
+            .h(px(32.))
+            .px(px(10.))
+            .items_center()
+            .bg(c("neutral-950"))
+            .border_r(px(1.))
+            .border_color(divider)
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                r(mode, "muted-foreground"),
+                text.into(),
+            ))
+    }
+
+    /// Text slot inside the field: px10, gap 8.
+    pub fn ig_text(text: impl Into<SharedString>, ix: IgIx, mode: Mode) -> Div {
+        let color = if ix == IgIx::Invalid {
+            r(mode, "danger-foreground")
+        } else {
+            r(mode, "foreground")
+        };
+        h_flex().px(px(10.)).gap(px(8.)).items_center().child(txt(
+            12.,
+            14.,
+            FontWeight::NORMAL,
+            color,
+            text.into(),
+        ))
+    }
+
+    /// Suffix addon slot: h-full, px4.
+    pub fn ig_suffix(content: Div) -> Div {
+        h_flex().h_full().px(px(4.)).items_center().child(content)
+    }
+
+    /// Inline ghost action button (Max): h24, px8, rx6, gap 6, 12/500 neutral-300.
+    pub fn ig_button(label: impl Into<SharedString>, mode: Mode) -> Div {
+        h_flex()
+            .h(px(24.))
+            .px(px(8.))
+            .gap(px(6.))
+            .items_center()
+            .rounded(px(6.))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "secondary-foreground"),
+                label.into(),
+            ))
+    }
+
+    // ── M11 · Dropdown button ───────────────────────────────────────────────
+
+    /// Dropdown-button interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DdIx {
+        /// rest.
+        Rest,
+        /// hover on the main half (only that half lightens).
+        HoverMain,
+        /// hover on the caret half.
+        HoverCaret,
+        /// open: caret half pressed + duotone caret.
+        Open,
+        /// loading: spinner replaces the main icon.
+        Loading,
+        /// focus on the main half: 2px neutral-200 ring.
+        FocusMain,
+        /// disabled: both halves at 40%.
+        Disabled,
+    }
+
+    /// Split button: two halves share one surface with a 1px seam — main half
+    /// (px12, icon 14, label 12/500) + caret half (px8, caret 12). `primary`
+    /// flips the fills to the inverted light scheme.
+    pub fn dropdown_button(
+        label: impl Into<SharedString>,
+        glyph: IconName,
+        primary: bool,
+        ix: DdIx,
+        _mode: Mode,
+    ) -> Div {
+        let (main_bg, caret_bg, ink) = match (primary, ix) {
+            (_, DdIx::Disabled) => (c("neutral-100"), c("neutral-100"), c("neutral-925")),
+            (true, DdIx::HoverMain) => (c("neutral-0"), c("neutral-100"), c("neutral-925")),
+            (true, DdIx::HoverCaret) => (c("neutral-100"), c("neutral-0"), c("neutral-925")),
+            (true, DdIx::Open) => (c("neutral-100"), c("neutral-200"), c("neutral-925")),
+            (true, _) => (c("neutral-100"), c("neutral-100"), c("neutral-925")),
+            (false, DdIx::HoverMain) => (c("neutral-850"), c("neutral-875"), c("neutral-0")),
+            (false, DdIx::HoverCaret) => (c("neutral-875"), c("neutral-850"), c("neutral-0")),
+            (false, DdIx::Open) => (c("neutral-875"), c("neutral-800"), c("neutral-0")),
+            (false, _) => (c("neutral-875"), c("neutral-875"), c("neutral-0")),
+        };
+        let opacity = if ix == DdIx::Disabled { 0.4 } else { 1.0 };
+        let main_icon = if ix == DdIx::Loading {
+            icon(IconName::LoaderCircle, 14.).text_color(ink)
+        } else {
+            icon(glyph, 14.).text_color(ink)
+        };
+        let mut main = h_flex()
+            .h(px(32.))
+            .px(px(12.))
+            .gap(px(6.))
+            .items_center()
+            .bg(main_bg)
+            .opacity(opacity)
+            .child(main_icon)
+            .child(txt(12., 14., FontWeight::MEDIUM, ink, label.into()));
+        if ix == DdIx::FocusMain {
+            main = main.border(px(2.)).border_color(c("neutral-200"));
+        }
+        // Outer clip gives the exact 6px-0-0-6 / 0-6-6-0 corner split.
+        h_flex()
+            .gap(px(1.))
+            .rounded(px(6.))
+            .overflow_hidden()
+            .child(main)
+            .child(
+                h_flex()
+                    .h(px(32.))
+                    .px(px(8.))
+                    .items_center()
+                    .bg(caret_bg)
+                    .opacity(opacity)
+                    .child(icon(IconName::ChevronsUpDown, 12.).text_color(ink)),
+            )
+    }
+
+    // ── M12 · Hover card ─────────────────────────────────────────────────────
+
+    /// Floating card: popover fill, rx12, 0 8 24 black-a60 shadow, padding 12,
+    /// gap 12, w300 — no arrow.
+    pub fn hover_card(content: Div, mode: Mode) -> Div {
+        use gpui_kit::BoxShadow;
+        div()
+            .w(px(300.))
+            .rounded(px(12.))
+            .bg(r(mode, "popover"))
+            .p(px(12.))
+            .flex()
+            .flex_col()
+            .gap(px(12.))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(vec![
+                    BoxShadow::new(px(0.), px(8.), c("black-a60")).blur_radius(px(24.)),
+                ]),
+                ..Default::default()
+            })
+            .child(content)
+    }
+
+    /// Card head: leading icon + text column (title 12/500, sub 11/400 muted).
+    pub fn hc_head(
+        glyph: IconName,
+        title: impl Into<SharedString>,
+        sub: impl Into<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .gap(px(12.))
+            .items_center()
+            .child(icon(glyph, 16.).text_color(r(mode, "foreground")))
+            .child(
+                v_flex()
+                    .gap(px(2.))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "foreground"),
+                        title.into(),
+                    ))
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        r(mode, "muted-foreground"),
+                        sub.into(),
+                    )),
+            )
+    }
+
+    /// Stat column: overline label 10/500 muted + amount (digits 13/500 + currency
+    /// 11/400 muted, pl3).
+    pub fn hc_stat(
+        label: impl Into<SharedString>,
+        digits: impl Into<SharedString>,
+        currency: impl Into<SharedString>,
+        ink: gpui_kit::Hsla,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .gap(px(2.))
+            .child(txt(
+                10.,
+                12.,
+                FontWeight::MEDIUM,
+                r(mode, "muted-foreground"),
+                label.into(),
+            ))
+            .child(
+                h_flex()
+                    .gap(px(1.))
+                    .items_end()
+                    .child(txt(13., 16., FontWeight::MEDIUM, ink, digits.into()))
+                    .child(div().pl(px(3.)).child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        r(mode, "muted-foreground"),
+                        currency.into(),
+                    ))),
+            )
+    }
+
+    /// Hairline divider + foot note (11/400 neutral-500).
+    pub fn hc_foot(note: impl Into<SharedString>) -> Div {
+        v_flex()
+            .gap(px(12.))
+            .child(div().w_full().h(px(1.)).bg(c("white-a8")))
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                c("neutral-500"),
+                note.into(),
+            ))
+    }
+
+    // ── M13/M14 · Collapsible + accordion ────────────────────────────────────
+
+    /// Disclosure interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ClIx {
+        /// closed, caret-right.
+        Closed,
+        /// hover: white-a4 fill on the trigger row.
+        Hover,
+        /// focus: white-a4 fill + 2px neutral-200 ring.
+        Focus,
+        /// open, caret-down.
+        Open,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// Trigger row: h28, px8, gap 8, rx6, 2px transparent border — caret 14,
+    /// label 12/500, optional count badge (h16 px5 rx999 neutral-200 fill,
+    /// neutral-925 10/600).
+    pub fn cl_trigger(
+        label: impl Into<SharedString>,
+        count: Option<usize>,
+        ix: ClIx,
+        mode: Mode,
+    ) -> Div {
+        let (bg, ring, caret, opacity) = match ix {
+            ClIx::Closed => (None, None, IconName::ChevronRight, 1.0),
+            ClIx::Hover => (Some(c("white-a4")), None, IconName::ChevronRight, 1.0),
+            ClIx::Focus => (
+                Some(c("white-a4")),
+                Some(c("neutral-200")),
+                IconName::ChevronRight,
+                1.0,
+            ),
+            ClIx::Open => (None, None, IconName::ChevronDown, 1.0),
+            ClIx::Disabled => (None, None, IconName::ChevronRight, 0.4),
+        };
+        let mut row = h_flex()
+            .w_full()
+            .h(px(28.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(6.))
+            .border(px(2.))
+            .border_color(ring.unwrap_or_else(|| c("transparent")))
+            .opacity(opacity)
+            .child(icon(caret, 14.).text_color(r(mode, "foreground")))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                label.into(),
+            ));
+        if let Some(bg) = bg {
+            row = row.bg(bg);
+        }
+        if let Some(count) = count {
+            row = row.child(
+                h_flex()
+                    .h(px(16.))
+                    .px(px(5.))
+                    .items_center()
+                    .rounded_full()
+                    .bg(c("neutral-200"))
+                    .child(txt(
+                        10.,
+                        12.,
+                        FontWeight::SEMIBOLD,
+                        c("neutral-925"),
+                        count.to_string().into(),
+                    )),
+            );
+        }
+        row
+    }
+
+    /// Accordion item: hairline bottom border; header = `cl_trigger` at h40;
+    /// open body: padding 8 8 12, 12/400 neutral-300, line-height 18.
+    pub fn acc_item(
+        title: impl Into<SharedString>,
+        body: Option<impl Into<SharedString>>,
+        ix: ClIx,
+        mode: Mode,
+    ) -> Div {
+        let mut item = v_flex()
+            .w_full()
+            .border_b(px(1.))
+            .border_color(c("white-a8"))
+            .child(cl_trigger(title, None, ix, mode).h(px(40.)));
+        if let Some(body) = body {
+            item = item.child(div().w_full().p(px(8.)).pb(px(12.)).child(txt(
+                12.,
+                18.,
+                FontWeight::NORMAL,
+                r(mode, "secondary-foreground"),
+                body.into(),
+            )));
+        }
+        item
+    }
+
+    // ── M15 · Alert ──────────────────────────────────────────────────────────
+
+    /// Alert tone (well fill + tone icon/title).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum AlertTone {
+        /// neutral: surface-raised fill, white icon/title.
+        Neutral,
+        /// info: cyan well, cyan icon/title.
+        Info,
+        /// success: green well.
+        Success,
+        /// warning: amber well.
+        Warning,
+        /// danger: red well.
+        Danger,
+        /// accent: orange well.
+        Accent,
+    }
+
+    /// Alert card: tone well, rx16, padding 12, gap 12, w460 — icon 16, title
+    /// 12/500 tone ink, message 11/400 neutral-300 (w300), actions row, close
+    /// icon-button (20×20, icon 14). `banner`: full width, square, hairline
+    /// bottom border.
+    pub fn alert_card(
+        tone: AlertTone,
+        glyph: IconName,
+        title: impl Into<SharedString>,
+        message: impl Into<SharedString>,
+        action: Option<impl Into<SharedString>>,
+        banner: bool,
+        mode: Mode,
+    ) -> Div {
+        let (well, tone500, tone_text) = match tone {
+            AlertTone::Neutral => (
+                r(mode, "surface-raised"),
+                r(mode, "foreground"),
+                r(mode, "foreground"),
+            ),
+            AlertTone::Info => (c("cyan-900"), c("cyan-500"), c("cyan-300")),
+            AlertTone::Success => (c("green-900"), c("green-500"), c("green-500")),
+            AlertTone::Warning => (c("amber-900"), c("amber-500"), c("amber-500")),
+            AlertTone::Danger => (c("red-900"), c("red-500"), c("red-300")),
+            AlertTone::Accent => (c("orange-900"), c("orange-500"), c("orange-300")),
+        };
+        let mut card = v_flex().gap(px(12.)).p(px(12.)).bg(well).child(
+            h_flex()
+                .gap(px(12.))
+                .items_center()
+                .child(icon(glyph, 16.).text_color(tone500))
+                .child(
+                    v_flex()
+                        .gap(px(2.))
+                        .child(txt(12., 14., FontWeight::MEDIUM, tone_text, title.into()))
+                        .child(div().w(px(300.)).child(txt(
+                            11.,
+                            15.,
+                            FontWeight::NORMAL,
+                            r(mode, "secondary-foreground"),
+                            message.into(),
+                        ))),
+                ),
+        );
+        if banner {
+            card = card
+                .w_full()
+                .rounded(px(0.))
+                .border_b(px(1.))
+                .border_color(c("neutral-825"));
+        } else {
+            card = card.w(px(460.)).rounded(px(16.));
+        }
+        let mut row = h_flex().gap(px(8.)).items_center();
+        if let Some(action) = action {
+            row = row.child(
+                h_flex()
+                    .h(px(24.))
+                    .px(px(8.))
+                    .items_center()
+                    .rounded(px(6.))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "secondary-foreground"),
+                        action.into(),
+                    )),
+            );
+        }
+        row = row.child(
+            div()
+                .size(px(20.))
+                .rounded(px(6.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(icon(IconName::X, 14.).text_color(r(mode, "secondary-foreground"))),
+        );
+        card.child(row)
+    }
+
+    // ── M16 · Description list ───────────────────────────────────────────────
+
+    /// Horizontal row: hairline bottom, py8, gap 16 — label w120 12/400 muted,
+    /// value 12/400 foreground.
+    pub fn dl_row(label: impl Into<SharedString>, value: Div, mode: Mode) -> Div {
+        h_flex()
+            .w(px(440.))
+            .py(px(8.))
+            .gap(px(16.))
+            .border_b(px(1.))
+            .border_color(c("white-a8"))
+            .child(div().w(px(120.)).child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                r(mode, "muted-foreground"),
+                label.into(),
+            )))
+            .child(value)
+    }
+
+    /// Vertical cell: label 11/400 muted above value, gap 2.
+    pub fn dl_cell(
+        label: impl Into<SharedString>,
+        value: impl Into<SharedString>,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .gap(px(2.))
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                r(mode, "muted-foreground"),
+                label.into(),
+            ))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                r(mode, "foreground"),
+                value.into(),
+            ))
+    }
+
+    /// Amount value: sign+digits 13/500 + currency 11/400 muted (pl3).
+    pub fn dl_amount(
+        sign: impl Into<SharedString>,
+        digits: impl Into<SharedString>,
+        currency: impl Into<SharedString>,
+        ink: gpui_kit::Hsla,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .gap(px(1.))
+            .items_end()
+            .child(txt(13., 16., FontWeight::MEDIUM, ink, sign.into()))
+            .child(txt(13., 16., FontWeight::MEDIUM, ink, digits.into()))
+            .child(div().pl(px(3.)).child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                r(mode, "muted-foreground"),
+                currency.into(),
+            )))
+    }
+
+    // ── M17 · Clipboard ──────────────────────────────────────────────────────
+
+    /// Clipboard chip states.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum CbIx {
+        /// idle: copy glyph.
+        Idle,
+        /// hover: white-a4 fill on the button, glyph brightens.
+        Hover,
+        /// copied: check glyph in success.
+        Copied,
+        /// focus: 2px neutral-200 ring on the button.
+        Focus,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// Clipboard chip: neutral-950 fill, rx6, h32, pl10 pr4, gap 12 — value
+    /// 12/400 foreground + copy button (24px hit, icon 14).
+    pub fn clipboard_chip(value: impl Into<SharedString>, ix: CbIx, mode: Mode) -> Div {
+        let (glyph, glyph_color, btn_bg, ring, opacity) = match ix {
+            CbIx::Idle => (IconName::Copy, r(mode, "icon-muted"), None, None, 1.0),
+            CbIx::Hover => (
+                IconName::Copy,
+                r(mode, "foreground"),
+                Some(c("white-a4")),
+                None,
+                1.0,
+            ),
+            CbIx::Copied => (IconName::Check, r(mode, "success"), None, None, 1.0),
+            CbIx::Focus => (
+                IconName::Copy,
+                r(mode, "icon-muted"),
+                None,
+                Some(c("neutral-200")),
+                1.0,
+            ),
+            CbIx::Disabled => (IconName::Copy, r(mode, "icon-muted"), None, None, 0.4),
+        };
+        let mut btn = div()
+            .size(px(24.))
+            .rounded(px(6.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(icon(glyph, 14.).text_color(glyph_color));
+        if let Some(bg) = btn_bg {
+            btn = btn.bg(bg);
+        }
+        if let Some(ring) = ring {
+            btn = btn.border(px(2.)).border_color(ring);
+        }
+        h_flex()
+            .h(px(32.))
+            .pl(px(10.))
+            .pr(px(4.))
+            .gap(px(12.))
+            .items_center()
+            .rounded(px(6.))
+            .bg(c("neutral-950"))
+            .opacity(opacity)
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                r(mode, "foreground"),
+                value.into(),
+            ))
+            .child(btn)
+    }
+
+    /// "Copied" tooltip plate: neutral-100 fill, rx6, 0 4 12 black-a40 shadow,
+    /// p4 8, 11/400 neutral-925 text.
+    pub fn clipboard_tooltip(text: impl Into<SharedString>) -> Div {
+        use gpui_kit::BoxShadow;
+        div()
+            .rounded(px(6.))
+            .bg(c("neutral-100"))
+            .p(px(4.))
+            .px(px(8.))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(vec![
+                    BoxShadow::new(px(0.), px(4.), c("black-a40")).blur_radius(px(12.)),
+                ]),
+                ..Default::default()
+            })
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                c("neutral-925"),
+                text.into(),
+            ))
+    }
+
+    // ── M18 · Pagination ─────────────────────────────────────────────────────
+
+    /// Page-item state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum PgIx {
+        /// rest: transparent, neutral-300 number.
+        Rest,
+        /// hover/pressed: white-a4/a8 fill, white number.
+        Hover,
+        /// current: white-a12 fill, white number.
+        Current,
+        /// focus: 2px neutral-200 ring.
+        Focus,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// Page item: 28×28, rx6, number 12/400.
+    pub fn page_item(n: usize, ix: PgIx) -> Div {
+        let (bg, ring, ink, opacity) = match ix {
+            PgIx::Rest => (None, None, c("neutral-300"), 1.0),
+            PgIx::Hover => (Some(c("white-a4")), None, c("neutral-0"), 1.0),
+            PgIx::Current => (Some(c("white-a12")), None, c("neutral-0"), 1.0),
+            PgIx::Focus => (None, Some(c("neutral-200")), c("neutral-300"), 1.0),
+            PgIx::Disabled => (None, None, c("neutral-300"), 0.4),
+        };
+        let mut el = div()
+            .size(px(28.))
+            .rounded(px(6.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .opacity(opacity)
+            .child(txt(12., 14., FontWeight::NORMAL, ink, n.to_string().into()));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        if let Some(ring) = ring {
+            el = el.border(px(2.)).border_color(ring);
+        }
+        el
+    }
+
+    /// Prev/next caret button: 28×28, rx6, caret 14.
+    pub fn page_nav(glyph: IconName, ix: PgIx) -> Div {
+        let (bg, opacity) = match ix {
+            PgIx::Rest => (None, 1.0),
+            PgIx::Hover => (Some(c("white-a4")), 1.0),
+            PgIx::Current => (Some(c("white-a12")), 1.0),
+            PgIx::Focus => (None, 1.0),
+            PgIx::Disabled => (None, 0.4),
+        };
+        let mut el = div()
+            .size(px(28.))
+            .rounded(px(6.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .opacity(opacity)
+            .child(icon(glyph, 14.).text_color(c("neutral-300")));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        if ix == PgIx::Focus {
+            el = el.border(px(2.)).border_color(c("neutral-200"));
+        }
+        el
+    }
+
+    /// Ellipsis: 12/400 neutral-400.
+    pub fn page_ellipsis() -> Div {
+        div()
+            .size(px(28.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::NORMAL,
+                c("neutral-400"),
+                "…".into(),
+            ))
+    }
+
+    /// Compact label between the carets: 12/400 neutral-300.
+    pub fn page_compact_label(text: impl Into<SharedString>) -> Div {
+        txt(12., 14., FontWeight::NORMAL, c("neutral-300"), text.into())
+    }
+
+    // ── M19 · Stepper ────────────────────────────────────────────────────────
+
+    /// Step state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum StIx {
+        /// done: white-a12 disc + white check.
+        Done,
+        /// current: neutral-875 disc, neutral-200 ring, white number.
+        Current,
+        /// upcoming: transparent disc, neutral-700 ring, muted number/title.
+        Upcoming,
+        /// error: red well disc, danger ring + x, danger title.
+        Error,
+        /// disabled: 40%.
+        Disabled,
+    }
+
+    /// One step: 24px indicator disc (1.5px ring) + text column (title 12/500,
+    /// desc 11/400 muted), gap 8.
+    pub fn step(
+        n: usize,
+        title: impl Into<SharedString>,
+        desc: impl Into<SharedString>,
+        ix: StIx,
+        mode: Mode,
+    ) -> Div {
+        let (disc_bg, disc_ring, glyph, num_ink, title_ink, opacity) = match ix {
+            StIx::Done => (
+                c("white-a12"),
+                c("white-a12"),
+                Some(IconName::Check),
+                c("neutral-0"),
+                r(mode, "foreground"),
+                1.0,
+            ),
+            StIx::Current => (
+                c("neutral-875"),
+                c("neutral-200"),
+                None,
+                c("neutral-0"),
+                r(mode, "foreground"),
+                1.0,
+            ),
+            StIx::Upcoming => (
+                c("transparent"),
+                c("neutral-700"),
+                None,
+                c("neutral-400"),
+                r(mode, "muted-foreground"),
+                1.0,
+            ),
+            StIx::Error => (
+                c("red-900"),
+                c("red-500"),
+                Some(IconName::X),
+                c("red-300"),
+                c("red-300"),
+                1.0,
+            ),
+            StIx::Disabled => (
+                c("transparent"),
+                c("neutral-700"),
+                None,
+                c("neutral-400"),
+                r(mode, "muted-foreground"),
+                0.4,
+            ),
+        };
+        let mut disc = div()
+            .size(px(24.))
+            .rounded_full()
+            .bg(disc_bg)
+            .border(px(1.5))
+            .border_color(disc_ring)
+            .flex()
+            .items_center()
+            .justify_center();
+        if let Some(glyph) = glyph {
+            disc = disc.child(icon(glyph, 12.).text_color(num_ink));
+        } else {
+            disc = disc.child(txt(
+                11.,
+                15.,
+                FontWeight::SEMIBOLD,
+                num_ink,
+                n.to_string().into(),
+            ));
+        }
+        h_flex()
+            .gap(px(8.))
+            .items_center()
+            .opacity(opacity)
+            .child(disc)
+            .child(
+                v_flex()
+                    .child(txt(12., 14., FontWeight::MEDIUM, title_ink, title.into()))
+                    .child(txt(
+                        11.,
+                        15.,
+                        FontWeight::NORMAL,
+                        r(mode, "muted-foreground"),
+                        desc.into(),
+                    )),
+            )
+    }
+
+    /// Connector line between steps: w40, 1.5px — neutral-700 after a done
+    /// step, neutral-825 otherwise.
+    pub fn step_connector(done: bool) -> Div {
+        div().w(px(40.)).h(px(1.5)).bg(if done {
+            c("neutral-700")
+        } else {
+            c("neutral-825")
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

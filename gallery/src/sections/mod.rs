@@ -21,6 +21,7 @@ mod atoms_feedback;
 mod atoms_input;
 mod atoms_media;
 pub(crate) mod kit;
+mod molecules_groups;
 mod molecules_pickers;
 mod molecules_popups;
 mod molecules_structure;
@@ -101,6 +102,7 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(atoms_feedback, "atoms-feedback", Atoms),
     section!(atoms_media, "atoms-media", Atoms),
     section!(molecules_popups, "molecules-popups", Molecules),
+    section!(molecules_groups, "molecules-groups", Molecules),
     section!(molecules_pickers, "molecules-pickers", Molecules),
     section!(molecules_structure, "molecules-structure", Molecules),
 ];

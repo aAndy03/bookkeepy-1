@@ -23,18 +23,18 @@ note = "One [[component]] per published gpui-kit component; kept in lockstep wit
 [[component]]
 id = "accordion"
 title = "Accordion"
-section = "molecules-structure"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/accordion/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "alert"
 title = "Alert"
-section = "molecules-structure"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/alert/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "alert-dialog"
@@ -119,18 +119,18 @@ note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS 
 [[component]]
 id = "clipboard"
 title = "Clipboard"
-section = "molecules-data-list"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/clipboard/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "collapsible"
 title = "Collapsible"
-section = "molecules-structure"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/collapsible/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "color-picker"
@@ -175,10 +175,10 @@ note = "Demoed live in gallery section molecules-pickers (MOLECULES · 01 sheet)
 [[component]]
 id = "description-list"
 title = "DescriptionList"
-section = "molecules-data-list"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/description-list/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "dialog"
@@ -255,10 +255,10 @@ note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new s
 [[component]]
 id = "hover-card"
 title = "HoverCard"
-section = "molecules-popups"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/hover-card/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "icon"
@@ -383,10 +383,10 @@ note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
 [[component]]
 id = "pagination"
 title = "Pagination"
-section = "molecules-data-list"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/pagination/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "plot"
@@ -541,10 +541,10 @@ note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new s
 [[component]]
 id = "stepper"
 title = "Stepper"
-section = "molecules-nav"
+section = "molecules-groups"
 docs = "https://gpui-kit.com/component/stepper/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
 
 [[component]]
 id = "switch"
