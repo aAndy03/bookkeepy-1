@@ -10,12 +10,13 @@
 use std::rc::Rc;
 
 use bookkeepy_ui::api::language::choice::{self, Ix as ChkIx, Tri};
-use bookkeepy_ui::api::language::organisms::{self, LiIx, SortIx, TrIx};
+use bookkeepy_ui::api::language::organisms::{self, LiIx, SortIx, TrIx, TreeIx};
 use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::list::{List, ListDelegate, ListItem, ListState};
 use gpui_kit::component::table::{Column, ColumnSort, DataTable, TableDelegate, TableState};
+use gpui_kit::component::tree::{TreeItem, TreeState, tree};
 use gpui_kit::component::{IndexPath, v_virtual_list};
 use gpui_kit::{
     AnyView, App, AppContext as _, Context, Entity, Hsla, IntoElement, ParentElement as _, Size,
@@ -27,6 +28,24 @@ use crate::sections::kit;
 
 /// Section entry point (the `section!` macro's `new` fn).
 pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
+    let tree_state = cx.new(|cx| {
+        TreeState::new(cx).items(vec![
+            TreeItem::new("accounts", "Accounts")
+                .expanded(true)
+                .children(vec![
+                    TreeItem::new("bt", "BT Pay"),
+                    TreeItem::new("rev", "Revolut"),
+                    TreeItem::new("cash", "Cash"),
+                ]),
+            TreeItem::new("categories", "Categories")
+                .expanded(true)
+                .children(vec![
+                    TreeItem::new("groceries", "Groceries"),
+                    TreeItem::new("transport", "Transport"),
+                ]),
+            TreeItem::new("reports", "Reports"),
+        ])
+    });
     let table_state = cx.new(|cx| {
         TableState::new(TxDelegate::new(), window, cx)
             .row_selectable(true)
@@ -49,6 +68,7 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
             .collect(),
     );
     cx.new(|_cx| OrganismsTable {
+        tree_state,
         table_state,
         list_state,
         vlist_sizes,
@@ -58,6 +78,7 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
 }
 
 pub struct OrganismsTable {
+    tree_state: Entity<TreeState>,
     table_state: Entity<TableState<TxDelegate>>,
     list_state: Entity<ListState<AcctDelegate>>,
     vlist_sizes: Rc<Vec<Size<gpui_kit::Pixels>>>,
@@ -1010,6 +1031,95 @@ impl gpui_kit::Render for OrganismsTable {
             )),
         );
 
+        // ── O12 · tree ───────────────────────────────────────────────────────
+        let live_tree = tree(&self.tree_state, |_ix, entry, _selected, _window, _cx| {
+            ListItem::new(_ix)
+                .pl(px(16. * entry.depth() as f32 + 12.))
+                .child(
+                    h_flex()
+                        .gap(px(6.))
+                        .items_center()
+                        .child(entry.item().label.clone()),
+                )
+        })
+        .w(px(280.));
+        let tree_states = kit::row([
+            kit::cell(
+                cx,
+                "gallery.atoms.state.rest",
+                organisms::tree_row(
+                    0,
+                    Some(false),
+                    Some(IconName::Folder),
+                    "Accounts".into(),
+                    Some("6".into()),
+                    TreeIx::Rest,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.hover",
+                organisms::tree_row(
+                    1,
+                    Some(true),
+                    Some(IconName::Landmark),
+                    "BT Pay".into(),
+                    None,
+                    TreeIx::Hover,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.selected",
+                organisms::tree_row(
+                    1,
+                    None,
+                    Some(IconName::ChartPie),
+                    "Reports".into(),
+                    Some("3".into()),
+                    TreeIx::Selected,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.focus",
+                organisms::tree_row(
+                    0,
+                    Some(true),
+                    Some(IconName::Folder),
+                    "Categories".into(),
+                    None,
+                    TreeIx::Focus,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.disabled",
+                organisms::tree_row(
+                    1,
+                    None,
+                    Some(IconName::Landmark),
+                    "Old ING".into(),
+                    None,
+                    TreeIx::Disabled,
+                    mode,
+                ),
+            ),
+        ]);
+        let tree_group = kit::group(
+            cx,
+            "gallery.o02.tr.title",
+            "gallery.o02.tr.hint",
+            v_flex()
+                .gap_6()
+                .child(kit::row([kit::cell(cx, "gallery.o02.tr.live", live_tree)]))
+                .child(tree_states),
+        );
+
         // ── page ─────────────────────────────────────────────────────────────
         v_flex()
             .size_full()
@@ -1021,6 +1131,7 @@ impl gpui_kit::Render for OrganismsTable {
             .child(dt_group)
             .child(ls_group)
             .child(vl_group)
+            .child(tree_group)
     }
 }
 

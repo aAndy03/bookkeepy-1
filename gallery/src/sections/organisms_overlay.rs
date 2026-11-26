@@ -13,21 +13,26 @@ use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::WindowExt as _;
 use gpui_kit::component::button::{Button, ButtonVariant, ButtonVariants as _};
+use gpui_kit::component::command::{Command, CommandGroup, CommandItem, CommandState};
 use gpui_kit::component::dialog::{DialogFooter, DialogHeader, DialogTitle};
 use gpui_kit::component::notification::{Notification, NotificationType};
 use gpui_kit::{
-    AnyView, App, AppContext as _, Context, ParentElement as _, Styled as _, Window, div, px,
+    AnyView, App, AppContext as _, Context, Entity, ParentElement as _, Styled as _, Window, div,
+    px,
 };
 
 use crate::app::{Gallery, Prefs, tr};
 use crate::sections::kit;
 
 /// Section entry point (the `section!` macro's `new` fn).
-pub fn view(_window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
-    cx.new(|_cx| OrganismsOverlay).into()
+pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
+    let cmd_state = cx.new(|cx| CommandState::new(window, cx));
+    cx.new(|_cx| OrganismsOverlay { cmd_state }).into()
 }
 
-pub struct OrganismsOverlay;
+pub struct OrganismsOverlay {
+    cmd_state: Entity<CommandState>,
+}
 
 /// The painted O3 dialog panel: header + amount/account/payee body + footer.
 fn painted_dialog(
@@ -513,6 +518,92 @@ impl gpui_kit::Render for OrganismsOverlay {
                 ])),
         );
 
+        // ── O11 · sheet ──────────────────────────────────────────────────────
+        let sheet_title = tr(cx, "gallery.o02.sh.title_v");
+        let sheet_mode = mode;
+        let open_sheet_btn = Button::new("o2-open-sheet")
+            .label(tr(cx, "gallery.o02.sh.open_live"))
+            .on_click(move |_ev, window, cx| {
+                let t = sheet_title.clone();
+                let m = sheet_mode;
+                window.open_sheet(cx, move |sheet, _window, _cx| {
+                    sheet
+                        .title(t.clone())
+                        .size(px(400.))
+                        .child(v_flex().p(px(16.)).gap(px(12.)).child(sheet_row(
+                            "Date".into(),
+                            "18 Oct 2026 · 14:32".into(),
+                            false,
+                            m,
+                        )))
+                        .footer(
+                            h_flex()
+                                .justify_end()
+                                .gap(px(8.))
+                                .p(px(12.))
+                                .child(Button::new("o2-sheet-cancel").label("Cancel").ghost())
+                                .child(Button::new("o2-sheet-save").primary().label("Save")),
+                        )
+                });
+            });
+        let sh_painted = sheet_panel(cx, mode);
+        let sh_group = kit::group(
+            cx,
+            "gallery.o02.sh.title",
+            "gallery.o02.sh.hint",
+            v_flex().gap_6().child(kit::row([
+                kit::cell(cx, "gallery.o02.sh.master", sh_painted),
+                kit::cell(cx, "gallery.o02.sh.live", open_sheet_btn),
+            ])),
+        );
+
+        // ── O15 · command palette ────────────────────────────────────────────
+        let cmd_state = self.cmd_state.clone();
+        let cmd_ph = tr(cx, "gallery.o02.cmd.placeholder");
+        let open_cmd_btn = Button::new("o2-open-cmd")
+            .label(tr(cx, "gallery.o02.cmd.open_live"))
+            .on_click(move |_ev, window, cx| {
+                let ph = cmd_ph.clone();
+                let state = cmd_state.clone();
+                let (ph2, state2) = (ph.clone(), state.clone());
+                window.open_dialog(cx, move |dialog, _window, _cx| {
+                    let (ph3, state3) = (ph2.clone(), state2.clone());
+                    dialog.close_button(false).p_0().w(px(560.)).content(
+                        move |content, _window, _cx| {
+                            content.child(
+                                Command::new(&state3)
+                                    .placeholder(ph3.clone())
+                                    .bordered(false)
+                                    .group(
+                                        CommandGroup::new().label("Suggestions").item(
+                                            CommandItem::new()
+                                                .label("Calendar")
+                                                .icon(IconName::Calendar),
+                                        ),
+                                    )
+                                    .group(
+                                        CommandGroup::new().label("Settings").item(
+                                            CommandItem::new()
+                                                .label("Sync now")
+                                                .icon(IconName::RefreshCw),
+                                        ),
+                                    ),
+                            )
+                        },
+                    )
+                });
+            });
+        let cmd_painted = cmd_panel(cx, mode);
+        let cmd_group = kit::group(
+            cx,
+            "gallery.o02.cmd.title",
+            "gallery.o02.cmd.hint",
+            v_flex().gap_6().child(kit::row([
+                kit::cell(cx, "gallery.o02.cmd.master", cmd_painted),
+                kit::cell(cx, "gallery.o02.cmd.live", open_cmd_btn),
+            ])),
+        );
+
         // ── page ─────────────────────────────────────────────────────────────
         v_flex()
             .size_full()
@@ -524,5 +615,251 @@ impl gpui_kit::Render for OrganismsOverlay {
             .child(dlg_group)
             .child(ad_group)
             .child(nt_group)
+            .child(sh_group)
+            .child(cmd_group)
     }
+}
+
+/// One sheet detail row: label left (muted), value right, hairline bottom (O11).
+fn sheet_row(
+    label: gpui_kit::SharedString,
+    value: gpui_kit::SharedString,
+    note: bool,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let vc = if note {
+        prim_hsla("neutral-300").unwrap_or_default()
+    } else {
+        role_hsla(mode, "foreground").unwrap_or_default()
+    };
+    h_flex()
+        .py(px(8.))
+        .items_center()
+        .justify_between()
+        .border_b(px(1.))
+        .border_color(prim_hsla("white-a8").unwrap_or_default())
+        .child(txt2(
+            12.,
+            14.,
+            gpui_kit::FontWeight::NORMAL,
+            prim_hsla("neutral-400").unwrap_or_default(),
+            label,
+        ))
+        .child(txt2(12., 14., gpui_kit::FontWeight::NORMAL, vc, value))
+}
+
+fn txt2(
+    size: f32,
+    lh: f32,
+    w: gpui_kit::FontWeight,
+    color: gpui_kit::Hsla,
+    s: gpui_kit::SharedString,
+) -> gpui_kit::Div {
+    div()
+        .text_size(px(size))
+        .line_height(px(lh))
+        .font_weight(w)
+        .text_color(color)
+        .child(s)
+}
+
+/// The painted O11 sheet panel: 400×640 popover fill, leading hairline, dialog
+/// shadow, header / detail rows / footer (right-edge sheet).
+fn sheet_panel(cx: &App, mode: bookkeepy_primary_data::theme::Mode) -> gpui_kit::Div {
+    use gpui_kit::component::StyledExt as _;
+    organisms::dlg_frame(400., mode)
+        .border_0()
+        .rounded(px(0.))
+        .bg(role_hsla(mode, "popover").unwrap_or_default())
+        .border_l(px(1.))
+        .border_color(role_hsla(mode, "border-subtle").unwrap_or_default())
+        .refine_style(&gpui_kit::StyleRefinement {
+            box_shadow: Some(organisms::dialog_shadow()),
+            ..Default::default()
+        })
+        .w(px(400.))
+        .h(px(640.))
+        .child(
+            h_flex()
+                .p(px(16.))
+                .items_start()
+                .justify_between()
+                .child(
+                    v_flex()
+                        .gap(px(4.))
+                        .child(txt2(
+                            16.,
+                            21.,
+                            gpui_kit::FontWeight::SEMIBOLD,
+                            role_hsla(mode, "foreground").unwrap_or_default(),
+                            tr(cx, "gallery.o02.sh.title_v"),
+                        ))
+                        .child(txt2(
+                            11.,
+                            15.,
+                            gpui_kit::FontWeight::NORMAL,
+                            prim_hsla("neutral-400").unwrap_or_default(),
+                            tr(cx, "gallery.o02.sh.desc"),
+                        )),
+                )
+                .child(organisms::icon_btn(
+                    IconName::X,
+                    16.,
+                    role_hsla(mode, "icon").unwrap_or_default(),
+                    mode,
+                )),
+        )
+        .child(v_flex().px(px(16.)).gap_0().children([
+            sheet_row(
+                tr(cx, "gallery.o02.sh.date"),
+                "18 Oct 2026 · 14:32".into(),
+                false,
+                mode,
+            ),
+            sheet_row(
+                tr(cx, "gallery.o02.sh.account"),
+                tr(cx, "gallery.o01.dlg.revolut"),
+                false,
+                mode,
+            ),
+            sheet_row(
+                tr(cx, "gallery.o02.sh.amount"),
+                "−142,50 RON".into(),
+                false,
+                mode,
+            ),
+            sheet_row(
+                tr(cx, "gallery.o02.sh.note"),
+                tr(cx, "gallery.o02.sh.note_v"),
+                true,
+                mode,
+            ),
+        ]))
+        .child(div().flex_1())
+        .child(
+            h_flex()
+                .h(px(56.))
+                .px(px(12.))
+                .gap(px(8.))
+                .items_center()
+                .justify_end()
+                .border_t(px(1.))
+                .border_color(prim_hsla("white-a8").unwrap_or_default())
+                .child(organisms::dlg_btn(
+                    tr(cx, "gallery.o02.sh.delete"),
+                    gpui_kit::transparent_white(),
+                    prim_hsla("neutral-300").unwrap_or_default(),
+                    Some(IconName::Trash),
+                    prim_hsla("neutral-300").unwrap_or_default(),
+                ))
+                .child(organisms::dlg_btn(
+                    tr(cx, "gallery.o01.dlg.cancel"),
+                    prim_hsla("neutral-875").unwrap_or_default(),
+                    role_hsla(mode, "foreground").unwrap_or_default(),
+                    None,
+                    prim_hsla("neutral-400").unwrap_or_default(),
+                ))
+                .child(organisms::dlg_btn(
+                    tr(cx, "gallery.o01.dlg.save"),
+                    prim_hsla("neutral-100").unwrap_or_default(),
+                    prim_hsla("neutral-925").unwrap_or_default(),
+                    None,
+                    prim_hsla("neutral-925").unwrap_or_default(),
+                )),
+        )
+}
+
+/// The painted O15 command palette: 560px frame, search row, groups, footer.
+fn cmd_panel(cx: &App, mode: bookkeepy_primary_data::theme::Mode) -> gpui_kit::Div {
+    organisms::cmd_frame(mode)
+        .child(
+            h_flex()
+                .h(px(48.))
+                .px(px(16.))
+                .gap(px(10.))
+                .items_center()
+                .border_b(px(1.))
+                .border_color(prim_hsla("white-a8").unwrap_or_default())
+                .child(
+                    bookkeepy_ui::api::language::atoms::icon(IconName::Search, 16.)
+                        .text_color(prim_hsla("neutral-400").unwrap_or_default()),
+                )
+                .child(txt2(
+                    12.,
+                    18.,
+                    gpui_kit::FontWeight::NORMAL,
+                    role_hsla(mode, "foreground").unwrap_or_default(),
+                    tr(cx, "gallery.o02.cmd.query"),
+                ))
+                .child(
+                    div()
+                        .w(px(1.5))
+                        .h(px(18.))
+                        .bg(role_hsla(mode, "foreground").unwrap_or_default()),
+                )
+                .child(div().flex_1())
+                .child(organisms::kbd_chip("Esc", mode)),
+        )
+        .child(
+            v_flex()
+                .p(px(4.))
+                .gap(px(2.))
+                .child(organisms::cmd_group_label(tr(cx, "gallery.o02.cmd.g_sugg")))
+                .child(organisms::cmd_item(
+                    tr(cx, "gallery.o02.cmd.calendar"),
+                    None,
+                    true,
+                    mode,
+                ))
+                .child(organisms::cmd_item(
+                    tr(cx, "gallery.o02.cmd.new_tx"),
+                    Some("Ctrl+N"),
+                    false,
+                    mode,
+                ))
+                .child(organisms::cmd_item(
+                    tr(cx, "gallery.o02.cmd.import"),
+                    Some("Ctrl+I"),
+                    false,
+                    mode,
+                ))
+                .child(organisms::cmd_group_label(tr(cx, "gallery.o02.cmd.g_set")))
+                .child(organisms::cmd_item(
+                    tr(cx, "gallery.o02.cmd.profile"),
+                    Some("Ctrl+P"),
+                    false,
+                    mode,
+                ))
+                .child(organisms::cmd_item(
+                    tr(cx, "gallery.o02.cmd.sync"),
+                    Some("Ctrl+S"),
+                    false,
+                    mode,
+                )),
+        )
+        .child(
+            h_flex()
+                .h(px(34.))
+                .px(px(12.))
+                .gap(px(16.))
+                .items_center()
+                .border_t(px(1.))
+                .border_color(prim_hsla("white-a8").unwrap_or_default())
+                .child(organisms::kbd_chip("↑ ↓", mode))
+                .child(txt2(
+                    11.,
+                    15.,
+                    gpui_kit::FontWeight::NORMAL,
+                    prim_hsla("neutral-400").unwrap_or_default(),
+                    tr(cx, "gallery.o02.cmd.h_move"),
+                ))
+                .child(organisms::kbd_chip("↵", mode))
+                .child(txt2(
+                    11.,
+                    15.,
+                    gpui_kit::FontWeight::NORMAL,
+                    prim_hsla("neutral-400").unwrap_or_default(),
+                    tr(cx, "gallery.o02.cmd.h_open"),
+                )),
+        )
 }

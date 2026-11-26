@@ -23,12 +23,14 @@ mod atoms_media;
 pub(crate) mod kit;
 mod molecules_calendar;
 mod molecules_groups;
+mod molecules_nav;
 mod molecules_pickers;
 mod molecules_popups;
 mod molecules_structure;
 mod organisms_overlay;
 mod organisms_shell;
 mod organisms_table;
+mod organisms_workspaces;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
 /// (references/designlanguage): ATOMS · 01–04, MOLECULES · 01–03, ORGANISMS · 01–02,
@@ -109,10 +111,12 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(molecules_pickers, "molecules-pickers", Molecules),
     section!(molecules_structure, "molecules-structure", Molecules),
     section!(molecules_groups, "molecules-groups", Molecules),
+    section!(molecules_nav, "molecules-nav", Molecules),
     section!(molecules_calendar, "molecules-calendar", Molecules),
     section!(organisms_shell, "organisms-shell", Organisms),
     section!(organisms_overlay, "organisms-overlay", Organisms),
     section!(organisms_table, "organisms-table", Organisms),
+    section!(organisms_workspaces, "organisms-workspaces", Organisms),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).

@@ -4849,8 +4849,8 @@ pub mod organisms {
     use gpui_kit::base::{h_flex, v_flex};
     use gpui_kit::component::StyledExt as _;
     use gpui_kit::{
-        BoxShadow, Div, FontWeight, Hsla, ParentElement as _, SharedString, StyleRefinement,
-        Styled as _, div, px,
+        BoxShadow, Div, FontWeight, Hsla, IntoElement as _, ParentElement as _, SharedString,
+        StyleRefinement, Styled as _, div, px,
     };
 
     fn c(alias: &str) -> Hsla {
@@ -5675,6 +5675,378 @@ pub mod organisms {
                 FontWeight::NORMAL,
                 c("neutral-400"),
                 currency.into(),
+            ))
+    }
+
+    // ── O9 · Toolbar (painted selection / disabled states; master is live) ───
+
+    /// The toolbar's selection state: accent-well bar with count + bulk actions
+    /// (O9 "selection").
+    pub fn toolbar_selection(count: SharedString, total: SharedString, mode: Mode) -> Div {
+        h_flex()
+            .w(px(760.))
+            .h(px(44.))
+            .px(px(8.))
+            .gap(px(4.))
+            .items_center()
+            .border_b(px(1.))
+            .border_color(c("white-a8"))
+            .bg(r(mode, "accent-subtle"))
+            .child(icon_btn(IconName::X, 16., r(mode, "icon"), mode))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "foreground"),
+                count,
+            ))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), total))
+            .child(div().flex_1())
+            .child(
+                h_flex()
+                    .h(px(32.))
+                    .px(px(12.))
+                    .gap(px(6.))
+                    .items_center()
+                    .child(icon(IconName::Tag, 14.).text_color(c("neutral-300")))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        c("neutral-300"),
+                        "Categorize".into(),
+                    )),
+            )
+            .child(
+                h_flex()
+                    .h(px(32.))
+                    .px(px(12.))
+                    .gap(px(6.))
+                    .items_center()
+                    .child(icon(IconName::ArrowLeftRight, 14.).text_color(c("neutral-300")))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        c("neutral-300"),
+                        "Move".into(),
+                    )),
+            )
+            .child(organisms_dlg_danger_btn("Delete", mode))
+    }
+
+    /// A danger button inside a bar: danger well fill, danger-foreground ink (O9).
+    pub fn organisms_dlg_danger_btn(label: &str, mode: Mode) -> Div {
+        h_flex()
+            .h(px(32.))
+            .px(px(12.))
+            .gap(px(6.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .bg(r(mode, "danger-subtle"))
+            .child(icon(IconName::Trash, 14.).text_color(r(mode, "danger-foreground")))
+            .child(txt(
+                12.,
+                14.,
+                FontWeight::MEDIUM,
+                r(mode, "danger-foreground"),
+                label.into(),
+            ))
+    }
+
+    // ── O10 · Status bar ─────────────────────────────────────────────────────
+
+    /// A kbd chip: h16.5, surface-raised fill, 1/1/2px border-strong bottom-heavy,
+    /// r4, px5 (O10).
+    pub fn kbd_chip(keys: &str, _mode: Mode) -> Div {
+        div()
+            .h(px(16.5))
+            .px(px(5.))
+            .flex()
+            .items_center()
+            .rounded(px(radius_tier("sm")))
+            .bg(c("neutral-875"))
+            .border(px(1.))
+            .border_color(c("neutral-700"))
+            .child(txt(
+                11.,
+                15.,
+                FontWeight::MEDIUM,
+                c("neutral-300"),
+                keys.into(),
+            ))
+    }
+
+    /// The status bar's sync line: icon + text (O10 sync axis).
+    pub fn sync_line(
+        glyph: IconName,
+        glyph_c: Hsla,
+        text: SharedString,
+        text_c: Hsla,
+        _mode: Mode,
+    ) -> Div {
+        h_flex()
+            .h(px(20.))
+            .px(px(8.))
+            .gap(px(4.))
+            .items_center()
+            .child(icon(glyph, 12.).text_color(glyph_c))
+            .child(txt(11., 15., FontWeight::NORMAL, text_c, text))
+    }
+
+    // ── O12 · Tree ───────────────────────────────────────────────────────────
+
+    /// Tree row interaction state (O12 axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TreeIx {
+        /// rest: transparent.
+        Rest,
+        /// hover: white-a4 + duotone glyph.
+        Hover,
+        /// selected: white-a12.
+        Selected,
+        /// focus: 2px ring border.
+        Focus,
+        /// disabled: 40% opacity.
+        Disabled,
+    }
+
+    /// One tree row: h28, r6, 2px transparent ring, px8, gap6 — caret slot 12×12,
+    /// indent = 20px per depth, icon 14, label 12, trailing count (O12).
+    pub fn tree_row(
+        depth: usize,
+        open: Option<bool>,
+        glyph: Option<IconName>,
+        label: SharedString,
+        count: Option<SharedString>,
+        ix: TreeIx,
+        _mode: Mode,
+    ) -> Div {
+        let (bg, ring, label_c) = match ix {
+            TreeIx::Hover => (Some(c("white-a4")), None, c("neutral-0")),
+            TreeIx::Selected => (Some(c("white-a12")), None, c("neutral-0")),
+            TreeIx::Focus => (None, Some(c("neutral-200")), c("neutral-0")),
+            TreeIx::Disabled => (None, None, c("neutral-300")),
+            TreeIx::Rest => (None, None, c("neutral-0")),
+        };
+        let caret: gpui_kit::AnyElement = match open {
+            Some(true) => icon(IconName::ChevronDown, 12.)
+                .text_color(c("neutral-400"))
+                .into_any_element(),
+            Some(false) => icon(IconName::ChevronRight, 12.)
+                .text_color(c("neutral-400"))
+                .into_any_element(),
+            None => div().size(px(12.)).into_any_element(),
+        };
+        let mut el = h_flex()
+            .w(px(280.))
+            .h(px(28.))
+            .px(px(8.))
+            .pl(px(8. + 20. * depth as f32))
+            .gap(px(6.))
+            .items_center()
+            .rounded(px(radius_tier("md")))
+            .border_2()
+            .border_color(ring.unwrap_or_else(gpui_kit::transparent_white));
+        if let Some(bg) = bg {
+            el = el.bg(bg);
+        }
+        el = el.child(caret);
+        if let Some(glyph) = glyph {
+            el = el.child(icon(glyph, 14.).text_color(c("neutral-200")));
+        }
+        el = el.child(txt(12., 14., FontWeight::NORMAL, label_c, label));
+        if let Some(count) = count {
+            el = el.child(div().flex_1()).child(txt(
+                11.,
+                15.,
+                FontWeight::NORMAL,
+                c("neutral-500"),
+                count,
+            ));
+        }
+        if ix == TreeIx::Disabled {
+            el = el.opacity(0.4);
+        }
+        el
+    }
+
+    // ── O15 · Command palette pieces ─────────────────────────────────────────
+
+    /// One command item: h28, px8, gap8, r6 — label 12 + shortcut keys right (O15).
+    pub fn cmd_item(
+        label: SharedString,
+        shortcut: Option<&str>,
+        selected: bool,
+        mode: Mode,
+    ) -> Div {
+        let mut el = h_flex()
+            .w_full()
+            .h(px(28.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .rounded(px(radius_tier("md")));
+        if selected {
+            el = el.bg(c("white-a4"));
+        }
+        el = el.child(txt(
+            12.,
+            14.,
+            FontWeight::NORMAL,
+            r(mode, "foreground"),
+            label,
+        ));
+        if let Some(sc) = shortcut {
+            el = el.child(div().flex_1()).child(txt(
+                11.,
+                15.,
+                FontWeight::MEDIUM,
+                c("neutral-500"),
+                sc.into(),
+            ));
+        }
+        el
+    }
+
+    /// Command group label: px "6 8 4 8", overline muted (O15).
+    pub fn cmd_group_label(label: SharedString) -> Div {
+        div().px(px(8.)).pt(px(6.)).pb(px(4.)).child(txt(
+            10.,
+            12.,
+            FontWeight::MEDIUM,
+            c("neutral-400"),
+            label,
+        ))
+    }
+
+    /// The command palette frame: w560, popover fill, rx20, hairline, dialog
+    /// shadow (O15).
+    pub fn cmd_frame(mode: Mode) -> Div {
+        div()
+            .w(px(560.))
+            .flex()
+            .flex_col()
+            .rounded(px(radius_tier("3xl")))
+            .border_1()
+            .border_color(r(mode, "border-subtle"))
+            .bg(r(mode, "popover"))
+            .refine_style(&StyleRefinement {
+                box_shadow: Some(dialog_shadow()),
+                ..Default::default()
+            })
+    }
+
+    // ── O17 · Resizable handle ───────────────────────────────────────────────
+
+    /// Resize handle state (O17 axis).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum RzIx {
+        /// rest: 1px border-subtle line.
+        Rest,
+        /// hover: border-strong line + grip 4×32.
+        Hover,
+        /// dragging/focus: ring-colored line + grip.
+        Drag,
+    }
+
+    /// The vertical resize handle: 8px hit area, 1px line (O17).
+    pub fn resize_handle(ix: RzIx) -> Div {
+        let (line, grip) = match ix {
+            RzIx::Rest => (c("neutral-825"), None),
+            RzIx::Hover => (c("neutral-700"), Some(c("neutral-700"))),
+            RzIx::Drag => (c("neutral-200"), Some(c("neutral-200"))),
+        };
+        h_flex()
+            .w(px(8.))
+            .h_full()
+            .items_center()
+            .justify_center()
+            .child(
+                div()
+                    .relative()
+                    .w(px(1.))
+                    .h_full()
+                    .bg(line)
+                    .children(grip.map(|g| {
+                        div()
+                            .absolute()
+                            .w(px(4.))
+                            .h(px(32.))
+                            .rounded(px(2.))
+                            .bg(g)
+                            .into_any_element()
+                    })),
+            )
+    }
+
+    // ── O18 · Scrollbar thumb ────────────────────────────────────────────────
+
+    /// Scrollbar thumb state (O18 axis): idle hidden, scrolling 6px white-a40,
+    /// hover 6px white-a40 on white-a4 track.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum SbIx {
+        /// scrolling: track transparent, thumb white-a40.
+        Scrolling,
+        /// hover: track white-a4, thumb white-a40 brighter.
+        Hover,
+    }
+
+    /// The painted scrollbar: 12px track, 6px thumb (O18).
+    pub fn scrollbar(ix: SbIx) -> Div {
+        let (track, thumb) = match ix {
+            SbIx::Scrolling => (gpui_kit::transparent_white(), c("white-a40")),
+            SbIx::Hover => (c("white-a4"), c("white-a40")),
+        };
+        div()
+            .w(px(12.))
+            .h(px(200.))
+            .rounded_full()
+            .bg(track)
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(div().w(px(6.)).h(px(64.)).rounded_full().bg(thumb))
+    }
+
+    // ── O20 · Nav stack header ───────────────────────────────────────────────
+
+    /// Nav-stack page header: back button + caption/title + actions (O20).
+    pub fn navstack_header(
+        back: bool,
+        caption: SharedString,
+        title: SharedString,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .w(px(340.))
+            .h(px(48.))
+            .px(px(8.))
+            .gap(px(8.))
+            .items_center()
+            .border_b(px(1.))
+            .border_color(c("white-a8"))
+            .children(back.then(|| {
+                icon_btn(IconName::ArrowLeft, 16., r(mode, "icon"), mode).into_any_element()
+            }))
+            .child(
+                v_flex()
+                    .gap_0()
+                    .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), caption))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        r(mode, "foreground"),
+                        title,
+                    )),
+            )
+            .child(div().flex_1())
+            .child(icon_btn(
+                IconName::EllipsisVertical,
+                16.,
+                r(mode, "icon"),
+                mode,
             ))
     }
 }

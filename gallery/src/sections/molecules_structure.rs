@@ -11,24 +11,41 @@ use bookkeepy_ui::api::language::{
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::button::ButtonVariant;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::empty::{
     Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant, EmptyTitle,
 };
+use gpui_kit::component::form::{field, v_form};
+use gpui_kit::component::group_box::{GroupBox, GroupBoxVariants as _};
+use gpui_kit::component::input::{Input, InputState};
+use gpui_kit::component::radio::Radio;
 use gpui_kit::component::tab::{Tab, TabBar};
 use gpui_kit::{
-    AnyView, AppContext as _, Context, ParentElement as _, Styled as _, Window, div, px,
+    AnyView, AppContext as _, Context, Entity, ParentElement as _, Styled as _, Window, div, px,
 };
 
 use crate::app::{Gallery, Prefs, tr};
 use crate::sections::kit;
 
 /// Section entry point (the `section!` macro's `new` fn).
-pub fn view(_window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
-    cx.new(|_cx| MoleculesStructure { tab: 0 }).into()
+pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
+    let payee = cx.new(|cx| InputState::new(window, cx).placeholder("Mega Image"));
+    let amount = cx.new(|cx| InputState::new(window, cx).placeholder("0,00"));
+    let note = cx.new(|cx| InputState::new(window, cx).placeholder("Add a note…"));
+    cx.new(|_cx| MoleculesStructure {
+        tab: 0,
+        payee,
+        amount,
+        note,
+    })
+    .into()
 }
 
 pub struct MoleculesStructure {
     tab: usize,
+    payee: Entity<InputState>,
+    amount: Entity<InputState>,
+    note: Entity<InputState>,
 }
 
 /// The count badge used as a tab suffix (h16, pad 0 5, rx999, neutral-200 fill).
@@ -385,6 +402,201 @@ impl gpui_kit::Render for MoleculesStructure {
                 .child(empty_variants),
         );
 
+        // ── O13 · form ───────────────────────────────────────────────────────
+        let form_live = v_form()
+            .w(px(440.))
+            .gap(px(16.))
+            .child(
+                field()
+                    .label(tr(cx, "gallery.o02.fm.payee"))
+                    .child(Input::new(&self.payee)),
+            )
+            .child(
+                field()
+                    .label(tr(cx, "gallery.o02.fm.amount"))
+                    .child(Input::new(&self.amount)),
+            )
+            .child(
+                field()
+                    .label(tr(cx, "gallery.o02.fm.note"))
+                    .description(tr(cx, "gallery.o02.fm.note_help"))
+                    .child(Input::new(&self.note)),
+            )
+            .child(
+                field().label(tr(cx, "gallery.o02.fm.category")).child(
+                    gpui_kit::component::radio::RadioGroup::horizontal("o2-fm-cat")
+                        .child(Radio::new("groceries").label(tr(cx, "gallery.o02.fm.groceries")))
+                        .child(Radio::new("transport").label(tr(cx, "gallery.o02.fm.transport"))),
+                ),
+            )
+            .footer(
+                h_flex()
+                    .justify_end()
+                    .gap(px(8.))
+                    .pt(px(8.))
+                    .child(organisms_dlg_btn_ghost(tr(cx, "gallery.o01.dlg.cancel")))
+                    .child(organisms_dlg_btn_primary(tr(cx, "gallery.o01.dlg.save"))),
+            );
+        let form_group = kit::group(
+            cx,
+            "gallery.o02.fm.title",
+            "gallery.o02.fm.hint",
+            v_flex()
+                .gap_6()
+                .child(kit::cell(cx, "gallery.o02.fm.live", form_live)),
+        );
+
+        // ── O14 · group box ──────────────────────────────────────────────────
+        let gb_live = h_flex().gap_6().items_start().children([
+            GroupBox::new()
+                .fill()
+                .title(tr(cx, "gallery.o02.gb.sync"))
+                .w(px(440.))
+                .p(px(16.))
+                .child(v_flex().gap(px(12.)).child(gb_row(
+                    tr(cx, "gallery.o02.gb.auto"),
+                    tr(cx, "gallery.o02.gb.auto_d"),
+                    true,
+                    mode,
+                )))
+                .footer(tr(cx, "gallery.o02.gb.footer")),
+            GroupBox::new()
+                .outline()
+                .title(tr(cx, "gallery.o02.gb.privacy"))
+                .w(px(440.))
+                .p(px(16.))
+                .child(v_flex().gap(px(12.)).child(gb_row(
+                    tr(cx, "gallery.o02.gb.private"),
+                    tr(cx, "gallery.o02.gb.private_d"),
+                    false,
+                    mode,
+                ))),
+        ]);
+        let gb_group = kit::group(
+            cx,
+            "gallery.o02.gb.title",
+            "gallery.o02.gb.hint",
+            v_flex()
+                .gap_6()
+                .child(kit::cell(cx, "gallery.o02.gb.live", gb_live)),
+        );
+
+        // ── O26 · questionnaire ─────────────────────────────────────────────
+        let q_choice = |n: &str,
+                        title: gpui_kit::SharedString,
+                        desc: gpui_kit::SharedString,
+                        sel: bool,
+                        mode: bookkeepy_primary_data::theme::Mode| {
+            let bc = if sel {
+                prim_hsla("neutral-0")
+            } else {
+                prim_hsla("white-a0")
+            };
+            h_flex()
+                .items_center()
+                .gap(px(12.))
+                .p(px(10.))
+                .pl(px(12.))
+                .w(px(440.))
+                .rounded(px(16.))
+                .bg(prim_hsla("neutral-900").unwrap_or_default())
+                .border(px(1.5))
+                .border_color(bc.unwrap_or_default())
+                .child(bookkeepy_ui::api::language::organisms::kbd_chip(n, mode))
+                .child(
+                    v_flex()
+                        .flex_1()
+                        .gap(px(2.))
+                        .child(
+                            div()
+                                .text_size(px(12.))
+                                .line_height(px(14.))
+                                .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                                .child(title),
+                        )
+                        .child(
+                            div()
+                                .text_size(px(11.))
+                                .line_height(px(15.))
+                                .text_color(prim_hsla("neutral-400").unwrap_or_default())
+                                .child(desc),
+                        ),
+                )
+                .child(bookkeepy_ui::api::language::choice::radio_circle(
+                    sel,
+                    bookkeepy_ui::api::language::choice::Ix::Rest,
+                    mode,
+                ))
+        };
+        let qn_live = v_flex()
+            .w(px(480.))
+            .p(px(20.))
+            .gap(px(16.))
+            .rounded(px(20.))
+            .bg(prim_hsla("neutral-850").unwrap_or_default())
+            .border_1()
+            .border_color(prim_hsla("border-subtle").unwrap_or_default())
+            .child(
+                div()
+                    .text_size(px(11.))
+                    .text_color(prim_hsla("neutral-400").unwrap_or_default())
+                    .child(tr(cx, "gallery.o02.qn.step")),
+            )
+            .child(
+                v_flex()
+                    .w_full()
+                    .h(px(4.))
+                    .rounded_full()
+                    .bg(prim_hsla("white-a8").unwrap_or_default())
+                    .child(
+                        div()
+                            .w(px(220.))
+                            .h_full()
+                            .rounded_full()
+                            .bg(prim_hsla("neutral-100").unwrap_or_default()),
+                    ),
+            )
+            .child(
+                div()
+                    .text_size(px(16.))
+                    .font_weight(gpui_kit::FontWeight::SEMIBOLD)
+                    .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                    .child(tr(cx, "gallery.o02.qn.question")),
+            )
+            .child(
+                v_flex()
+                    .gap(px(8.))
+                    .child(q_choice(
+                        "1",
+                        tr(cx, "gallery.o02.qn.c1"),
+                        tr(cx, "gallery.o02.qn.c1d"),
+                        true,
+                        mode,
+                    ))
+                    .child(q_choice(
+                        "2",
+                        tr(cx, "gallery.o02.qn.c2"),
+                        tr(cx, "gallery.o02.qn.c2d"),
+                        false,
+                        mode,
+                    )),
+            )
+            .child(
+                h_flex()
+                    .justify_end()
+                    .gap(px(8.))
+                    .child(organisms_dlg_btn_ghost(tr(cx, "gallery.o02.qn.back")))
+                    .child(organisms_dlg_btn_primary(tr(cx, "gallery.o02.qn.cont"))),
+            );
+        let qn_group = kit::group(
+            cx,
+            "gallery.o02.qn.title",
+            "gallery.o02.qn.hint",
+            v_flex()
+                .gap_6()
+                .child(kit::cell(cx, "gallery.o02.qn.live", qn_live)),
+        );
+
         // ── page ─────────────────────────────────────────────────────────────
         v_flex()
             .size_full()
@@ -395,5 +607,52 @@ impl gpui_kit::Render for MoleculesStructure {
             .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
             .child(tabs_group)
             .child(empty_group)
+            .child(form_group)
+            .child(gb_group)
+            .child(qn_group)
     }
+}
+
+fn organisms_dlg_btn_ghost(label: gpui_kit::SharedString) -> Button {
+    Button::new("o2-fm-cancel").label(label).ghost()
+}
+
+fn organisms_dlg_btn_primary(label: gpui_kit::SharedString) -> Button {
+    Button::new("o2-fm-save").label(label).primary()
+}
+
+/// One group-box setting row: title + subtitle left, switch right (O14).
+fn gb_row(
+    title: gpui_kit::SharedString,
+    desc: gpui_kit::SharedString,
+    on: bool,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    h_flex()
+        .items_center()
+        .justify_between()
+        .child(
+            v_flex()
+                .gap(px(2.))
+                .child(
+                    div()
+                        .text_size(px(12.))
+                        .line_height(px(14.))
+                        .text_color(role_hsla(mode, "foreground").unwrap_or_default())
+                        .child(title),
+                )
+                .child(
+                    div()
+                        .text_size(px(11.))
+                        .line_height(px(15.))
+                        .text_color(prim_hsla("neutral-400").unwrap_or_default())
+                        .child(desc),
+                ),
+        )
+        .child(bookkeepy_ui::api::language::choice::switch_track(
+            on,
+            false,
+            bookkeepy_ui::api::language::choice::Ix::Rest,
+            mode,
+        ))
 }
