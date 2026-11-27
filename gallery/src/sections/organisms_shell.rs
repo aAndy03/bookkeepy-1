@@ -8,7 +8,7 @@
 //! (expanded + collapsed via its footer toggle); the resize affordance is painted.
 
 use bookkeepy_ui::api::language::organisms::{self, RzIx, SbIx};
-use bookkeepy_ui::api::language::{prim_hsla, role_hsla, shell};
+use bookkeepy_ui::api::language::{prim_hsla, primitives, role_hsla, shell};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::Side;
@@ -327,20 +327,20 @@ impl gpui_kit::Render for OrganismsShell {
                     .icon(IconName::Search)
                     .tooltip(tr(cx, "gallery.o02.tb.search")),
             )
-            .child(
+            .child(primitives::medium(
                 Button::new("o2-import")
                     .icon(IconName::Upload)
                     .label(tr(cx, "gallery.o02.tb.import"))
                     .dropdown_caret(true),
-            )
+            ))
             // Primary actions go through `.content` — `.child` would force
             // ghost+compact via `prepare_for_toolbar` (gpui-kit toolbar.rs).
-            .content(
+            .content(primitives::medium(
                 Button::new("o2-add")
                     .primary()
                     .icon(IconName::Plus)
                     .label(tr(cx, "gallery.o02.tb.add")),
-            );
+            ));
         let tb9_group = kit::group(
             cx,
             "gallery.o02.tb.title_g",

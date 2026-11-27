@@ -8,7 +8,7 @@
 //! sheet's content variants.
 
 use bookkeepy_ui::api::language::{
-    display, feedback2, feedback2::ProgressTone, feedback2::ScrollIx,
+    display, feedback2, feedback2::ProgressTone, feedback2::ScrollIx, primitives,
 };
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::button::Button;
@@ -261,16 +261,20 @@ impl gpui_kit::Render for AtomsFeedback {
             kit::cell(
                 cx,
                 "gallery.atoms03.tooltip.live",
-                Button::new("tt1")
-                    .label(tr(cx, "gallery.atoms03.demo.hover_me"))
-                    .tooltip(tr(cx, "gallery.atoms03.demo.tooltip_text")),
+                primitives::medium(
+                    Button::new("tt1")
+                        .label(tr(cx, "gallery.atoms03.demo.hover_me"))
+                        .tooltip(tr(cx, "gallery.atoms03.demo.tooltip_text")),
+                ),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms03.tooltip.shortcut_live",
-                Button::new("tt2")
-                    .label(tr(cx, "gallery.atoms03.demo.save"))
-                    .tooltip(tr(cx, "gallery.atoms03.demo.save")),
+                primitives::medium(
+                    Button::new("tt2")
+                        .label(tr(cx, "gallery.atoms03.demo.save"))
+                        .tooltip(tr(cx, "gallery.atoms03.demo.save")),
+                ),
             ),
         ]);
         let tooltip_plates = kit::row([

@@ -11,6 +11,7 @@ use bookkeepy_ui::api::language::groups::{
     self, AlertTone, CbIx, ClIx, DdIx, DdVariant, IgIx, PgIx, RgIx, StIx, TgIx,
 };
 use bookkeepy_ui::api::language::popups::{self, MenuIx};
+use bookkeepy_ui::api::language::primitives;
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::Sizable as _;
@@ -724,11 +725,11 @@ impl gpui_kit::Render for MoleculesGroups {
 
         // ── M11 · dropdown button ────────────────────────────────────────────
         let live_dd = DropdownButton::new("m2-dd")
-            .button(
+            .button(primitives::medium(
                 Button::new("m2-dd-main")
                     .label(tr(cx, "gallery.m02.dd.import"))
                     .icon(IconName::Upload),
-            )
+            ))
             .dropdown_menu(|menu, _window, _cx| {
                 menu.item(
                     gpui_kit::component::menu::PopupMenuItem::new(tr_static("gallery.m02.dd.bank"))

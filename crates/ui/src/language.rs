@@ -6809,6 +6809,57 @@ pub mod custom {
     }
 }
 
+/// Live-primitive restyle layer ("primitives" of the design language, RULE-UI-005/007):
+/// wrappers that pin the design's px metrics on STOCK gpui-kit components so the live
+/// elements render 1:1 with the sheet even though the app's rem root is the 12px `body`
+/// token (gpui-kit's rem-based ladders assume 16px). Use these at every call site instead
+/// of restating values.
+pub mod primitives {
+    use super::controls::{ControlSize, button_size, icon_button_size};
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::component::button::Button;
+    use gpui_kit::component::input::Input;
+    use gpui_kit::component::{Sizable as _, Size};
+    use gpui_kit::{Styled as _, px};
+
+    /// A labeled button on the design control-size ladder (default Medium = h32 r6).
+    pub fn button(b: Button, size: ControlSize) -> Button {
+        button_size(b, size)
+    }
+
+    /// The standard control: h32, radius 6, px-12, medium weight.
+    pub fn medium(b: Button) -> Button {
+        button_size(b, ControlSize::Medium)
+    }
+
+    /// An icon-only button pinned square on the ladder (Medium = 32×32 r6).
+    pub fn icon_button(b: Button, size: ControlSize) -> Button {
+        icon_button_size(b, size)
+    }
+
+    /// The standard icon button: 32×32, radius 6.
+    pub fn icon_medium(b: Button) -> Button {
+        icon_button_size(b, ControlSize::Medium)
+    }
+
+    /// A live single-line input in the design's field chrome: h32, sunken
+    /// `surface-sunken` well, 1px `input` border, radius 6, px-10 (ATOMS · 03 / O13).
+    pub fn input(input: Input, mode: Mode) -> Input {
+        let mut i = input
+            .with_size(Size::Large)
+            .h(px(32.))
+            .px(px(10.))
+            .rounded(px(radius_tier("md")));
+        if let Some(bg) = prim_hsla("neutral-950") {
+            i = i.bg(bg);
+        }
+        if let Some(b) = role_hsla(mode, "input") {
+            i = i.border_1().border_color(b);
+        }
+        i
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

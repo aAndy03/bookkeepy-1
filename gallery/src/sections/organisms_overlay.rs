@@ -8,7 +8,7 @@
 //! Root layers, so the interactive behavior is exercised too.
 
 use bookkeepy_ui::api::language::organisms::{self, NoteTone};
-use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
+use bookkeepy_ui::api::language::{prim_hsla, primitives, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::WindowExt as _;
@@ -337,6 +337,8 @@ impl gpui_kit::Render for OrganismsOverlay {
                     );
                     window.open_dialog(cx, move |dialog, _window, _cx| {
                         dialog
+                            // O3 master width is 440 (kit default 448 measured too wide).
+                            .w(px(440.))
                             .title(t.clone())
                             .child(DialogHeader::new().child(DialogTitle::new().child(t.clone())))
                             .child(
@@ -347,8 +349,12 @@ impl gpui_kit::Render for OrganismsOverlay {
                             )
                             .footer(
                                 DialogFooter::new()
-                                    .child(Button::new("o1-dlg-cancel").label(c.clone()).ghost())
-                                    .child(Button::new("o1-dlg-ok").label(s.clone()).primary()),
+                                    .child(primitives::medium(
+                                        Button::new("o1-dlg-cancel").label(c.clone()).ghost(),
+                                    ))
+                                    .child(primitives::medium(
+                                        Button::new("o1-dlg-ok").label(s.clone()).primary(),
+                                    )),
                             )
                     });
                 });
@@ -541,8 +547,12 @@ impl gpui_kit::Render for OrganismsOverlay {
                                 .justify_end()
                                 .gap(px(8.))
                                 .p(px(12.))
-                                .child(Button::new("o2-sheet-cancel").label("Cancel").ghost())
-                                .child(Button::new("o2-sheet-save").primary().label("Save")),
+                                .child(primitives::medium(
+                                    Button::new("o2-sheet-cancel").label("Cancel").ghost(),
+                                ))
+                                .child(primitives::medium(
+                                    Button::new("o2-sheet-save").primary().label("Save"),
+                                )),
                         )
                 });
             });

@@ -6,7 +6,7 @@
 //! ladder is painted from `language::structure`.
 
 use bookkeepy_ui::api::language::{
-    atoms, controls::ControlSize, prim_hsla, role_hsla, structure, structure::TabIx,
+    atoms, controls::ControlSize, prim_hsla, primitives, role_hsla, structure, structure::TabIx,
 };
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
@@ -615,11 +615,11 @@ impl gpui_kit::Render for MoleculesStructure {
 }
 
 fn organisms_dlg_btn_ghost(label: gpui_kit::SharedString) -> Button {
-    Button::new("o2-fm-cancel").label(label).ghost()
+    primitives::medium(Button::new("o2-fm-cancel").label(label).ghost())
 }
 
 fn organisms_dlg_btn_primary(label: gpui_kit::SharedString) -> Button {
-    Button::new("o2-fm-save").label(label).primary()
+    primitives::medium(Button::new("o2-fm-save").label(label).primary())
 }
 
 /// One group-box setting row: title + subtitle left, switch right (O14).
