@@ -6051,6 +6051,379 @@ pub mod organisms {
     }
 }
 
+/// COMPONENTS · bookkeepy custom — the app's own atoms/molecules/board parts (C1–C10).
+/// Each painter is token-driven and reusable anywhere in the app, not just the gallery.
+pub mod custom {
+    use super::atoms::{duotone_icon, icon};
+    use super::popups::popup_shadow;
+    use super::{Mode, prim_hsla, radius_tier, role_hsla};
+    use gpui_kit::assets::IconName;
+    use gpui_kit::base::{h_flex, v_flex};
+    use gpui_kit::prelude::FluentBuilder as _;
+    use gpui_kit::{
+        BoxShadow, Div, FontWeight, Hsla, ParentElement as _, SharedString, Styled as _, div, px,
+    };
+
+    fn c(alias: &str) -> Hsla {
+        prim_hsla(alias).unwrap_or_default()
+    }
+
+    fn r(mode: Mode, role: &str) -> Hsla {
+        role_hsla(mode, role).unwrap_or_default()
+    }
+
+    fn txt(size: f32, lh: f32, w: FontWeight, color: Hsla, s: impl Into<SharedString>) -> Div {
+        div()
+            .text_size(px(size))
+            .line_height(px(lh))
+            .font_weight(w)
+            .text_color(color)
+            .child(s.into())
+    }
+
+    /// C1 amount size classes (typography.toml: amount-xl / amount / amount-sm).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum AmountSz {
+        /// 44/600/−1.6/44.
+        Xl,
+        /// 20/500/−0.4/22.
+        Md,
+        /// 13/500/0/16.
+        Sm,
+    }
+
+    impl AmountSz {
+        fn metrics(self) -> (f32, f32, f32, FontWeight) {
+            match self {
+                AmountSz::Xl => (44., 44., -1.6, FontWeight::SEMIBOLD),
+                AmountSz::Md => (20., 22., -0.4, FontWeight::MEDIUM),
+                AmountSz::Sm => (13., 16., 0., FontWeight::MEDIUM),
+            }
+        }
+    }
+
+    /// C1 · amount atom: sign + tabular digits (money ink) + currency caption that
+    /// never wraps away from the digits (pl 3, muted). `masked` swaps digits for ••••.
+    pub fn amount(
+        sign: &str,
+        digits: &str,
+        currency: &str,
+        ink: Hsla,
+        sz: AmountSz,
+        masked: bool,
+        _mode: Mode,
+    ) -> Div {
+        let (size, lh, _ls, w) = sz.metrics();
+        let digits = if masked { "••••" } else { digits };
+        h_flex()
+            .items_end()
+            .gap(px(1.))
+            .child(
+                div()
+                    .text_size(px(size))
+                    .line_height(px(lh))
+                    .font_weight(w)
+                    .text_color(ink)
+                    .child(format!("{sign}{digits}")),
+            )
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), currency).pl(px(3.)))
+    }
+
+    /// C2 · category dot: filled circle in a data-N color, optional selected ring
+    /// (1.5px foreground, used in legends to filter).
+    pub fn cat_dot(size_px: f32, color: Hsla, selected: bool) -> Div {
+        let el = div().size(px(size_px)).rounded_full().bg(color);
+        if selected {
+            el.border(px(1.5)).border_color(c("neutral-0"))
+        } else {
+            el
+        }
+    }
+
+    /// C3 · money direction mark: 14px glyph slot in icon ink (neutral-200).
+    pub fn dir_mark(glyph: IconName, ink: Hsla) -> Div {
+        div()
+            .flex()
+            .items_center()
+            .child(icon(glyph, 14.).text_color(ink))
+    }
+
+    /// C3 · in-row direction plate: surface r6 plate holding mark + amount (C1 sm).
+    pub fn dir_plate(
+        glyph: IconName,
+        ink: Hsla,
+        sign: &str,
+        digits: &str,
+        currency: &str,
+        mode: Mode,
+    ) -> Div {
+        h_flex()
+            .items_center()
+            .gap(px(8.))
+            .rounded(px(radius_tier("md")))
+            .bg(r(mode, "surface"))
+            .p(px(8.))
+            .pl(px(12.))
+            .pr(px(12.))
+            .child(dir_mark(glyph, ink))
+            .child(amount(
+                sign,
+                digits,
+                currency,
+                ink,
+                AmountSz::Sm,
+                false,
+                mode,
+            ))
+    }
+
+    /// C5 switcher interaction state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum SwIx {
+        /// rest: secondary value, regular caret.
+        Rest,
+        /// hover/open: foreground value, duotone caret.
+        Open,
+        /// focus: 2px ring border.
+        Focus,
+        /// disabled: 40% opacity, disabled ink.
+        Disabled,
+    }
+
+    /// C5 · switcher: caption overline + value row (optional 16px avatar) + 12px caret.
+    pub fn switcher(
+        caption: impl Into<SharedString>,
+        value: impl Into<SharedString>,
+        avatar: Option<(&str, &str, &str)>,
+        ix: SwIx,
+        mode: Mode,
+    ) -> Div {
+        let (value_c, caret, ring, op) = match ix {
+            SwIx::Rest => (
+                c("neutral-300"),
+                icon(IconName::ChevronsUpDown, 12.),
+                None,
+                1.,
+            ),
+            SwIx::Open => (
+                c("neutral-0"),
+                duotone_icon(IconName::ChevronsUpDown, 12.).text_color(c("neutral-300")),
+                None,
+                1.,
+            ),
+            SwIx::Focus => (
+                c("neutral-0"),
+                duotone_icon(IconName::ChevronsUpDown, 12.).text_color(c("neutral-300")),
+                Some(c("neutral-200")),
+                1.,
+            ),
+            SwIx::Disabled => (
+                c("neutral-600"),
+                icon(IconName::ChevronsUpDown, 12.),
+                None,
+                0.4,
+            ),
+        };
+        let mut row = h_flex().gap(px(4.)).items_center();
+        if let Some((initials, bg, ink)) = avatar {
+            row = row.child(
+                div()
+                    .size(px(16.))
+                    .rounded_full()
+                    .bg(c(bg))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(txt(7., 8., FontWeight::SEMIBOLD, c(ink), initials)),
+            );
+        }
+        row = row
+            .child(txt(12., 14., FontWeight::SEMIBOLD, value_c, value))
+            .child(caret.text_color(value_c));
+        let _ = mode;
+        v_flex()
+            .gap(px(2.))
+            .rounded(px(radius_tier("md")))
+            .border_2()
+            .border_color(ring.unwrap_or(gpui_kit::transparent_white()))
+            .p(px(4.))
+            .px(px(6.))
+            .opacity(op)
+            .child(txt(10., 12., FontWeight::MEDIUM, c("neutral-400"), caption))
+            .child(row)
+    }
+
+    /// C6 · location chip: HUD plate (neutral-950@90%) with segments separated by a
+    /// 10px caret-right; `hover_seg` paints the hovered segment white-a8.
+    pub fn loc_chip(segs: &[(SharedString, Hsla)], hover_seg: Option<usize>, _mode: Mode) -> Div {
+        let mut row = h_flex()
+            .h(px(28.))
+            .rounded(px(radius_tier("lg")))
+            .bg(c("neutral-950"))
+            .p(px(4.))
+            .gap(px(2.))
+            .items_center()
+            .opacity(0.9);
+        for (i, (text, color)) in segs.iter().enumerate() {
+            if i > 0 {
+                row = row.child(icon(IconName::ChevronRight, 10.).text_color(c("neutral-400")));
+            }
+            let mut seg = h_flex()
+                .h(px(20.))
+                .rounded(px(radius_tier("sm")))
+                .px(px(6.))
+                .items_center();
+            if hover_seg == Some(i) {
+                seg = seg.bg(c("white-a8"));
+            }
+            row = row.child(seg.child(txt(11., 15., FontWeight::NORMAL, *color, text.clone())));
+        }
+        row
+    }
+
+    /// C8 · zoom control HUD plate: minus / percent / plus, divider, fit (Expand).
+    pub fn zoom_ctrl(
+        pct: &str,
+        minus_dis: bool,
+        plus_dis: bool,
+        focus_fit: bool,
+        hover: Option<u8>,
+        _mode: Mode,
+    ) -> Div {
+        let btn = |glyph: IconName, dis: bool, hov: bool, focus: bool| {
+            let el = div()
+                .size(px(28.))
+                .rounded(px(radius_tier("md")))
+                .border_2()
+                .border_color(if focus {
+                    c("neutral-200")
+                } else {
+                    gpui_kit::transparent_white()
+                })
+                .flex()
+                .items_center()
+                .justify_center()
+                .opacity(if dis { 0.4 } else { 1. });
+            let g = if hov {
+                duotone_icon(glyph, 16.)
+            } else {
+                icon(glyph, 16.)
+            };
+            el.child(g.text_color(c("neutral-200")))
+        };
+        h_flex()
+            .rounded(px(radius_tier("lg")))
+            .bg(c("neutral-950"))
+            .border_1()
+            .border_color(c("border-subtle"))
+            .shadow(popup_shadow())
+            .p(px(4.))
+            .gap(px(2.))
+            .items_center()
+            .child(btn(IconName::Minus, minus_dis, hover == Some(0), false))
+            .child(
+                h_flex()
+                    .h(px(28.))
+                    .rounded(px(radius_tier("md")))
+                    .px(px(8.))
+                    .items_center()
+                    .when(hover == Some(1), |el| el.bg(c("white-a4")))
+                    .child(txt(
+                        12.,
+                        14.,
+                        FontWeight::MEDIUM,
+                        if hover == Some(1) {
+                            c("neutral-0")
+                        } else {
+                            c("neutral-300")
+                        },
+                        pct,
+                    )),
+            )
+            .child(btn(IconName::Plus, plus_dis, hover == Some(2), false))
+            .child(div().w(px(1.)).h(px(16.)).bg(c("white-a8")))
+            .child(btn(IconName::Expand, false, hover == Some(3), focus_fit))
+    }
+
+    /// C9 · place card (board HUD): raised surface r12 with a stroke that brightens
+    /// on hover / accent on active.
+    pub fn place_card(
+        label: impl Into<SharedString>,
+        stroke: Hsla,
+        dimmed: bool,
+        mode: Mode,
+    ) -> Div {
+        v_flex()
+            .w(px(260.))
+            .h(px(56.))
+            .rounded(px(radius_tier("xl")))
+            .bg(r(mode, "surface-raised"))
+            .border_1()
+            .border_color(stroke)
+            .px(px(16.))
+            .items_center()
+            .opacity(if dimmed { 0.25 } else { 1. })
+            .child(txt(12., 14., FontWeight::MEDIUM, c("neutral-0"), label))
+    }
+
+    /// C9 · tucked tag: hangs under a place card (rounded bottom only, three-side stroke).
+    pub fn tucked_tag(text: impl Into<SharedString>, dimmed: bool, mode: Mode) -> Div {
+        h_flex()
+            .w(px(150.))
+            .items_center()
+            .gap(px(6.))
+            .rounded_b(px(radius_tier("lg")))
+            .bg(r(mode, "surface-raised"))
+            .border_b_1()
+            .border_l_1()
+            .border_r_1()
+            .border_color(c("white-a4"))
+            .p(px(3.))
+            .pl(px(10.))
+            .pr(px(10.))
+            .pb(px(4.))
+            .ml(px(16.))
+            .opacity(if dimmed { 0.25 } else { 1. })
+            .child(icon(IconName::Clock, 12.).text_color(c("neutral-400")))
+            .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), text))
+    }
+
+    /// C10 · sticky note: tone well bg + tone ink, shadow sm, optional editing ring.
+    pub fn sticky_note(
+        bg: Hsla,
+        ink: Hsla,
+        text: impl Into<SharedString>,
+        meta: impl Into<SharedString>,
+        editing: bool,
+        dimmed: bool,
+    ) -> Div {
+        v_flex()
+            .w(px(180.))
+            .rounded(px(radius_tier("sm")))
+            .bg(bg)
+            .border_2()
+            .border_color(if editing {
+                c("neutral-200")
+            } else {
+                gpui_kit::transparent_white()
+            })
+            .shadow(vec![
+                BoxShadow::new(px(0.), px(2.), c("black-a60")).blur_radius(px(6.)),
+            ])
+            .p(px(12.))
+            .gap(px(10.))
+            .opacity(if dimmed { 0.4 } else { 1. })
+            .child(txt(12., 18., FontWeight::NORMAL, ink, text).w(px(156.)))
+            .child(
+                h_flex()
+                    .items_center()
+                    .child(txt(11., 15., FontWeight::NORMAL, ink, meta).opacity(0.6))
+                    .child(div().flex_1())
+                    .child(icon(IconName::Link, 12.).text_color(ink)),
+            )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::controls::ControlSize;

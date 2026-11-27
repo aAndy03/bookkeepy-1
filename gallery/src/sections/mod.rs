@@ -31,6 +31,7 @@ mod organisms_overlay;
 mod organisms_shell;
 mod organisms_table;
 mod organisms_workspaces;
+mod ours;
 mod viz;
 
 /// Top-level sidebar group — mirrors the design language's sheet families
@@ -119,6 +120,7 @@ pub const SECTIONS: &[SectionSpec] = &[
     section!(organisms_table, "organisms-table", Organisms),
     section!(organisms_workspaces, "organisms-workspaces", Organisms),
     section!(viz, "viz", Viz),
+    section!(ours, "ours", Ours),
 ];
 
 /// `Layer::sections` in registry order (sidebar groups).
