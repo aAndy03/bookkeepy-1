@@ -109,7 +109,7 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // → pressed/selected #D1D1D1), with the focus ring on `ring`.
     config.colors.button_primary_active = role("primary-active");
     config.colors.button_primary_foreground = role("primary-foreground");
-    config.colors.muted = role("surface-raised");
+    config.colors.muted = role("surface-sunken");
     config.colors.muted_foreground = role("muted-foreground");
     // Functional hues: solid fills carry `on-solid` ink (white); the soft variant buttons
     // sit on the hue wells (900) with the light tint (300) as ink; pressed goes solid.

@@ -708,10 +708,14 @@ impl gpui_kit::Render for OrganismsTable {
         let mode = cx.global::<Prefs>().mode;
 
         // ── O6 · data table ──────────────────────────────────────────────────
-        let live_table = div()
-            .w(px(960.))
-            .h(px(8. * 36. + 32.))
-            .child(DataTable::new(&self.table_state).bordered(false));
+        let live_table = div().w(px(960.)).h(px(8. * 36. + 32.)).child(
+            // O6: the table's own card — surface r16, clipped (part of the component, not the harness).
+            div()
+                .rounded(px(16.))
+                .bg(role_hsla(mode, "surface").unwrap_or_default())
+                .overflow_hidden()
+                .child(DataTable::new(&self.table_state).bordered(false)),
+        );
         let skel_row = |w1: f32, w2: f32, w3: f32| {
             h_flex()
                 .h(px(36.))

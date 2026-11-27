@@ -216,27 +216,33 @@ impl gpui_kit::Render for Gallery {
             .flex_col()
             .size_full()
             .child(
-                TitleBar::new().child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap_2()
-                        .child(Label::new(title))
-                        .child(
-                            Button::new("locale-switch")
-                                .label(locale_label)
-                                .ghost()
-                                .small()
-                                .on_click(cx.listener(Self::toggle_locale)),
-                        )
-                        .child(
-                            Button::new("theme-switch")
-                                .icon(mode_icon)
-                                .ghost()
-                                .small()
-                                .on_click(cx.listener(Self::toggle_theme)),
-                        ),
-                ),
+                TitleBar::new()
+                    .bg(bookkeepy_ui::api::language::role_hsla(
+                        cx.global::<Prefs>().mode,
+                        "background",
+                    )
+                    .unwrap_or_default())
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .child(Label::new(title))
+                            .child(
+                                Button::new("locale-switch")
+                                    .label(locale_label)
+                                    .ghost()
+                                    .small()
+                                    .on_click(cx.listener(Self::toggle_locale)),
+                            )
+                            .child(
+                                Button::new("theme-switch")
+                                    .icon(mode_icon)
+                                    .ghost()
+                                    .small()
+                                    .on_click(cx.listener(Self::toggle_theme)),
+                            ),
+                    ),
             )
             .child(
                 div()

@@ -20,6 +20,7 @@ use gpui_kit::component::group_box::{GroupBox, GroupBoxVariants as _};
 use gpui_kit::component::input::{Input, InputState};
 use gpui_kit::component::radio::Radio;
 use gpui_kit::component::tab::{Tab, TabBar};
+use gpui_kit::component::{Sizable as _, Size};
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, ParentElement as _, Styled as _, Window, div, px,
 };
@@ -409,18 +410,18 @@ impl gpui_kit::Render for MoleculesStructure {
             .child(
                 field()
                     .label(tr(cx, "gallery.o02.fm.payee"))
-                    .child(Input::new(&self.payee)),
+                    .child(Input::new(&self.payee).with_size(Size::Large)),
             )
             .child(
                 field()
                     .label(tr(cx, "gallery.o02.fm.amount"))
-                    .child(Input::new(&self.amount)),
+                    .child(Input::new(&self.amount).with_size(Size::Large)),
             )
             .child(
                 field()
                     .label(tr(cx, "gallery.o02.fm.note"))
                     .description(tr(cx, "gallery.o02.fm.note_help"))
-                    .child(Input::new(&self.note)),
+                    .child(Input::new(&self.note).with_size(Size::Large)),
             )
             .child(
                 field().label(tr(cx, "gallery.o02.fm.category")).child(

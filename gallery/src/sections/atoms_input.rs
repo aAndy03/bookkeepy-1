@@ -10,6 +10,7 @@ use bookkeepy_ui::api::language::{atoms, fields, fields::FieldIx};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::v_flex;
 use gpui_kit::component::input::{Input, InputState, NumberInput, Textarea, TextareaState};
+use gpui_kit::component::{Sizable as _, Size};
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, IntoElement, ParentElement as _, Styled as _,
     Window, div, px,
@@ -57,6 +58,7 @@ pub struct AtomsInput {
 /// frame, so these win over the theme's input_background mix).
 fn live_input(input: Input, mode: bookkeepy_primary_data::theme::Mode) -> Input {
     let mut i = input
+        .with_size(Size::Large)
         .w(px(280.))
         .h(px(32.))
         .px(px(10.))

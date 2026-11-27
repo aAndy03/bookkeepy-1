@@ -145,8 +145,15 @@ impl gpui_kit::Render for MoleculesNav {
                             .alignment(MessageAlignment::End)
                             .header(MessageHeader::new().child("You").child("14:33"))
                             .content(
-                                MessageContent::new()
-                                    .bubble(Bubble::new().child(tr(cx, "gallery.o02.msg.out"))),
+                                MessageContent::new().bubble(
+                                    // Ghost variant skips the theme fill so the design's white-a12
+                                    // outgoing pill shows through the instance bg.
+                                    Bubble::new()
+                                        .with_variant(BubbleVariant::Ghost)
+                                        .bg(bookkeepy_ui::api::language::prim_hsla("white-a12")
+                                            .unwrap_or_default())
+                                        .child(tr(cx, "gallery.o02.msg.out")),
+                                ),
                             ),
                     ),
             )),

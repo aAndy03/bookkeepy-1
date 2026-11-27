@@ -21,6 +21,7 @@ use gpui_kit::component::sidebar::{
 };
 use gpui_kit::component::status_bar::StatusBar;
 use gpui_kit::component::toolbar::Toolbar;
+use gpui_kit::component::{Sizable as _, Size};
 use gpui_kit::{
     AnyView, AppContext as _, Context, InteractiveElement as _, IntoElement as _,
     ParentElement as _, Styled as _, Window, div, px,
@@ -290,6 +291,7 @@ impl gpui_kit::Render for OrganismsShell {
             .child(Toggle::new("o2-v-chart").icon(IconName::ChartPie))
             .child(Toggle::new("o2-v-cal").icon(IconName::Calendar));
         let tb_live = Toolbar::new("o2-toolbar")
+            .with_size(Size::Large)
             .w(px(760.))
             .content(
                 h_flex()
@@ -329,7 +331,9 @@ impl gpui_kit::Render for OrganismsShell {
                     .label(tr(cx, "gallery.o02.tb.import"))
                     .dropdown_caret(true),
             )
-            .child(
+            // Primary actions go through `.content` — `.child` would force
+            // ghost+compact via `prepare_for_toolbar` (gpui-kit toolbar.rs).
+            .content(
                 Button::new("o2-add")
                     .primary()
                     .icon(IconName::Plus)
