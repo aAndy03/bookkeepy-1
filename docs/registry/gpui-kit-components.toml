@@ -105,8 +105,8 @@ id = "chart"
 title = "Chart"
 section = "viz"
 docs = "https://gpui-kit.com/component/chart/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed live (AreaChart/BarChart geometry/PieChart/CandlestickChart/sparkline LineChart) in gallery section viz (CHARTS sheet, P1–P6)."
 
 [[component]]
 id = "checkbox"
@@ -393,8 +393,8 @@ id = "plot"
 title = "Plot"
 section = "viz"
 docs = "https://gpui-kit.com/component/plot/"
-status = "exception"
-note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+status = "covered"
+note = "Demoed via chart plots + painted state demos in gallery section viz (CHARTS sheet, P1–P6)."
 
 [[component]]
 id = "popover"
