@@ -46,7 +46,7 @@ pub fn caption(cx: &App, text: impl Into<SharedString>) -> Div {
         div()
             .text_color(cx.theme().muted_foreground)
             .child(text.into()),
-        "body",
+        "caption",
     )
 }
 

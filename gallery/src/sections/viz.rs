@@ -78,6 +78,7 @@ fn card_header(
                     div()
                         .text_size(px(11.))
                         .line_height(px(15.))
+                        .font_weight(gpui_kit::FontWeight::MEDIUM)
                         .text_color(role_hsla(mode, "success-foreground").unwrap_or_default())
                         .child(t),
                 ),
@@ -681,6 +682,7 @@ impl gpui_kit::Render for Viz {
                                 div()
                                     .text_size(px(11.))
                                     .line_height(px(15.))
+                                    .font_weight(gpui_kit::FontWeight::MEDIUM)
                                     .text_color(
                                         role_hsla(mode, "success-foreground").unwrap_or_default(),
                                     )

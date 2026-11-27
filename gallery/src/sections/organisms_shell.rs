@@ -55,6 +55,7 @@ fn live_sidebar(
         badge: Option<&'static str>,
     ) -> SidebarMenuItem {
         let mut it = SidebarMenuItem::new(tr(cx, key))
+            .h(px(24.))
             .icon(icon)
             .active(active)
             .on_click(cx.listener(|_v, _ev, _window, cx| cx.notify()));

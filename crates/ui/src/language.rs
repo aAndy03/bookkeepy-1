@@ -4906,11 +4906,11 @@ pub mod organisms {
             ]))
             .child(div().w(px(1.)).h(px(16.)).bg(c("neutral-800")))
             .child(h_flex().gap(px(2.)).children([
-                icon_btn(IconName::Minus, 18., ink, mode),
+                icon_btn(IconName::Minus, 16., ink, mode),
                 icon_btn(IconName::Square, 16., ink, mode),
                 icon_btn(
                     IconName::X,
-                    18.,
+                    16.,
                     if close_danger { r(mode, "danger") } else { ink },
                     mode,
                 ),

@@ -95,13 +95,13 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.secondary = role("control");
     config.colors.secondary_hover = role("control-hover");
     config.colors.secondary_active = role("control-active");
-    config.colors.secondary_foreground = role("icon");
+    config.colors.secondary_foreground = role("foreground");
     // The button_secondary* seats must be set explicitly — unset, gpui falls back to the
     // shadcn light-gray secondary and secondary buttons render wrong on dark.
     config.colors.button_secondary = role("control");
     config.colors.button_secondary_hover = role("control-hover");
     config.colors.button_secondary_active = role("control-active");
-    config.colors.button_secondary_foreground = role("icon");
+    config.colors.button_secondary_foreground = role("foreground");
     // The primary button INVERTS — the only button that does (ATOMS · 01 primary row).
     config.colors.button_primary = role("primary");
     config.colors.button_primary_hover = role("primary-hover");
@@ -181,7 +181,8 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     // the white overlays (hover @4%, selected @12% + light indicator).
     config.colors.table = transparent();
     config.colors.table_even = transparent();
-    config.colors.table_head = role("control");
+    // O6 master: the header row is transparent with a hairline bottom border, not a filled bar.
+    config.colors.table_head = transparent();
     config.colors.table_head_foreground = role("muted-foreground");
     config.colors.table_foot = transparent();
     config.colors.table_foot_foreground = role("muted-foreground");
