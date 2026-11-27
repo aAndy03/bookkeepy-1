@@ -6422,6 +6422,391 @@ pub mod custom {
                     .child(icon(IconName::Link, 12.).text_color(ink)),
             )
     }
+
+    // ── ORGANISMS · bookkeepy custom (D1–D3 board cards) ────────────────────
+
+    /// D1/D2 · outline pill: h 18, radius full, 1px border-strong outline, transparent
+    /// bg, caption-size label (period chips, version pills).
+    pub fn outline_pill(label: impl Into<SharedString>, _mode: Mode) -> Div {
+        h_flex()
+            .h(px(18.))
+            .px(px(6.))
+            .items_center()
+            .rounded_full()
+            .border_1()
+            .border_color(c("neutral-700"))
+            .child(txt(10., 14., FontWeight::MEDIUM, c("neutral-300"), label))
+    }
+
+    /// D1 · diverging in/out bars: 16 column pairs in a 40px-tall strip, bar w 6 r 1,
+    /// pitch 14.5; `in` grows up from y 20 (money-in), `out` grows down from y 22
+    /// (money-negative); no-activity pairs are 2px neutral-750 stubs.
+    pub fn diverging_bars(pairs: &[(f32, f32)], mode: Mode) -> Div {
+        let mut strip = div().relative().w_full().h(px(40.));
+        let in_c = r(mode, "money-in");
+        let out_c = r(mode, "money-negative");
+        let stub_c = c("neutral-750");
+        for (i, (hi, ho)) in pairs.iter().enumerate() {
+            let left = i as f32 * 14.5;
+            let (ci, ho_top, hc) = if *hi <= 2. && *ho <= 2. {
+                (stub_c, 20., 2.)
+            } else {
+                (in_c, 20. - hi, *hi)
+            };
+            strip = strip.child(
+                div()
+                    .absolute()
+                    .left(px(left))
+                    .top(px(ho_top))
+                    .w(px(6.))
+                    .h(px(hc))
+                    .rounded(px(1.))
+                    .bg(ci),
+            );
+            let oc = if *hi <= 2. && *ho <= 2. {
+                stub_c
+            } else {
+                out_c
+            };
+            strip = strip.child(
+                div()
+                    .absolute()
+                    .left(px(left))
+                    .top(px(22.))
+                    .w(px(6.))
+                    .h(px(if *hi <= 2. && *ho <= 2. { 2. } else { *ho }))
+                    .rounded(px(1.))
+                    .bg(oc),
+            );
+        }
+        strip
+    }
+
+    /// D1 account card interaction/privacy state.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum AcctIx {
+        /// rest: white-a4 hairline.
+        Rest,
+        /// hover: white-a12 hairline.
+        Hover,
+        /// selected: accent @ 40% hairline.
+        Selected,
+        /// privacy hidden: balance masked, bars keep shape, rest hairline.
+        Hidden,
+        /// first load: skeleton bars + balance.
+        Loading,
+    }
+
+    /// D1 account card parameters (clippy: one struct instead of 8 args).
+    pub struct AcctCard {
+        /// account name (head row).
+        pub name: SharedString,
+        /// period chip label (e.g. "3 mo / w").
+        pub period: SharedString,
+        /// amount sign ("", "−", "+", "≈").
+        pub sign: String,
+        /// amount digits.
+        pub digits: String,
+        /// currency caption.
+        pub currency: String,
+        /// 16 diverging in/out bar pairs.
+        pub pairs: Vec<(f32, f32)>,
+        /// interaction / privacy / loading state.
+        pub ix: AcctIx,
+    }
+
+    /// D1 · account card: w 260, p 16, r 16, surface-raised, hairline per state;
+    /// head (name + period pill) + amount (Md) + diverging bars (or skeletons).
+    pub fn account_card(p: AcctCard, mode: Mode) -> Div {
+        let AcctCard {
+            name,
+            period,
+            sign,
+            digits,
+            currency,
+            pairs,
+            ix,
+        } = p;
+        let pairs = &pairs;
+        let outline = match ix {
+            AcctIx::Rest | AcctIx::Hidden | AcctIx::Loading => c("white-a4"),
+            AcctIx::Hover => c("white-a12"),
+            AcctIx::Selected => r(mode, "accent").opacity(0.4),
+        };
+        let body = match ix {
+            AcctIx::Loading => v_flex()
+                .gap(px(8.))
+                .child(
+                    div()
+                        .w(px(80.))
+                        .h(px(10.))
+                        .rounded(px(2.))
+                        .bg(c("neutral-850")),
+                )
+                .child(
+                    div()
+                        .w(px(120.))
+                        .h(px(20.))
+                        .rounded(px(2.))
+                        .bg(c("neutral-850")),
+                )
+                .child(
+                    div()
+                        .w_full()
+                        .h(px(40.))
+                        .rounded(px(4.))
+                        .bg(c("neutral-850")),
+                ),
+            _ => v_flex()
+                .gap(px(12.))
+                .child(
+                    h_flex()
+                        .items_center()
+                        .gap(px(8.))
+                        .child(txt(12., 14., FontWeight::MEDIUM, c("neutral-0"), name).flex_1())
+                        .child(outline_pill(period, mode)),
+                )
+                .child(amount(
+                    &sign,
+                    &digits,
+                    &currency,
+                    c("neutral-0"),
+                    AmountSz::Md,
+                    ix == AcctIx::Hidden,
+                    mode,
+                ))
+                .child(diverging_bars(pairs, mode)),
+        };
+        v_flex()
+            .w(px(260.))
+            .p(px(16.))
+            .gap(px(12.))
+            .rounded(px(radius_tier("2xl")))
+            .bg(r(mode, "surface-raised"))
+            .border_1()
+            .border_color(outline)
+            .child(body)
+    }
+
+    /// D2 net worth card variant.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum NwIx {
+        /// now: raised surface, white-a4 hairline.
+        Now,
+        /// privacy hidden: every amount masked.
+        Hidden,
+        /// forecast: steel-tinted bg + steel hairline, ≈ ink.
+        Forecast,
+    }
+
+    /// D2 · 36-bar trend strip: h 80, gap 3, flex-1 bars r 1 in neutral-800, the
+    /// current (last) bar in data-2.
+    pub fn trend_bars(heights: &[f32], _mode: Mode) -> Div {
+        let cur = c("data-2");
+        let base = c("neutral-800");
+        h_flex()
+            .items_end()
+            .gap(px(3.))
+            .w_full()
+            .h(px(80.))
+            .children(heights.iter().enumerate().map(|(i, h)| {
+                div()
+                    .flex_1()
+                    .h(px(*h))
+                    .rounded(px(1.))
+                    .bg(if i == heights.len() - 1 { cur } else { base })
+            }))
+    }
+
+    /// D2 net worth card parameters (clippy: one struct instead of 11 args).
+    pub struct NwCard {
+        /// balance sign ("", "≈").
+        pub sign: String,
+        /// balance digits.
+        pub digits: String,
+        /// currency caption.
+        pub currency: String,
+        /// delta sign ("+", "≈").
+        pub delta_sign: String,
+        /// delta digits.
+        pub delta_digits: String,
+        /// delta trailing caption ("this month" / "/ month forecast").
+        pub delta_cap: SharedString,
+        /// 36 trend bar heights.
+        pub trend: Vec<f32>,
+        /// assets digits.
+        pub assets: String,
+        /// debts digits.
+        pub debts: String,
+        /// now / hidden / forecast.
+        pub ix: NwIx,
+    }
+
+    /// D2 · net worth card: w 440, p 24, r 16; kicker + Xl amount + delta row with
+    /// direction mark + 36-bar trend + assets/debts split.
+    pub fn net_worth_card(p: NwCard, mode: Mode) -> Div {
+        let NwCard {
+            sign,
+            digits,
+            currency,
+            delta_sign,
+            delta_digits,
+            delta_cap,
+            trend,
+            assets,
+            debts,
+            ix,
+        } = p;
+        let trend = &trend;
+        let fc = r(mode, "money-forecast");
+        let (bg, outline, amt_ink, delta_ink, cap_ink) = match ix {
+            NwIx::Now => (
+                r(mode, "surface-raised"),
+                c("white-a4"),
+                c("neutral-0"),
+                r(mode, "money-in"),
+                c("neutral-400"),
+            ),
+            NwIx::Hidden => (
+                r(mode, "surface-raised"),
+                c("white-a4"),
+                c("neutral-0"),
+                r(mode, "money-in"),
+                c("neutral-400"),
+            ),
+            NwIx::Forecast => (c("steel-900").opacity(0.53), fc, fc, fc, fc),
+        };
+        let masked = ix == NwIx::Hidden;
+        let split_amt = |sign: &str, digits: &str, ink: Hsla| {
+            amount(sign, digits, "RON", ink, AmountSz::Sm, masked, mode)
+        };
+        let assets = assets.as_str();
+        let debts = debts.as_str();
+        v_flex()
+            .w(px(440.))
+            .p(px(24.))
+            .gap(px(12.))
+            .rounded(px(radius_tier("2xl")))
+            .bg(bg)
+            .border_1()
+            .border_color(outline)
+            .child(txt(
+                10.,
+                12.,
+                FontWeight::MEDIUM,
+                c("neutral-400"),
+                "net worth",
+            ))
+            .child(amount(
+                &sign,
+                &digits,
+                &currency,
+                amt_ink,
+                AmountSz::Xl,
+                masked,
+                mode,
+            ))
+            .child(
+                h_flex()
+                    .items_center()
+                    .gap(px(4.))
+                    .child(dir_mark(
+                        IconName::ArrowDownLeft,
+                        if masked { c("neutral-400") } else { delta_ink },
+                    ))
+                    .child(amount(
+                        &delta_sign,
+                        &delta_digits,
+                        "RON",
+                        if masked { c("neutral-400") } else { delta_ink },
+                        AmountSz::Sm,
+                        masked,
+                        mode,
+                    ))
+                    .child(txt(11., 15., FontWeight::NORMAL, cap_ink, delta_cap)),
+            )
+            .child(trend_bars(trend, mode))
+            .child(
+                h_flex().gap(px(24.)).children([
+                    v_flex()
+                        .gap(px(2.))
+                        .child(txt(
+                            11.,
+                            15.,
+                            FontWeight::NORMAL,
+                            c("neutral-400"),
+                            "assets",
+                        ))
+                        .child(split_amt("", assets, c("neutral-0"))),
+                    v_flex()
+                        .gap(px(2.))
+                        .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), "debts"))
+                        .child(split_amt("−", debts, c("neutral-0"))),
+                ]),
+            )
+    }
+
+    /// D3 todo tone (icon ink only).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TodoTone {
+        /// accent (duotone on hover).
+        Accent,
+        /// warning.
+        Warning,
+        /// neutral icon ink.
+        Neutral,
+    }
+
+    /// D3 · todo row: h 52, r 6, px 12, gap 12; 16px tone icon, title + source caption,
+    /// trailing caret-right. `bg` paints the interaction plate (transparent at rest).
+    pub fn todo_row(
+        glyph: IconName,
+        tone: TodoTone,
+        duotone: bool,
+        title: impl Into<SharedString>,
+        caption: impl Into<SharedString>,
+        bg: Hsla,
+        _mode: Mode,
+    ) -> Div {
+        let ink = match tone {
+            TodoTone::Accent => c("accent"),
+            TodoTone::Warning => c("amber-500"),
+            TodoTone::Neutral => c("neutral-200"),
+        };
+        let g = if duotone {
+            duotone_icon(glyph, 16.)
+        } else {
+            icon(glyph, 16.)
+        };
+        h_flex()
+            .w_full()
+            .h(px(52.))
+            .items_center()
+            .gap(px(12.))
+            .rounded(px(radius_tier("md")))
+            .px(px(12.))
+            .bg(bg)
+            .child(g.text_color(ink))
+            .child(
+                v_flex()
+                    .flex_1()
+                    .gap(px(2.))
+                    .child(txt(12., 14., FontWeight::NORMAL, c("neutral-0"), title))
+                    .child(txt(11., 15., FontWeight::NORMAL, c("neutral-400"), caption)),
+            )
+            .child(icon(IconName::ChevronRight, 12.).text_color(c("neutral-400")))
+    }
+
+    /// D3 · count pill: h 16, radius full, neutral-200 bg, neutral-925 ink, 10/600.
+    pub fn count_pill(n: impl Into<SharedString>) -> Div {
+        h_flex()
+            .h(px(16.))
+            .px(px(5.))
+            .items_center()
+            .rounded_full()
+            .bg(c("neutral-200"))
+            .child(txt(10., 12., FontWeight::SEMIBOLD, c("neutral-925"), n))
+    }
 }
 
 #[cfg(test)]
