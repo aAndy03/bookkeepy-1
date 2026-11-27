@@ -317,11 +317,13 @@ impl gpui_kit::Render for OrganismsShell {
             .content(Separator::vertical().h(px(16.)))
             .child(
                 Button::new("o2-filter")
+                    .with_size(Size::Size(px(32.)))
                     .icon(IconName::Funnel)
                     .tooltip(tr(cx, "gallery.o02.tb.filter")),
             )
             .child(
                 Button::new("o2-search")
+                    .with_size(Size::Size(px(32.)))
                     .icon(IconName::Search)
                     .tooltip(tr(cx, "gallery.o02.tb.search")),
             )
@@ -526,7 +528,7 @@ impl gpui_kit::Render for OrganismsShell {
         );
 
         // ── O18 · scrollable ─────────────────────────────────────────────────
-        let scroll_rows = v_flex().gap_2().children((0..20).map(|i| {
+        let scroll_rows = v_flex().children((0..20).map(|i| {
             organisms::list_item(
                 div()
                     .size(px(28.))

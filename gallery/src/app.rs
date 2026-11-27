@@ -166,6 +166,7 @@ impl Gallery {
             let mut group = SidebarGroup::new(tr(cx, layer.title_key()));
             for spec in specs {
                 let item = SidebarMenuItem::new(tr(cx, spec.title_key))
+                    .h(gpui_kit::px(24.))
                     .active(spec.id == active)
                     .on_click(cx.listener({
                         let id = spec.id;
