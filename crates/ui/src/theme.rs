@@ -222,6 +222,11 @@ fn config_for(mode: Mode) -> Rc<ThemeConfig> {
     config.colors.accordion = role("background");
     config.colors.window_border = role("border");
     config.colors.description_list_label = role("muted-foreground");
+    // Gap seats closed by the design-language modifier pass (audit of gpui-kit 0.11.0
+    // ThemeConfig): search-highlight ink, description-list label ink, group-box legend.
+    config.colors.description_list_label_foreground = role("secondary-foreground");
+    config.colors.list_highlight_foreground = role("info");
+    config.colors.group_box_title_foreground = role("foreground");
     Rc::new(config)
 }
 
@@ -237,6 +242,9 @@ pub fn config(mode: Mode) -> Rc<ThemeConfig> {
 pub fn apply(mode: Mode, cx: &mut App) {
     let theme = config(mode);
     Theme::update(cx, |t| t.apply_config(&theme));
+    // The style modifier pass: seats ThemeConfig cannot express (motion, scrollbar
+    // mode, focus ring) — still token-driven, still the single install path.
+    Theme::update(cx, |t| design_language_modifier(t, mode));
     // The raw-hue slots (icon color roles, rating stars, color-picker swatches) are
     // private in `ThemeConfig` (serde-only `base.*`); set them on the resolved theme.
     // Design hues, not tailwind's red-600/green-600/yellow-600.
@@ -260,4 +268,88 @@ pub fn apply(mode: Mode, cx: &mut App) {
         th.cyan = hsla(p.get("cyan-500").map(|s| s.as_str()));
         th.cyan_light = hsla(p.get("cyan-300").map(|s| s.as_str()));
     });
+}
+
+/// The design-language **style modifier** for gpui-kit primitives (RULE-UI-005/007):
+/// everything `ThemeConfig` cannot express is set here on the resolved [`Theme`] —
+/// motion tokens from `data/theme/motion.toml`, the scrollbar mode, and the focus-ring
+/// switch. Called by [`apply`] on every install, so the app and the gallery share it.
+pub fn design_language_modifier(theme: &mut Theme, _mode: Mode) {
+    use gpui_kit::base::motion::Easing;
+    use gpui_kit::component::scroll::ScrollbarMode;
+    use std::time::Duration;
+
+    let m = bookkeepy_primary_data::theme::motion();
+    let dur = |name: &str| -> Duration {
+        Duration::from_millis(m.duration.get(name).copied().unwrap_or(200) as u64)
+    };
+    let bez = |name: &str| -> Easing {
+        let b = m.easing.get(name).copied().unwrap_or([0.2, 0.0, 0.0, 1.0]);
+        Easing::cubic_bezier(b[0], b[1], b[2], b[3]).unwrap_or(Easing::Linear)
+    };
+    // TOKENS §10: instant 80 / fast 120 / base 200 / slow 320 map onto the kit's
+    // instant/fast/normal/slow ladder; enter/exit/standard easings from the sheet.
+    theme.motion.duration_instant = dur("instant");
+    theme.motion.duration_fast = dur("fast");
+    theme.motion.duration_normal = dur("base");
+    theme.motion.duration_slow = dur("slow");
+    theme.motion.easing_enter = bez("enter");
+    theme.motion.easing_exit = bez("exit");
+    theme.motion.easing_move = bez("standard");
+    // O18: scrollbar idle-hidden, appears while scrolling (never on desktop).
+    theme.scrollbar_mode = ScrollbarMode::Scrolling;
+    // Design focus ring: 2px in the ring/accent color — geometry is per-component;
+    // the global switch stays on so every focusable primitive shows one.
+    theme.focus_ring = true;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The modifier must make the resolved theme match the tokens for BOTH modes
+    /// (RULE-DATA-003: tokens are the only source; dark is native, light mirrors).
+    #[test]
+    fn bridge_maps_core_seats_to_tokens_both_modes() {
+        for mode in [Mode::Dark, Mode::Light] {
+            let cfg = config(mode);
+            let t = colors(mode);
+            let eq = |seat: &Option<SharedString>, role_name: &str| {
+                let want = t.get(role_name).map(|s| s.to_string());
+                assert_eq!(
+                    seat.as_ref().map(|s| s.to_string()),
+                    want,
+                    "seat != token role {role_name} in {mode:?}"
+                );
+            };
+            eq(&cfg.colors.background, "background");
+            eq(&cfg.colors.foreground, "foreground");
+            eq(&cfg.colors.primary, "primary");
+            eq(&cfg.colors.primary_foreground, "primary-foreground");
+            eq(&cfg.colors.popover, "popover");
+            eq(&cfg.colors.sidebar_accent, "sidebar-selected");
+            eq(&cfg.colors.table_active, "control-selected");
+            eq(&cfg.colors.list_hover, "ghost-hover");
+            eq(&cfg.colors.chart_1, "data-1");
+            eq(&cfg.colors.chart_bullish, "money-in");
+            eq(&cfg.colors.danger, "danger");
+            eq(&cfg.colors.success, "success");
+            // Gap seats closed by the modifier pass.
+            eq(&cfg.colors.list_highlight_foreground, "info");
+            eq(
+                &cfg.colors.description_list_label_foreground,
+                "secondary-foreground",
+            );
+            eq(&cfg.colors.group_box_title_foreground, "foreground");
+        }
+    }
+
+    #[test]
+    fn motion_modifier_uses_token_durations() {
+        // The modifier reads motion.toml — assert the mapping lands (base=200ms).
+        let m = bookkeepy_primary_data::theme::motion();
+        assert_eq!(m.duration.get("base").copied(), Some(200));
+        assert_eq!(m.duration.get("slow").copied(), Some(320));
+        assert!(m.easing.contains_key("enter"));
+    }
 }
