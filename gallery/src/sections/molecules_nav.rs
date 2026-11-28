@@ -5,7 +5,7 @@
 //! prev/next + pagination, and `Message`/`Bubble` incoming vs outgoing.
 
 use gpui_kit::base::{h_flex, v_flex};
-use gpui_kit::component::bubble::{Bubble, BubbleVariant};
+use gpui_kit::component::bubble::{Bubble, BubbleContent, BubbleVariant};
 use gpui_kit::component::carousel::{
     Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination, CarouselPrevious,
     CarouselState,
@@ -17,7 +17,7 @@ use gpui_kit::{
     Window, div, px,
 };
 
-use crate::app::{Gallery, tr};
+use crate::app::{Gallery, Prefs, tr};
 use crate::sections::kit;
 
 /// Section entry point (the `section!` macro's `new` fn).
@@ -36,6 +36,7 @@ impl gpui_kit::Render for MoleculesNav {
         _window: &mut Window,
         cx: &mut Context<'_, Self>,
     ) -> impl gpui_kit::IntoElement {
+        let mode = cx.global::<Prefs>().mode;
         let md = "## October summary\n\n**1.240** transactions imported from *BT Pay*.\n\n- Groceries 378,00 RON\n- Transport 96,20 RON\n\nSee [the full report](#).";
 
         // ── O21 · text view ─────────────────────────────────────────────────
@@ -146,13 +147,22 @@ impl gpui_kit::Render for MoleculesNav {
                             .header(MessageHeader::new().child("You").child("14:33"))
                             .content(
                                 MessageContent::new().bubble(
-                                    // Ghost variant skips the theme fill so the design's white-a12
-                                    // outgoing pill shows through the instance bg.
-                                    Bubble::new()
-                                        .with_variant(BubbleVariant::Ghost)
-                                        .bg(bookkeepy_ui::api::language::prim_hsla("white-a12")
-                                            .unwrap_or_default())
-                                        .child(tr(cx, "gallery.o02.msg.out")),
+                                    // O25: outgoing = white-a12 pill r999, fit-content,
+                                    // right-aligned (stock Ghost forces w_full = full-width bar).
+                                    Bubble::new().content(
+                                        BubbleContent::new()
+                                            .child(tr(cx, "gallery.o02.msg.out"))
+                                            .bg(bookkeepy_ui::api::language::prim_hsla("white-a12")
+                                                .unwrap_or_default())
+                                            .text_color(
+                                                bookkeepy_ui::api::language::role_hsla(
+                                                    mode,
+                                                    "foreground",
+                                                )
+                                                .unwrap_or_default(),
+                                            )
+                                            .rounded_full(),
+                                    ),
                                 ),
                             ),
                     ),

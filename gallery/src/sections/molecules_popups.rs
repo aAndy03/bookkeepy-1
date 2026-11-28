@@ -24,7 +24,8 @@ use crate::sections::kit;
 /// Section entry point (the `section!` macro's `new` fn).
 pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
     let menu = PopupMenu::build(window, cx, |menu, window, cx| {
-        menu.label("Transaction")
+        menu.min_w(px(240.)) // MOLECULES · 01: context menu panel is 240px wide
+            .label("Transaction")
             .item(
                 PopupMenuItem::new("Edit")
                     .icon(IconName::Pencil)

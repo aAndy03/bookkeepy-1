@@ -330,14 +330,15 @@ impl gpui_kit::Render for OrganismsOverlay {
             Button::new("o1-open-dialog")
                 .label(open_live)
                 .on_click(move |_ev, window, cx| {
-                    let (t, d, c, s) = (
+                    let (t, d, c, s, m) = (
                         dlg_title.clone(),
                         dlg_desc.clone(),
                         dlg_cancel.clone(),
                         dlg_save.clone(),
+                        mode,
                     );
                     window.open_dialog(cx, move |dialog, _window, _cx| {
-                        dialog
+                        primitives::dialog(dialog, m)
                             // O3 master width is 440 (kit default 448 measured too wide).
                             .w(px(440.))
                             .title(t.clone())
@@ -393,14 +394,18 @@ impl gpui_kit::Render for OrganismsOverlay {
             Button::new("o1-open-alert")
                 .label(ad_open)
                 .on_click(move |_ev, window, cx| {
-                    let (t, d, ok, c) = (
+                    let (t, d, ok, c, m) = (
                         ad_title.clone(),
                         ad_desc.clone(),
                         ad_ok.clone(),
                         ad_cancel.clone(),
+                        mode,
                     );
                     window.open_alert_dialog(cx, move |alert, _window, _cx| {
                         alert
+                            // O4 alert is 380px, surface-raised fill (stock dialog: 448 on background)
+                            .w(px(380.))
+                            .bg(role_hsla(m, "surface-raised").unwrap_or_default())
                             .confirm()
                             .title(t.clone())
                             .description(d.clone())
@@ -534,7 +539,7 @@ impl gpui_kit::Render for OrganismsOverlay {
                 let t = sheet_title.clone();
                 let m = sheet_mode;
                 window.open_sheet(cx, move |sheet, _window, _cx| {
-                    sheet
+                    primitives::sheet(sheet, m)
                         .title(t.clone())
                         .size(px(400.))
                         .child(v_flex().p(px(16.)).gap(px(12.)).child(sheet_row(

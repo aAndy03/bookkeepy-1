@@ -506,15 +506,17 @@ impl gpui_kit::Render for MoleculesGroups {
         );
 
         // ── M9 · radio group ─────────────────────────────────────────────────
-        let live_rg = RadioGroup::vertical("m2-rg")
-            .selected_index(Some(self.rg))
-            .on_click(cx.listener(|v, ix: &usize, _window, cx| {
-                v.rg = *ix;
-                cx.notify();
-            }))
-            .child(Radio::new("m2-r-never").label(tr(cx, "gallery.m02.rg.never")))
-            .child(Radio::new("m2-r-monthly").label(tr(cx, "gallery.m02.rg.monthly")))
-            .child(Radio::new("m2-r-yearly").label(tr(cx, "gallery.m02.rg.yearly")));
+        let live_rg = primitives::radio_group(
+            RadioGroup::vertical("m2-rg")
+                .selected_index(Some(self.rg))
+                .on_click(cx.listener(|v, ix: &usize, _window, cx| {
+                    v.rg = *ix;
+                    cx.notify();
+                }))
+                .child(Radio::new("m2-r-never").label(tr(cx, "gallery.m02.rg.never")))
+                .child(Radio::new("m2-r-monthly").label(tr(cx, "gallery.m02.rg.monthly")))
+                .child(Radio::new("m2-r-yearly").label(tr(cx, "gallery.m02.rg.yearly"))),
+        );
         let rg_opts = |a: RgIx, b: RgIx, c: RgIx| {
             h_flex().gap(px(16.)).children([
                 groups::radio_option(tr(cx, "gallery.m02.rg.never"), a),

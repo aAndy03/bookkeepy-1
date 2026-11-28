@@ -11,15 +11,18 @@ use bookkeepy_ui::api::language::{
 };
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
-use gpui_kit::component::IndexPath;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::combobox::{Combobox, ComboboxState};
 use gpui_kit::component::date_picker::{DatePicker, DatePickerState};
 use gpui_kit::component::searchable_list::SearchableListItem;
 use gpui_kit::component::select::{SearchableVec, Select, SelectState};
+use gpui_kit::component::{Icon, IndexPath, Sizable as _};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, Hsla, IntoElement, ParentElement as _, SharedString,
-    Styled as _, Window, div, px,
+    Styled as _, Subscription, Window, div, px,
 };
 
 use crate::app::{Gallery, Prefs, tr};
@@ -100,7 +103,17 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
         .multiple(true)
         .searchable(true)
     });
-    let date_state = cx.new(|cx| DatePickerState::new(window, cx));
+    // MOLECULES · 03: trigger shows "21 Oct 2026" (stock state format: %Y/%m/%d)
+    // Mirror the combobox query for the custom chips trigger (the trigger renders
+    // while the state is borrowed, so it reads this cell instead of the entity).
+    let combo_query = Rc::new(RefCell::new(SharedString::default()));
+    let combo_query_sub = {
+        let combo_query = combo_query.clone();
+        cx.observe(&combo_state, move |_view, state, cx| {
+            *combo_query.borrow_mut() = state.read(cx).query(cx);
+        })
+    };
+    let date_state = cx.new(|cx| DatePickerState::new(window, cx).date_format("%d %b %Y"));
     date_state.update(cx, |s, cx| {
         s.set_date(jiff::civil::date(2026, 10, 21), window, cx);
     });
@@ -108,6 +121,8 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
         select_state,
         combo_state,
         date_state,
+        combo_query,
+        _combo_query_sub: combo_query_sub,
     })
     .into()
 }
@@ -116,6 +131,8 @@ pub struct MoleculesPickers {
     select_state: Entity<SelectState<SearchableVec<Account>>>,
     combo_state: Entity<ComboboxState<SearchableVec<Account>>>,
     date_state: Entity<DatePickerState>,
+    combo_query: Rc<RefCell<SharedString>>,
+    _combo_query_sub: Subscription,
 }
 
 impl gpui_kit::Render for MoleculesPickers {
@@ -129,7 +146,10 @@ impl gpui_kit::Render for MoleculesPickers {
         // ── select ───────────────────────────────────────────────────────────
         let select_live = Select::new(&self.select_state)
             .placeholder(tr(cx, "gallery.m01.select.placeholder"))
-            .w(px(240.));
+            .w(px(240.))
+            .menu_width(px(240.))
+            // MOLECULES · 01: trailing ChevronsUpDown 12px in icon ink (stock: xsmall caret)
+            .icon(Icon::new(IconName::ChevronsUpDown).with_size(px(12.)));
         let select_triggers = kit::row([
             kit::cell(
                 cx,
@@ -344,10 +364,42 @@ impl gpui_kit::Render for MoleculesPickers {
                 })
                 .child(field)
         };
+        let combo_query = self.combo_query.clone();
         let combo_live = Combobox::new(&self.combo_state)
             .placeholder(tr(cx, "gallery.m01.combo.placeholder"))
             .search_placeholder(tr(cx, "gallery.m01.combo.search_ph"))
-            .w(px(320.));
+            .w(px(320.))
+            .menu_width(px(320.))
+            .icon(Icon::new(IconName::ChevronsUpDown).with_size(px(12.)))
+            // MOLECULES · 01: multi-select shows chips in the field (+N overflow)
+            // followed by the typed query; the stock trigger joins values with ", ".
+            .render_trigger(move |t, _window, cx| {
+                let mode = cx.global::<Prefs>().mode;
+                let query = combo_query.borrow().clone();
+                let sel = t.selection();
+                let mut field = h_flex().flex_1().min_w_0().gap_1().items_center();
+                for (_, a) in sel.iter().take(2) {
+                    field = field.child(popups::chip(a.title(), a.dot, mode));
+                }
+                if sel.len() > 2 {
+                    field = field.child(popups::chip(
+                        SharedString::from(format!("+{}", sel.len() - 2)),
+                        None,
+                        mode,
+                    ));
+                }
+                if !query.is_empty() {
+                    field = field.child(div().refine_style(&kit::label_refinement()).child(query));
+                } else if sel.is_empty() {
+                    field = field.child(
+                        div()
+                            .refine_style(&kit::label_refinement())
+                            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+                            .child(t.placeholder().cloned().unwrap_or_default()),
+                    );
+                }
+                field
+            });
         let multi_list = popups::popup_surface(320., 4., mode)
             .flex()
             .flex_col()

@@ -1176,18 +1176,20 @@ pub mod controls {
         t
     }
 
-    /// A segmented toggle group on the design surface: `control` rx6 container, segments
-    /// `control-selected` (white @ 12%) rx4 when selected (MOLECULES · 02 toggle group:
-    /// 198x28 rx6 container, 47/55x24 rx4 segments).
-    pub fn toggle_group<G>(g: G, mode: Mode) -> G
+    /// A segmented toggle group on the design surface: **transparent** rx8 track, p2,
+    /// gap2, h28 (MOLECULES · 02 toggle group: "segmented track: transparent rx8 p2
+    /// gap2 · item h28 rx6"). The stock group fills `control` and drops the gap when
+    /// segmented; our refinement lands after both, so it wins.
+    pub fn toggle_group<G>(g: G, _mode: Mode) -> G
     where
         G: gpui_kit::Styled,
     {
-        let mut g = g.border_0().rounded(px(radius_tier("md"))).h(px(28.));
-        if let Some(bg) = role_hsla(mode, "control") {
-            g = g.bg(bg);
-        }
-        g
+        g.border_0()
+            .bg(gpui_kit::transparent_white())
+            .rounded(px(radius_tier("lg")))
+            .p(px(2.))
+            .gap_2()
+            .h(px(28.))
     }
 
     /// GroupBox legend refinement in the design's `overline` named style (10/500) — the
@@ -6888,6 +6890,45 @@ pub mod primitives {
             i = i.border_1().border_color(b);
         }
         i
+    }
+
+    /// A live dialog frame on the design surface: `surface-raised` fill (the stock
+    /// dialog paints `tokens.background`), r20 + hairline ride the theme seats
+    /// (ORGANISMS · 01 O3: 440px #1c1c1c card).
+    pub fn dialog(
+        d: gpui_kit::component::dialog::Dialog,
+        mode: Mode,
+    ) -> gpui_kit::component::dialog::Dialog {
+        let mut d = d;
+        if let Some(bg) = role_hsla(mode, "surface-raised") {
+            d = d.bg(bg);
+        }
+        d
+    }
+
+    /// A live sheet on the design surface: `popover` fill with the `rz-handle` leading
+    /// edge color (the stock sheet paints `tokens.background`, ORGANISMS · 02 O11).
+    pub fn sheet(
+        s: gpui_kit::component::sheet::Sheet,
+        mode: Mode,
+    ) -> gpui_kit::component::sheet::Sheet {
+        let mut s = s;
+        if let Some(bg) = role_hsla(mode, "popover") {
+            s = s.bg(bg);
+        }
+        if let Some(b) = role_hsla(mode, "rz-handle") {
+            s = s.border_color(b);
+        }
+        s
+    }
+
+    /// A live radio group with the design's rhythm: 8px between options
+    /// (MOLECULES · 02 radio group; the stock group hardcodes gap_3).
+    pub fn radio_group<G>(g: G) -> G
+    where
+        G: gpui_kit::Styled,
+    {
+        g.gap(px(8.))
     }
 }
 

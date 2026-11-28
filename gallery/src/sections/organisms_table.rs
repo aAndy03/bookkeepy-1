@@ -52,7 +52,11 @@ pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
             .row_selectable(true)
             .sortable(true)
     });
-    let list_state = cx.new(|cx| ListState::new(AcctDelegate, window, cx).selectable(true));
+    let list_state = cx.new(|cx| {
+        ListState::new(AcctDelegate, window, cx)
+            .selectable(true)
+            .searchable(true)
+    });
     let vlist_sizes: Rc<Vec<Size<gpui_kit::Pixels>>> = Rc::new(
         (0..12_480)
             .map(|i| {

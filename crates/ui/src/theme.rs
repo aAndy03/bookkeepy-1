@@ -302,6 +302,10 @@ pub fn design_language_modifier(theme: &mut Theme, _mode: Mode) {
     // Design focus ring: 2px in the ring/accent color — geometry is per-component;
     // the global switch stays on so every focusable primitive shows one.
     theme.focus_ring = true;
+    // ORGANISMS · 01 O5: toasts are 360px wide, stack bottom-right, max 3 visible.
+    theme.notification.placement = gpui_kit::Anchor::BottomRight;
+    theme.notification.max_items = 3;
+    theme.notification.width = gpui_kit::px(360.);
 }
 
 #[cfg(test)]

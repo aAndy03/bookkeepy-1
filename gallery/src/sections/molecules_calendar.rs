@@ -24,6 +24,7 @@ use gpui_kit::component::color_picker::{
 use gpui_kit::component::time_field::{
     HourCycle, TimeField, TimeFieldEvent, TimeFieldState, TimePrecision,
 };
+use gpui_kit::component::{Sizable as _, Size};
 use gpui_kit::{
     AnyView, AppContext as _, Context, Entity, ParentElement as _, Styled as _, Subscription,
     Window, div, px,
@@ -269,6 +270,8 @@ impl gpui_kit::Render for MoleculesCalendar {
 
         // ── M20 · calendar ───────────────────────────────────────────────────
         let live_cal = Calendar::new(&self.cal_state)
+            // day cells 32x32 r6 in the design; Large is the closest stock step (30px)
+            .with_size(Size::Large)
             .first_day_of_week(jiff::civil::Weekday::Monday)
             .w(px(260.))
             .p(px(12.))
