@@ -317,7 +317,7 @@ impl gpui_kit::Render for MoleculesPopups {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.m01.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.m01.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.m01.popups_title")))
             .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
             .child(popover_group)

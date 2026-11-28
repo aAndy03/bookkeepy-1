@@ -30,7 +30,7 @@ pub fn with_style(el: Div, id: &str) -> Div {
     el
 }
 
-/// Overline caption (section labels, cell state captions) in muted ink.
+/// Overline caption (cell state captions) in muted ink.
 pub fn overline(cx: &App, text: impl Into<SharedString>) -> Div {
     with_style(
         div()
@@ -38,6 +38,28 @@ pub fn overline(cx: &App, text: impl Into<SharedString>) -> Div {
             .child(text.into()),
         "overline",
     )
+}
+
+/// Sheet eyebrow — the "bookkeepy · atoms 01" line above each section title. The design
+/// paints this one overline in `accent-foreground` (#f5a76a), unlike cell captions.
+pub fn eyebrow(cx: &App, text: impl Into<SharedString>) -> Div {
+    let mode = cx.global::<crate::app::Prefs>().mode;
+    let ink = bookkeepy_ui::api::language::role_hsla(mode, "accent-foreground")
+        .unwrap_or(cx.theme().accent_foreground);
+    with_style(div().text_color(ink).child(text.into()), "overline")
+}
+
+/// A `StyleRefinement` carrying the named `label` type style (12/400/14) — for pinning
+/// stock components' text to the label size without a raw value in code (TOKENS §03).
+pub fn label_refinement() -> gpui_kit::StyleRefinement {
+    let mut st = gpui_kit::StyleRefinement::default();
+    if let Some(s) = style("label") {
+        st = st
+            .text_size(px(s.size_px as f32))
+            .line_height(px(s.line_height_px as f32))
+            .font_weight(FontWeight::from(s.weight as f32));
+    }
+    st
 }
 
 /// Body caption (hints, demo text) in muted ink.

@@ -14,6 +14,7 @@ use bookkeepy_ui::api::language::organisms::{self, LiIx, SortIx, TrIx, TreeIx};
 use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::list::{List, ListDelegate, ListItem, ListState};
 use gpui_kit::component::table::{Column, ColumnSort, DataTable, TableDelegate, TableState};
 use gpui_kit::component::tree::{TreeItem, TreeState, tree};
@@ -280,7 +281,7 @@ impl TableDelegate for TxDelegate {
                 )
                 .child(
                     div()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                         .child(row.payee),
                 ),
@@ -410,7 +411,7 @@ impl ListDelegate for AcctDelegate {
                             .gap(px(2.))
                             .child(
                                 div()
-                                    .text_size(px(12.))
+                                    .refine_style(&kit::label_refinement())
                                     .font_weight(gpui_kit::FontWeight::MEDIUM)
                                     .text_color(fg)
                                     .child(title),
@@ -483,7 +484,7 @@ fn painted_row(mode: bookkeepy_primary_data::theme::Mode, row: &RowSpec) -> gpui
                 .child(bookkeepy_ui::api::language::atoms::icon(dir, 14.).text_color(amt_color))
                 .child(
                     div()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .text_color(fg)
                         .child(payee.to_string()),
                 ),
@@ -711,6 +712,7 @@ impl gpui_kit::Render for OrganismsTable {
         let live_table = div().w(px(960.)).h(px(8. * 36. + 32.)).child(
             // O6: the table's own card — surface r16, clipped (part of the component, not the harness).
             div()
+                .size_full()
                 .rounded(px(16.))
                 .bg(role_hsla(mode, "surface").unwrap_or_default())
                 .overflow_hidden()
@@ -990,7 +992,7 @@ impl gpui_kit::Render for OrganismsTable {
                                 .bg(prim_hsla("neutral-900").unwrap_or_default())
                                 .child(
                                     div()
-                                        .text_size(px(12.))
+                                        .refine_style(&kit::label_refinement())
                                         .text_color(prim_hsla("neutral-0").unwrap_or_default())
                                         .child(format!("Row {ix}")),
                                 )
@@ -1018,11 +1020,11 @@ impl gpui_kit::Render for OrganismsTable {
                 h_flex().gap_6().items_start().child(vlist).child(
                     v_flex().w(px(300.)).gap_3().children([
                         div()
-                            .text_size(px(12.))
+                            .refine_style(&kit::label_refinement())
                             .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                             .child(tr(cx, "gallery.o01.vl.viewport")),
                         div()
-                            .text_size(px(12.))
+                            .refine_style(&kit::label_refinement())
                             .line_height(px(18.))
                             .text_color(prim_hsla("neutral-400").unwrap_or_default())
                             .child(tr(cx, "gallery.o01.vl.desc")),
@@ -1129,7 +1131,7 @@ impl gpui_kit::Render for OrganismsTable {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.o01.tb.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.o01.tb.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.o01.tb.title")))
             .child(kit::caption(cx, tr(cx, "gallery.o01.tb.subtitle")))
             .child(dt_group)

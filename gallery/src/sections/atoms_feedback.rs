@@ -11,6 +11,7 @@ use bookkeepy_ui::api::language::{
     display, feedback2, feedback2::ProgressTone, feedback2::ScrollIx, primitives,
 };
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::Button;
 use gpui_kit::component::progress::{Progress, ProgressCircle};
 use gpui_kit::component::scroll::ScrollableElement as _;
@@ -82,15 +83,16 @@ impl gpui_kit::Render for AtomsFeedback {
         let progress_indet = kit::cell(
             cx,
             "gallery.atoms03.progress.indeterminate",
-            Progress::new("p-indet").loading(true).w(px(240.)),
+            Progress::new("p-indet")
+                .loading(true)
+                .with_size(Size::XSmall)
+                .w(px(240.)),
         );
         let progress_circle = kit::row([
             kit::cell(
                 cx,
                 "gallery.atoms03.progress.circle",
-                ProgressCircle::new("pc1")
-                    .value(65.)
-                    .with_size(Size::Size(px(20.))),
+                ProgressCircle::new("pc1").value(65.).w(px(32.)).h(px(32.)),
             ),
             kit::cell(
                 cx,
@@ -100,7 +102,8 @@ impl gpui_kit::Render for AtomsFeedback {
                     .color(
                         bookkeepy_ui::api::language::role_hsla(mode, "success").unwrap_or_default(),
                     )
-                    .with_size(Size::Size(px(20.))),
+                    .w(px(32.))
+                    .h(px(32.)),
             ),
             kit::cell(
                 cx,
@@ -110,7 +113,8 @@ impl gpui_kit::Render for AtomsFeedback {
                     .color(
                         bookkeepy_ui::api::language::role_hsla(mode, "danger").unwrap_or_default(),
                     )
-                    .with_size(Size::Size(px(20.))),
+                    .w(px(32.))
+                    .h(px(32.)),
             ),
         ]);
         let progress_label = kit::cell(
@@ -367,11 +371,15 @@ impl gpui_kit::Render for AtomsFeedback {
                 .border_color(
                     bookkeepy_ui::api::language::prim_hsla("white-a8").unwrap_or_default(),
                 )
-                .child(div().text_size(px(12.)).child(SharedString::from(format!(
-                    "{}. {}",
-                    i + 1,
-                    tr(cx, "gallery.atoms03.demo.row")
-                ))))
+                .child(
+                    div()
+                        .refine_style(&kit::label_refinement())
+                        .child(SharedString::from(format!(
+                            "{}. {}",
+                            i + 1,
+                            tr(cx, "gallery.atoms03.demo.row")
+                        ))),
+                )
         }));
         let scrollbar_live = kit::cell(
             cx,
@@ -405,7 +413,7 @@ impl gpui_kit::Render for AtomsFeedback {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.atoms03.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.atoms03.sheet")))
             .child(kit::group_title(
                 cx,
                 tr(cx, "gallery.atoms03.feedback_title"),

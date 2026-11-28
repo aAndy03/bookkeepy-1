@@ -51,7 +51,7 @@ impl SearchableListItem for Account {
         }
         row.child(
             div()
-                .text_size(px(12.))
+                .refine_style(&kit::label_refinement())
                 .line_height(px(14.))
                 .child(self.name),
         )
@@ -322,7 +322,7 @@ impl gpui_kit::Render for MoleculesPickers {
             field = field
                 .child(
                     div()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .line_height(px(14.))
                         .text_color(color.unwrap_or_default())
                         .child(text),
@@ -508,7 +508,7 @@ impl gpui_kit::Render for MoleculesPickers {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.m01.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.m01.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.m01.pickers_title")))
             .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
             .child(select_group)
@@ -550,7 +550,7 @@ fn combo_row(
     }
     row.child(
         div()
-            .text_size(px(12.))
+            .refine_style(&kit::label_refinement())
             .line_height(px(14.))
             .text_color(prim_hsla("neutral-0").unwrap_or_default())
             .child(label),

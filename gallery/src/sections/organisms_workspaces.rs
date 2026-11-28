@@ -10,6 +10,7 @@ use bookkeepy_ui::api::language::organisms;
 use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::{
     AnyView, AppContext as _, Context, IntoElement as _, ParentElement as _, Styled as _, Window,
     div, px,
@@ -48,7 +49,7 @@ fn dock_panel(
             });
         t = t.child(
             div()
-                .text_size(px(12.))
+                .refine_style(&kit::label_refinement())
                 .line_height(px(14.))
                 .font_weight(gpui_kit::FontWeight::MEDIUM)
                 .text_color(if active { fg } else { muted })
@@ -222,7 +223,7 @@ impl gpui_kit::Render for OrganismsWorkspaces {
                         .child(
                             v_flex().flex_1().gap(px(2.)).child(
                                 div()
-                                    .text_size(px(12.))
+                                    .refine_style(&kit::label_refinement())
                                     .font_weight(gpui_kit::FontWeight::MEDIUM)
                                     .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                                     .child(format!("Row {i}")),
@@ -260,7 +261,7 @@ impl gpui_kit::Render for OrganismsWorkspaces {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.o02.ws.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.o02.ws.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.o02.ws.title")))
             .child(kit::caption(cx, tr(cx, "gallery.o02.ws.subtitle")))
             .child(dk_group)

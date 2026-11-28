@@ -8,6 +8,7 @@
 use bookkeepy_ui::api::language::{custom, prim_hsla, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::{
     AnyView, AppContext as _, Context, ParentElement as _, SharedString, Styled as _, Window, div,
     px,
@@ -289,7 +290,7 @@ impl gpui_kit::Render for OursBoard {
                                 div()
                                     .w(px(280.))
                                     .text_center()
-                                    .text_size(px(12.))
+                                    .refine_style(&kit::label_refinement())
                                     .line_height(px(18.))
                                     .text_color(muted)
                                     .child(tr(cx, "gallery.ours.d3.empty_d")),

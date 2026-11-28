@@ -12,6 +12,7 @@ use bookkeepy_ui::api::language::{prim_hsla, primitives, role_hsla, shell};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
 use gpui_kit::component::Side;
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _, Toggle, ToggleGroup};
 use gpui_kit::component::resizable::{h_resizable, resizable_panel};
 use gpui_kit::component::scroll::ScrollableElement as _;
@@ -301,7 +302,7 @@ impl gpui_kit::Render for OrganismsShell {
                     .items_center()
                     .child(
                         div()
-                            .text_size(px(12.))
+                            .refine_style(&kit::label_refinement())
                             .font_weight(gpui_kit::FontWeight::MEDIUM)
                             .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                             .child(tr(cx, "gallery.o02.tb.title")),
@@ -505,17 +506,17 @@ impl gpui_kit::Render for OrganismsShell {
             kit::cell(
                 cx,
                 "gallery.atoms.state.rest",
-                organisms::resize_handle(RzIx::Rest),
+                organisms::resize_handle(RzIx::Rest, mode),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.hover",
-                organisms::resize_handle(RzIx::Hover),
+                organisms::resize_handle(RzIx::Hover, mode),
             ),
             kit::cell(
                 cx,
                 "gallery.o02.rz.dragging",
-                organisms::resize_handle(RzIx::Drag),
+                organisms::resize_handle(RzIx::Drag, mode),
             ),
         ]);
         let rz_group = kit::group(
@@ -631,7 +632,7 @@ impl gpui_kit::Render for OrganismsShell {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.o01.sh.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.o01.sh.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.o01.sh.title")))
             .child(kit::caption(cx, tr(cx, "gallery.o01.sh.subtitle")))
             .child(tb1_group)

@@ -11,6 +11,7 @@ use bookkeepy_ui::api::language::organisms::{self, NoteTone};
 use bookkeepy_ui::api::language::{prim_hsla, primitives, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::WindowExt as _;
 use gpui_kit::component::button::{Button, ButtonVariant, ButtonVariants as _};
 use gpui_kit::component::command::{Command, CommandGroup, CommandItem, CommandState};
@@ -85,7 +86,7 @@ fn painted_dialog(
         .items_center()
         .child(
             div()
-                .text_size(px(12.))
+                .refine_style(&kit::label_refinement())
                 .line_height(px(14.))
                 .text_color(fg)
                 .child(tr(cx, "gallery.o01.dlg.revolut")),
@@ -100,7 +101,7 @@ fn painted_dialog(
         .items_center()
         .child(
             div()
-                .text_size(px(12.))
+                .refine_style(&kit::label_refinement())
                 .line_height(px(14.))
                 .text_color(fg)
                 .child(tr(cx, "gallery.o01.dlg.mega")),
@@ -261,7 +262,7 @@ fn painted_alert(
         )
         .child(
             div()
-                .text_size(px(12.))
+                .refine_style(&kit::label_refinement())
                 .line_height(px(18.))
                 .text_color(muted)
                 .child(tr(cx, desc_key)),
@@ -343,7 +344,7 @@ impl gpui_kit::Render for OrganismsOverlay {
                             .child(DialogHeader::new().child(DialogTitle::new().child(t.clone())))
                             .child(
                                 div()
-                                    .text_size(px(12.))
+                                    .refine_style(&kit::label_refinement())
                                     .text_color(prim_hsla("neutral-400").unwrap_or_default())
                                     .child(d.clone()),
                             )
@@ -619,7 +620,7 @@ impl gpui_kit::Render for OrganismsOverlay {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.o01.ov.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.o01.ov.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.o01.ov.title")))
             .child(kit::caption(cx, tr(cx, "gallery.o01.ov.subtitle")))
             .child(dlg_group)

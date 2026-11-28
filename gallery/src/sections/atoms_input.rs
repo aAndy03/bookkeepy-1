@@ -347,7 +347,7 @@ impl gpui_kit::Render for AtomsInput {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.atoms03.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.atoms03.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.atoms03.title")))
             .child(kit::caption(cx, tr(cx, "gallery.atoms03.subtitle")))
             .child(input_group)

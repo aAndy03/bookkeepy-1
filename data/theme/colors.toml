@@ -136,6 +136,10 @@ input-focus    = "$neutral-300"
 ring           = "$neutral-200"     # default focus ring
 ring-accent    = "$orange-500"      # attention/focus ring — ATOMS · 03: ring 2, offset 2
 selection      = "$white-a12"       # text-selection highlight
+# rz-handle family (ORGANISMS · 02 O17): resizable divider states
+rz-handle       = "$neutral-825"
+rz-handle-hover = "$neutral-700"
+rz-handle-drag  = "$neutral-200"
 
 [theme.dark.interaction]
 control           = "$neutral-875"  # flat control fill — neutral/default buttons
@@ -252,6 +256,9 @@ input-focus    = "#575757"
 ring           = "#2E2E2E"
 ring-accent    = "$orange-500"
 selection      = "#0000001F"
+rz-handle       = "#E8E8E8"
+rz-handle-hover = "#B5B5B5"
+rz-handle-drag  = "#2E2E2E"
 
 [theme.light.interaction]
 control           = "#FFFFFF"

@@ -9,6 +9,7 @@
 
 use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::chart::{AreaChart, CandlestickChart, LineChart, PieChart};
 use gpui_kit::component::empty::{
     Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant, EmptyTitle,
@@ -395,7 +396,7 @@ impl gpui_kit::Render for Viz {
                 .child(
                     div()
                         .flex_1()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .line_height(px(14.))
                         .text_color(fg)
                         .child(name.to_string()),
@@ -411,7 +412,7 @@ impl gpui_kit::Render for Viz {
                     div()
                         .w(px(70.))
                         .text_right()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .line_height(px(14.))
                         .text_color(fg)
                         .child(amount.to_string()),

@@ -10,6 +10,7 @@ use bookkeepy_ui::api::language::{
 };
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::ButtonVariant;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::empty::{
@@ -452,6 +453,7 @@ impl gpui_kit::Render for MoleculesStructure {
             GroupBox::new()
                 .fill()
                 .title(tr(cx, "gallery.o02.gb.sync"))
+                .title_style(bookkeepy_ui::api::language::controls::group_box_title_style())
                 .w(px(440.))
                 .p(px(16.))
                 .child(v_flex().gap(px(12.)).child(gb_row(
@@ -464,6 +466,7 @@ impl gpui_kit::Render for MoleculesStructure {
             GroupBox::new()
                 .outline()
                 .title(tr(cx, "gallery.o02.gb.privacy"))
+                .title_style(bookkeepy_ui::api::language::controls::group_box_title_style())
                 .w(px(440.))
                 .p(px(16.))
                 .child(v_flex().gap(px(12.)).child(gb_row(
@@ -510,7 +513,7 @@ impl gpui_kit::Render for MoleculesStructure {
                         .gap(px(2.))
                         .child(
                             div()
-                                .text_size(px(12.))
+                                .refine_style(&kit::label_refinement())
                                 .line_height(px(14.))
                                 .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                                 .child(title),
@@ -603,7 +606,7 @@ impl gpui_kit::Render for MoleculesStructure {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.m01.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.m01.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.m01.structure_title")))
             .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
             .child(tabs_group)
@@ -637,7 +640,7 @@ fn gb_row(
                 .gap(px(2.))
                 .child(
                     div()
-                        .text_size(px(12.))
+                        .refine_style(&kit::label_refinement())
                         .line_height(px(14.))
                         .text_color(role_hsla(mode, "foreground").unwrap_or_default())
                         .child(title),

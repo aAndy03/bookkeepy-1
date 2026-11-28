@@ -10,6 +10,7 @@
 use bookkeepy_ui::api::language::{atoms, choice, choice::Ix, choice::Tri};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Toggle, ToggleGroup, ToggleVariants as _};
 use gpui_kit::component::checkbox::Checkbox;
 use gpui_kit::component::radio::{Radio, RadioGroup};
@@ -239,7 +240,11 @@ impl gpui_kit::Render for AtomsChoice {
                 .child(
                     v_flex()
                         .gap_1()
-                        .child(div().text_size(px(12.)).child(tr(cx, title_key)))
+                        .child(
+                            div()
+                                .refine_style(&kit::label_refinement())
+                                .child(tr(cx, title_key)),
+                        )
                         .child(kit::caption(cx, tr(cx, desc_key))),
                 )
                 .child({
@@ -447,7 +452,7 @@ impl gpui_kit::Render for AtomsChoice {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.atoms02.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.atoms02.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.atoms02.choice.title")))
             .child(kit::caption(cx, tr(cx, "gallery.atoms02.choice.subtitle")))
             .child(checkbox_group)
@@ -461,7 +466,7 @@ impl gpui_kit::Render for AtomsChoice {
 /// The 12/400 label next to a choice control (sheet: white ink at rest).
 fn label_div(text: SharedString) -> gpui_kit::Div {
     div()
-        .text_size(px(12.))
+        .refine_style(&kit::label_refinement())
         .line_height(px(14.))
         .whitespace_nowrap()
         .child(text)

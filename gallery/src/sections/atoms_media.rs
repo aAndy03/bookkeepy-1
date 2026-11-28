@@ -11,6 +11,7 @@ use bookkeepy_ui::api::language::{atoms, media, media::OtpContent, media::OtpIx,
 use gpui_kit::ObjectFit;
 use gpui_kit::assets::IconName;
 use gpui_kit::base::v_flex;
+use gpui_kit::component::Sizable as _;
 use gpui_kit::component::input::{OtpEvent, OtpInput, OtpState};
 use gpui_kit::component::marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle};
 use gpui_kit::component::rating::Rating;
@@ -92,7 +93,7 @@ impl gpui_kit::Render for AtomsMedia {
                 "gallery.atoms04.otp.live",
                 v_flex()
                     .gap_2()
-                    .child(OtpInput::new(&self.otp).groups(2))
+                    .child(OtpInput::new(&self.otp).groups(2).with_size(px(36.)))
                     .child(kit::caption(
                         cx,
                         SharedString::from(format!(
@@ -105,12 +106,15 @@ impl gpui_kit::Render for AtomsMedia {
             kit::cell(
                 cx,
                 "gallery.atoms04.otp.live_masked",
-                OtpInput::new(&self.otp_masked).groups(2),
+                OtpInput::new(&self.otp_masked).groups(2).with_size(px(36.)),
             ),
             kit::cell(
                 cx,
                 "gallery.atoms.state.disabled",
-                OtpInput::new(&self.otp_disabled).groups(2).disabled(true),
+                OtpInput::new(&self.otp_disabled)
+                    .groups(2)
+                    .with_size(px(36.))
+                    .disabled(true),
             ),
         ]);
         let empty = || cell(OtpContent::Empty, OtpIx::Rest, mode);
@@ -421,7 +425,7 @@ impl gpui_kit::Render for AtomsMedia {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.atoms04.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.atoms04.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.atoms04.title")))
             .child(kit::caption(cx, tr(cx, "gallery.atoms04.subtitle")))
             .child(otp_group)

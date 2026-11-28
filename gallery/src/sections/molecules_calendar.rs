@@ -12,6 +12,7 @@ use bookkeepy_ui::api::language::temporal::{self, AttIx, CsIx, DzIx, MonthIx, Sw
 use bookkeepy_ui::api::language::{prim_hsla, role_hsla};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::attachment::{
     Attachment, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentStatus,
     AttachmentTitle,
@@ -317,7 +318,7 @@ impl gpui_kit::Render for MoleculesCalendar {
             .gap(px(6.))
             .child(
                 div()
-                    .text_size(px(12.))
+                    .refine_style(&kit::label_refinement())
                     .line_height(px(14.))
                     .font_weight(gpui_kit::FontWeight::MEDIUM)
                     .text_color(role_hsla(mode, "foreground").unwrap_or_default())
@@ -328,7 +329,7 @@ impl gpui_kit::Render for MoleculesCalendar {
             .gap(px(6.))
             .child(
                 div()
-                    .text_size(px(12.))
+                    .refine_style(&kit::label_refinement())
                     .line_height(px(14.))
                     .font_weight(gpui_kit::FontWeight::MEDIUM)
                     .text_color(role_hsla(mode, "foreground").unwrap_or_default())
@@ -593,7 +594,7 @@ impl gpui_kit::Render for MoleculesCalendar {
             .size_full()
             .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
             .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
-            .child(kit::overline(cx, tr(cx, "gallery.m03.sheet")))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.m03.sheet")))
             .child(kit::group_title(cx, tr(cx, "gallery.m03.title")))
             .child(kit::caption(cx, tr(cx, "gallery.m03.subtitle")))
             .child(cal_group)

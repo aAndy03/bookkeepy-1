@@ -1141,7 +1141,15 @@ pub mod controls {
     /// `border-strong` base (the "raised key with a 2px base", ATOMS · 01 kbd:
     /// 44x16.5, padding 0 5px, ink `secondary-foreground` 11px/500).
     pub fn kbd(k: gpui_kit::component::kbd::Kbd, mode: Mode) -> gpui_kit::component::kbd::Kbd {
-        let mut k = k.rounded(px(radius_tier("sm"))).border_b(px(2.)).px(px(5.));
+        // ATOMS · 01 kbd glyphs are 11px/500 (the stock component hardcodes text_xs;
+        // its render applies our refinement last, so this wins).
+        let mut k = k
+            .rounded(px(radius_tier("sm")))
+            .border_b(px(2.))
+            .px(px(5.))
+            .py_1()
+            .text_size(px(11.))
+            .font_weight(gpui_kit::FontWeight::MEDIUM);
         if let Some(bg) = role_hsla(mode, "control") {
             k = k.bg(bg);
         }
@@ -1175,11 +1183,24 @@ pub mod controls {
     where
         G: gpui_kit::Styled,
     {
-        let mut g = g.border_0().rounded(px(radius_tier("md")));
+        let mut g = g.border_0().rounded(px(radius_tier("md"))).h(px(28.));
         if let Some(bg) = role_hsla(mode, "control") {
             g = g.bg(bg);
         }
         g
+    }
+
+    /// GroupBox legend refinement in the design's `overline` named style (10/500) — the
+    /// stock GroupBox renders its title at the inherited 12/400 (ORGANISMS · 02 O14).
+    pub fn group_box_title_style() -> gpui_kit::StyleRefinement {
+        let mut st = gpui_kit::StyleRefinement::default();
+        if let Some(s) = bookkeepy_primary_data::theme::style("overline") {
+            st = st
+                .text_size(px(s.size_px as f32))
+                .line_height(px(s.line_height_px as f32))
+                .font_weight(gpui_kit::FontWeight::from(s.weight as f32));
+        }
+        st
     }
 }
 
@@ -1335,7 +1356,17 @@ pub mod atoms {
             h_flex()
                 .gap_1()
                 .items_center()
-                .child(text.into())
+                // the link text rides the `label` named style (12/400); the stock
+                // Button::link() would render its own text_sm (10.5 at the 12px rem)
+                .child({
+                    let mut t = div().child(text.into());
+                    if let Some(s) = style("label") {
+                        t = t
+                            .text_size(px(s.size_px as f32))
+                            .line_height(px(s.line_height_px as f32));
+                    }
+                    t
+                })
                 .child(Icon::new(IconName::ArrowUpRight).with_size(Size::Size(px(12.)))),
         )
     }
@@ -1906,7 +1937,7 @@ pub mod feedback2 {
             )
     }
 
-    /// Progress label row: name left (11/400 icon-muted), `n / total` right (10/500).
+    /// Progress label row: name left (11/400 secondary-foreground), `n / total` right (10/500).
     pub fn progress_label(
         name: impl Into<SharedString>,
         n: usize,
@@ -1921,7 +1952,7 @@ pub mod feedback2 {
                 div()
                     .text_size(px(11.))
                     .line_height(px(15.))
-                    .text_color(role_hsla(mode, "icon-muted").unwrap_or_default())
+                    .text_color(role_hsla(mode, "secondary-foreground").unwrap_or_default())
                     .child(name.into()),
             )
             .child(
@@ -5951,11 +5982,11 @@ pub mod organisms {
     }
 
     /// The vertical resize handle: 8px hit area, 1px line (O17).
-    pub fn resize_handle(ix: RzIx) -> Div {
+    pub fn resize_handle(ix: RzIx, mode: Mode) -> Div {
         let (line, grip) = match ix {
-            RzIx::Rest => (c("neutral-825"), None),
-            RzIx::Hover => (c("neutral-700"), Some(c("neutral-700"))),
-            RzIx::Drag => (c("neutral-200"), Some(c("neutral-200"))),
+            RzIx::Rest => (r(mode, "rz-handle"), None),
+            RzIx::Hover => (r(mode, "rz-handle-hover"), Some(r(mode, "rz-handle-hover"))),
+            RzIx::Drag => (r(mode, "rz-handle-drag"), Some(r(mode, "rz-handle-drag"))),
         };
         h_flex()
             .w(px(8.))
