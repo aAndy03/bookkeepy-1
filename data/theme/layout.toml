@@ -1,0 +1,14 @@
+# Bookkeepy 1 — primary data: shell layout tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# SSOT for the fixed shell dimensions drawn in the design language (ORGANISMS · 01
+# sidebar spec, TEMPLATES · shell): the window chrome's geometry. Components and the
+# app shell reference these by name — never a raw px in code.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+[layout]
+sidebar_expanded_px = 284 # sidebar expanded width (ORGANISMS · 01: "expanded 284 px")
+sidebar_collapsed_px = 72 # sidebar collapsed to icons (ORGANISMS · 01: "collapsed 72 px")
+sidebar_divider_px = 2 # sidebar trailing-edge resize/divider line (ORGANISMS · 01: "2px border-strong line on the trailing edge")

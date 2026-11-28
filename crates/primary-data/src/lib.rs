@@ -19,6 +19,8 @@ pub mod load_policies;
 pub mod locales;
 pub mod perf_budgets;
 pub mod settings;
+pub mod shortcuts;
+pub mod theme;
 mod validate;
 
 pub use validate::validate_all;

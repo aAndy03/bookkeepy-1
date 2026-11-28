@@ -1,0 +1,41 @@
+# Bookkeepy 1 — primary data: motion design tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# 1:1 with TOKENS · Bookkeepy v1 §10 Motion: durations, cubic-bezier easings, delays.
+# Referenced by name — never a raw ms/bezier in code.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+# Durations, ms (TOKENS §10).
+[duration]
+instant = 80  # hover fill appears, press feedback
+fast    = 120 # hover fill leaves, tooltip fade
+icon    = 160 # regular → duotone fill
+base    = 200 # popover, menu, chip expand
+slow    = 320 # sheet, dialog, tucked tag slide
+slower  = 500 # skeleton → content crossfade
+camera  = 700 # board camera flight between places
+snap    = 300 # camera pull-back and arrival
+
+# Easings — cubic-bezier(x1, y1, x2, y2) (TOKENS §10).
+[easing.standard]    # most state changes
+bezier = [0.2, 0.0, 0.0, 1.0]
+[easing.enter]       # things appearing
+bezier = [0.0, 0.0, 0.2, 1.0]
+[easing.exit]        # things leaving
+bezier = [0.4, 0.0, 1.0, 1.0]
+[easing.emphasized]  # tucked tag, small overshoot
+bezier = [0.3, 0.0, 0.0, 1.2]
+[easing.camera]      # camera pull-back and arrival
+bezier = [0.65, 0.0, 0.35, 1.0]
+
+# Delays, ms (TOKENS §10).
+[delay]
+spinner = 300    # wait before any loading indicator
+loading-min = 500 # minimum time an indicator stays
+tooltip = 1400   # hover time before a tooltip
+
+# Skeleton highlight sweep (TOKENS §10).
+[skeleton]
+cycle-ms = 900

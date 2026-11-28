@@ -1,0 +1,717 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! MOLECULES · 01 sheet (part 2) — select, combobox, date picker
+//! (references/designlanguage).
+//!
+//! FLAT on the page background. Live cells: `Select`, `Combobox` (type to filter,
+//! click to open), `DatePicker` trigger + a live `Calendar`. Open-dropdown and
+//! day-cell pseudo-states are painted from `language::popups` / `language::pickers`.
+
+use bookkeepy_ui::api::language::{
+    atoms, pickers, pickers::DayIx, popups, popups::TriggerIx, prim_hsla, role_hsla,
+};
+use gpui_kit::assets::IconName;
+use gpui_kit::base::{h_flex, v_flex};
+use gpui_kit::component::StyledExt as _;
+use gpui_kit::component::combobox::{Combobox, ComboboxState};
+use gpui_kit::component::date_picker::{DatePicker, DatePickerState};
+use gpui_kit::component::searchable_list::SearchableListItem;
+use gpui_kit::component::select::{SearchableVec, Select, SelectState};
+use gpui_kit::component::{Icon, IndexPath, Sizable as _};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use gpui_kit::{
+    AnyView, AppContext as _, Context, Entity, Hsla, IntoElement, ParentElement as _, SharedString,
+    Styled as _, Subscription, Window, div, px,
+};
+
+use crate::app::{Gallery, Prefs, tr};
+use crate::sections::kit;
+
+/// A select/combobox row model with a glyph and an optional category dot.
+#[derive(Clone)]
+struct Account {
+    name: &'static str,
+    icon: IconName,
+    dot: Option<Hsla>,
+    icon_color: Hsla,
+}
+
+impl SearchableListItem for Account {
+    type Value = &'static str;
+    fn title(&self) -> SharedString {
+        self.name.into()
+    }
+    fn value(&self) -> &Self::Value {
+        &self.name
+    }
+    fn render(&self, _window: &mut gpui_kit::Window, _cx: &mut gpui_kit::App) -> impl IntoElement {
+        let mut row = h_flex().gap(px(8.)).items_center();
+        if let Some(d) = self.dot {
+            row = row.child(div().size(px(8.)).rounded_full().bg(d));
+        } else {
+            row = row.child(atoms::icon(self.icon, 14.).text_color(self.icon_color));
+        }
+        row.child(
+            div()
+                .refine_style(&kit::label_refinement())
+                .line_height(px(14.))
+                .child(self.name),
+        )
+    }
+}
+
+fn accounts(mode: bookkeepy_primary_data::theme::Mode) -> Vec<Account> {
+    let icon_color = role_hsla(mode, "icon").unwrap_or_default();
+    let mk = |name: &'static str, icon: IconName, dot: Option<Hsla>| Account {
+        name,
+        icon,
+        dot,
+        icon_color,
+    };
+    vec![
+        mk("BT Pay", IconName::Landmark, None),
+        mk("Revolut", IconName::Wallet, None),
+        mk("Cash", IconName::Wallet, None),
+        mk("Savings", IconName::PiggyBank, None),
+        mk("groceries", IconName::Tag, prim_hsla("cyan-500")),
+        mk("transport", IconName::Tag, prim_hsla("lime-500")),
+        mk("fun", IconName::Tag, prim_hsla("pink-500")),
+        mk("grants", IconName::Tag, prim_hsla("green-500")),
+    ]
+}
+
+/// Section entry point (the `section!` macro's `new` fn).
+pub fn view(window: &mut Window, cx: &mut Context<'_, Gallery>) -> AnyView {
+    let mode = cx.global::<Prefs>().mode;
+    let select_state = cx.new(|cx| {
+        SelectState::new(
+            SearchableVec::new(accounts(mode).into_iter().take(4).collect::<Vec<_>>()),
+            Some(IndexPath::default()),
+            window,
+            cx,
+        )
+        .searchable(true)
+    });
+    let combo_state = cx.new(|cx| {
+        ComboboxState::new(
+            SearchableVec::new(accounts(mode).into_iter().skip(4).collect::<Vec<_>>()),
+            vec![IndexPath::new(0), IndexPath::new(2)],
+            window,
+            cx,
+        )
+        .multiple(true)
+        .searchable(true)
+    });
+    // MOLECULES · 03: trigger shows "21 Oct 2026" (stock state format: %Y/%m/%d)
+    // Mirror the combobox query for the custom chips trigger (the trigger renders
+    // while the state is borrowed, so it reads this cell instead of the entity).
+    let combo_query = Rc::new(RefCell::new(SharedString::default()));
+    let combo_query_sub = {
+        let combo_query = combo_query.clone();
+        cx.observe(&combo_state, move |_view, state, cx| {
+            *combo_query.borrow_mut() = state.read(cx).query(cx);
+        })
+    };
+    let date_state = cx.new(|cx| DatePickerState::new(window, cx).date_format("%d %b %Y"));
+    date_state.update(cx, |s, cx| {
+        s.set_date(jiff::civil::date(2026, 10, 21), window, cx);
+    });
+    cx.new(|_cx| MoleculesPickers {
+        select_state,
+        combo_state,
+        date_state,
+        combo_query,
+        _combo_query_sub: combo_query_sub,
+    })
+    .into()
+}
+
+pub struct MoleculesPickers {
+    select_state: Entity<SelectState<SearchableVec<Account>>>,
+    combo_state: Entity<ComboboxState<SearchableVec<Account>>>,
+    date_state: Entity<DatePickerState>,
+    combo_query: Rc<RefCell<SharedString>>,
+    _combo_query_sub: Subscription,
+}
+
+impl gpui_kit::Render for MoleculesPickers {
+    fn render(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<'_, Self>,
+    ) -> impl gpui_kit::IntoElement {
+        let mode = cx.global::<Prefs>().mode;
+
+        // ── select ───────────────────────────────────────────────────────────
+        let select_live = Select::new(&self.select_state)
+            .placeholder(tr(cx, "gallery.m01.select.placeholder"))
+            .w(px(240.))
+            .menu_width(px(240.))
+            // MOLECULES · 01: trailing ChevronsUpDown 12px in icon ink (stock: xsmall caret)
+            .icon(Icon::new(IconName::ChevronsUpDown).with_size(px(12.)));
+        let select_triggers = kit::row([
+            kit::cell(
+                cx,
+                "gallery.m01.select.placeholder_cell",
+                popups::select_trigger(None, None, 200., TriggerIx::Rest, mode),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.rest",
+                popups::select_trigger(
+                    None,
+                    Some(tr(cx, "gallery.m01.select.value")),
+                    200.,
+                    TriggerIx::Rest,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.hover",
+                popups::select_trigger(
+                    None,
+                    Some(tr(cx, "gallery.m01.select.value")),
+                    200.,
+                    TriggerIx::Hover,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m01.select.open",
+                popups::select_trigger(
+                    Some((IconName::Landmark, true)),
+                    Some(tr(cx, "gallery.m01.select.value")),
+                    240.,
+                    TriggerIx::Open,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.atoms.state.disabled",
+                popups::select_trigger(
+                    None,
+                    Some(tr(cx, "gallery.m01.select.value")),
+                    200.,
+                    TriggerIx::Disabled,
+                    mode,
+                ),
+            ),
+            kit::cell(cx, "gallery.m01.select.live", select_live),
+        ]);
+        // Painted open lists: plain, searchable with groups, empty + create.
+        let plain_list = popups::popup_surface(240., 4., mode)
+            .flex()
+            .flex_col()
+            .child(popups::menu_item(
+                "BT Pay",
+                Some(IconName::Landmark),
+                false,
+                None,
+                popups::MenuIx::Rest,
+                mode,
+            ))
+            .child(popups::menu_item(
+                "Revolut",
+                Some(IconName::Wallet),
+                true,
+                None,
+                popups::MenuIx::Rest,
+                mode,
+            ))
+            .child(popups::menu_item(
+                "Cash",
+                Some(IconName::Wallet),
+                false,
+                None,
+                popups::MenuIx::Hover,
+                mode,
+            ))
+            .child(popups::menu_item(
+                "Savings",
+                Some(IconName::PiggyBank),
+                false,
+                None,
+                popups::MenuIx::Rest,
+                mode,
+            ));
+        let grouped_list = popups::popup_surface(260., 4., mode)
+            .flex()
+            .flex_col()
+            .child(popups::search_row(tr(cx, "gallery.m01.select.query"), mode))
+            .child(popups::menu_label(
+                tr(cx, "gallery.m01.select.group_spending"),
+                mode,
+            ))
+            .child(popups::menu_item(
+                "groceries",
+                Some(IconName::Tag),
+                true,
+                None,
+                popups::MenuIx::Rest,
+                mode,
+            ))
+            .child(popups::menu_item(
+                "gifts",
+                Some(IconName::Tag),
+                false,
+                None,
+                popups::MenuIx::Hover,
+                mode,
+            ))
+            .child(popups::menu_label(
+                tr(cx, "gallery.m01.select.group_income"),
+                mode,
+            ))
+            .child(popups::menu_item(
+                "grants",
+                Some(IconName::Tag),
+                false,
+                None,
+                popups::MenuIx::Rest,
+                mode,
+            ));
+        let empty_list = popups::popup_surface(260., 4., mode)
+            .flex()
+            .flex_col()
+            .child(popups::search_row("Glov", mode))
+            .child(popups::empty_row(
+                tr(cx, "gallery.m01.select.no_match"),
+                mode,
+            ))
+            .child(popups::menu_item(
+                tr(cx, "gallery.m01.select.create"),
+                Some(IconName::Plus),
+                false,
+                None,
+                popups::MenuIx::Hover,
+                mode,
+            ));
+        let select_open = kit::row([
+            kit::cell(cx, "gallery.m01.select.list_plain", plain_list),
+            kit::cell(cx, "gallery.m01.select.list_search", grouped_list),
+            kit::cell(cx, "gallery.m01.select.list_empty", empty_list),
+        ]);
+        let select_group = kit::group(
+            cx,
+            "gallery.m01.select.title",
+            "gallery.m01.select.hint",
+            v_flex().gap_6().child(select_triggers).child(select_open),
+        );
+
+        // ── combobox ─────────────────────────────────────────────────────────
+        let chips = |with_query: bool| {
+            let mut field = h_flex()
+                .w_full()
+                .h(px(32.))
+                .px(px(10.))
+                .gap(px(8.))
+                .items_center()
+                .rounded(px(bookkeepy_ui::api::language::radius_tier("md")))
+                .bg(prim_hsla("neutral-950").unwrap_or_default());
+            field = field.child(
+                h_flex()
+                    .gap(px(4.))
+                    .child(popups::chip(
+                        tr(cx, "gallery.m01.combo.chip_groceries"),
+                        prim_hsla("cyan-500"),
+                        mode,
+                    ))
+                    .child(popups::chip(
+                        tr(cx, "gallery.m01.combo.chip_fun"),
+                        prim_hsla("pink-500"),
+                        mode,
+                    ))
+                    .child(popups::chip(
+                        tr(cx, "gallery.m01.combo.chip_more"),
+                        None,
+                        mode,
+                    )),
+            );
+            let (text, color) = if with_query {
+                (SharedString::from("g"), prim_hsla("neutral-0"))
+            } else {
+                (
+                    tr(cx, "gallery.m01.combo.placeholder"),
+                    prim_hsla("neutral-500"),
+                )
+            };
+            field = field
+                .child(
+                    div()
+                        .refine_style(&kit::label_refinement())
+                        .line_height(px(14.))
+                        .text_color(color.unwrap_or_default())
+                        .child(text),
+                )
+                .child(div().flex_1())
+                .child(
+                    atoms::icon(IconName::ChevronsUpDown, 12.)
+                        .text_color(role_hsla(mode, "icon").unwrap_or_default()),
+                );
+            div()
+                .w(px(320.))
+                .p(px(2.))
+                .rounded(px(bookkeepy_ui::api::language::radius_tier("lg")))
+                .border_2()
+                .border_color(if with_query {
+                    prim_hsla("white-a16").unwrap_or_default()
+                } else {
+                    gpui_kit::transparent_white()
+                })
+                .child(field)
+        };
+        let combo_query = self.combo_query.clone();
+        let combo_live = Combobox::new(&self.combo_state)
+            .placeholder(tr(cx, "gallery.m01.combo.placeholder"))
+            .search_placeholder(tr(cx, "gallery.m01.combo.search_ph"))
+            .w(px(320.))
+            .menu_width(px(320.))
+            .icon(Icon::new(IconName::ChevronsUpDown).with_size(px(12.)))
+            // MOLECULES · 01: multi-select shows chips in the field (+N overflow)
+            // followed by the typed query; the stock trigger joins values with ", ".
+            .render_trigger(move |t, _window, cx| {
+                let mode = cx.global::<Prefs>().mode;
+                let query = combo_query.borrow().clone();
+                let sel = t.selection();
+                let mut field = h_flex().flex_1().min_w_0().gap_1().items_center();
+                for (_, a) in sel.iter().take(2) {
+                    field = field.child(popups::chip(a.title(), a.dot, mode));
+                }
+                if sel.len() > 2 {
+                    field = field.child(popups::chip(
+                        SharedString::from(format!("+{}", sel.len() - 2)),
+                        None,
+                        mode,
+                    ));
+                }
+                if !query.is_empty() {
+                    field = field.child(div().refine_style(&kit::label_refinement()).child(query));
+                } else if sel.is_empty() {
+                    field = field.child(
+                        div()
+                            .refine_style(&kit::label_refinement())
+                            .text_color(role_hsla(mode, "muted-foreground").unwrap_or_default())
+                            .child(t.placeholder().cloned().unwrap_or_default()),
+                    );
+                }
+                field
+            });
+        let multi_list = popups::popup_surface(320., 4., mode)
+            .flex()
+            .flex_col()
+            .child(popups::search_row(
+                tr(cx, "gallery.m01.combo.search_ph"),
+                mode,
+            ))
+            .child(combo_row(
+                "groceries",
+                true,
+                prim_hsla("cyan-500"),
+                false,
+                mode,
+            ))
+            .child(combo_row(
+                "transport",
+                false,
+                prim_hsla("lime-500"),
+                true,
+                mode,
+            ))
+            .child(combo_row("fun", true, prim_hsla("pink-500"), false, mode));
+        let combo_triggers = kit::row([
+            kit::cell(
+                cx,
+                "gallery.m01.combo.empty",
+                popups::select_trigger(None, None, 320., TriggerIx::Rest, mode),
+            ),
+            kit::cell(cx, "gallery.m01.combo.chips", chips(false)),
+            kit::cell(cx, "gallery.m01.combo.typing", chips(true)),
+            kit::cell(cx, "gallery.m01.combo.live", combo_live),
+        ]);
+        let combo_group = kit::group(
+            cx,
+            "gallery.m01.combo.title",
+            "gallery.m01.combo.hint",
+            v_flex().gap_6().child(combo_triggers).child(kit::cell(
+                cx,
+                "gallery.m01.combo.open_multi",
+                multi_list,
+            )),
+        );
+
+        // ── date picker ──────────────────────────────────────────────────────
+        let day_axis = kit::row(
+            [
+                ("gallery.m01.dp.default", 12, DayIx::Default),
+                ("gallery.m01.dp.today", 18, DayIx::Today),
+                ("gallery.m01.dp.selected", 21, DayIx::Selected),
+                ("gallery.m01.dp.range_middle", 14, DayIx::RangeMiddle),
+                ("gallery.m01.dp.outside", 29, DayIx::Outside),
+                ("gallery.m01.dp.disabled", 25, DayIx::Disabled),
+                ("gallery.m01.dp.hover", 13, DayIx::Hover),
+            ]
+            .into_iter()
+            .map(|(key, n, ix)| {
+                kit::cell(
+                    cx,
+                    key,
+                    v_flex()
+                        .gap_1()
+                        .child(pickers::day_cell(n, ix, mode))
+                        .child(kit::caption(cx, tr(cx, key))),
+                )
+            }),
+        );
+        let dp_triggers = kit::row([
+            kit::cell(
+                cx,
+                "gallery.m01.dp.rest",
+                pickers::date_trigger(
+                    Some(tr(cx, "gallery.m01.dp.value")),
+                    240.,
+                    TriggerIx::Rest,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m01.dp.open",
+                pickers::date_trigger(
+                    Some(tr(cx, "gallery.m01.dp.value")),
+                    240.,
+                    TriggerIx::Open,
+                    mode,
+                ),
+            ),
+            kit::cell(
+                cx,
+                "gallery.m01.dp.live",
+                DatePicker::new(&self.date_state).w(px(240.)),
+            ),
+        ]);
+        // Painted calendars, sheet-exact (stock Calendar cells don't match the
+        // 32px day-cell axis); the DatePicker trigger above stays live.
+        let cal_single = painted_calendar(mode, CalendarKind::Single);
+        let presets_rail = v_flex()
+            .h(px(148.))
+            .p(px(4.))
+            .border_r(px(1.))
+            .border_color(prim_hsla("white-a8").unwrap_or_default())
+            .child(pickers::preset_row(
+                tr(cx, "gallery.m01.dp.preset_month"),
+                false,
+                mode,
+            ))
+            .child(pickers::preset_row(
+                tr(cx, "gallery.m01.dp.preset_last_month"),
+                false,
+                mode,
+            ))
+            .child(pickers::preset_row(
+                tr(cx, "gallery.m01.dp.preset_30"),
+                true,
+                mode,
+            ))
+            .child(pickers::preset_row(
+                tr(cx, "gallery.m01.dp.preset_year"),
+                false,
+                mode,
+            ))
+            .child(pickers::preset_row(
+                tr(cx, "gallery.m01.dp.preset_custom"),
+                false,
+                mode,
+            ));
+        let cal_range = h_flex()
+            .rounded(px(bookkeepy_ui::api::language::radius_tier("xl")))
+            .border_1()
+            .border_color(role_hsla(mode, "border-subtle").unwrap_or_default())
+            .bg(role_hsla(mode, "popover").unwrap_or_default())
+            .refine_style(&gpui_kit::StyleRefinement {
+                box_shadow: Some(popups::popup_shadow()),
+                ..Default::default()
+            })
+            .child(presets_rail)
+            .child(
+                painted_calendar(mode, CalendarKind::Range)
+                    .border_0()
+                    .rounded(px(0.)),
+            );
+        let dp_group = kit::group(
+            cx,
+            "gallery.m01.dp.title",
+            "gallery.m01.dp.hint",
+            v_flex()
+                .gap_6()
+                .child(day_axis)
+                .child(dp_triggers)
+                .child(kit::row([
+                    kit::cell(cx, "gallery.m01.dp.calendar_single", cal_single),
+                    kit::cell(cx, "gallery.m01.dp.calendar_range", cal_range),
+                ])),
+        );
+
+        // ── page ─────────────────────────────────────────────────────────────
+        v_flex()
+            .size_full()
+            .p(px(bookkeepy_ui::api::language::space("space-12") as f32))
+            .gap(px(bookkeepy_ui::api::language::space("space-8") as f32))
+            .child(kit::eyebrow(cx, tr(cx, "gallery.m01.sheet")))
+            .child(kit::group_title(cx, tr(cx, "gallery.m01.pickers_title")))
+            .child(kit::caption(cx, tr(cx, "gallery.m01.subtitle")))
+            .child(select_group)
+            .child(combo_group)
+            .child(dp_group)
+    }
+}
+
+/// One combobox dropdown row: checkbox + optional dot + label.
+fn combo_row(
+    label: &'static str,
+    checked: bool,
+    dot: Option<Hsla>,
+    hover: bool,
+    mode: bookkeepy_primary_data::theme::Mode,
+) -> gpui_kit::Div {
+    let box_on = bookkeepy_ui::api::language::choice::checkbox_box(
+        if checked {
+            bookkeepy_ui::api::language::choice::Tri::On
+        } else {
+            bookkeepy_ui::api::language::choice::Tri::Off
+        },
+        bookkeepy_ui::api::language::choice::Ix::Rest,
+        mode,
+    );
+    let mut row = h_flex()
+        .w_full()
+        .h(px(28.))
+        .px(px(8.))
+        .gap(px(8.))
+        .items_center()
+        .rounded(px(bookkeepy_ui::api::language::radius_tier("md")));
+    if hover {
+        row = row.bg(prim_hsla("white-a4").unwrap_or_default());
+    }
+    row = row.child(box_on);
+    if let Some(d) = dot {
+        row = row.child(div().size(px(8.)).rounded_full().bg(d));
+    }
+    row.child(
+        div()
+            .refine_style(&kit::label_refinement())
+            .line_height(px(14.))
+            .text_color(prim_hsla("neutral-0").unwrap_or_default())
+            .child(label),
+    )
+}
+
+/// Which selection the painted October 2026 calendar shows.
+enum CalendarKind {
+    Single,
+    Range,
+}
+
+/// Painted October 2026 calendar (Mon-start) in the sheet's popup frame:
+/// head with month nav, weekday header, 6 weeks of 32×32 day cells.
+/// Sundays 4/11/25 disabled, 18 = today (accent ring), single marks 21,
+/// range marks 10–20 (ends primary, middle white-a8).
+fn painted_calendar(
+    mode: bookkeepy_primary_data::theme::Mode,
+    kind: CalendarKind,
+) -> gpui_kit::Div {
+    let day = |n: u32, ix: DayIx| pickers::day_cell(n, ix, mode);
+    let weeks: [[(u32, DayIx); 7]; 6] = [
+        [
+            (28, DayIx::Outside),
+            (29, DayIx::Outside),
+            (30, DayIx::Outside),
+            (1, DayIx::Default),
+            (2, DayIx::Default),
+            (3, DayIx::Default),
+            (4, DayIx::Disabled),
+        ],
+        [
+            (5, DayIx::Default),
+            (6, DayIx::Default),
+            (7, DayIx::Default),
+            (8, DayIx::Default),
+            (9, DayIx::Default),
+            (10, DayIx::Default),
+            (11, DayIx::Disabled),
+        ],
+        [
+            (12, DayIx::Default),
+            (13, DayIx::Default),
+            (14, DayIx::Default),
+            (15, DayIx::Default),
+            (16, DayIx::Default),
+            (17, DayIx::Default),
+            (18, DayIx::Today),
+        ],
+        [
+            (19, DayIx::Default),
+            (20, DayIx::Default),
+            (21, DayIx::Default),
+            (22, DayIx::Default),
+            (23, DayIx::Default),
+            (24, DayIx::Default),
+            (25, DayIx::Disabled),
+        ],
+        [
+            (26, DayIx::Default),
+            (27, DayIx::Default),
+            (28, DayIx::Default),
+            (29, DayIx::Default),
+            (30, DayIx::Default),
+            (31, DayIx::Default),
+            (1, DayIx::Outside),
+        ],
+        [
+            (2, DayIx::Outside),
+            (3, DayIx::Outside),
+            (4, DayIx::Outside),
+            (5, DayIx::Outside),
+            (6, DayIx::Outside),
+            (7, DayIx::Outside),
+            (8, DayIx::Outside),
+        ],
+    ];
+    // apply the selection kind
+    let weeks = match kind {
+        CalendarKind::Single => weeks.map(|w| {
+            w.map(|(n, ix)| {
+                if n == 21 {
+                    (n, DayIx::Selected)
+                } else {
+                    (n, ix)
+                }
+            })
+        }),
+        CalendarKind::Range => weeks.map(|w| {
+            w.map(|(n, ix)| {
+                if n == 10 || n == 20 {
+                    (n, DayIx::Selected)
+                } else if (11..=19).contains(&n) {
+                    (n, DayIx::RangeMiddle)
+                } else {
+                    (n, ix)
+                }
+            })
+        }),
+    };
+    let weekday_row = h_flex()
+        .children(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(|d| pickers::weekday(d, mode)));
+    let grid = v_flex().gap(px(0.)).children(
+        weeks
+            .into_iter()
+            .map(|w| h_flex().children(w.map(|(n, ix)| day(n, ix)))),
+    );
+    pickers::calendar_popup(mode)
+        .child(pickers::calendar_head("October 2026", mode))
+        .child(weekday_row)
+        .child(grid)
+}

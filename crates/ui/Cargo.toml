@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[package]
+name = "bookkeepy-ui"
+description = "gpui-kit views, widgets (Atomic Design, Figma-model), presenters, theme — the one component set the gallery and the app share (doc 04 §4.9, ADR-0017)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# RULE-UI-004: the UI layer talks only to app-services' api (presenters live here) and
+# to the data layers (theme tokens via `bookkeepy-primary-data`, `bookkeepy-core`
+# money) — never to storage/engines directly. app-services/contracts/i18n join when
+# the first presenter/view that needs them lands (keeping manifests to in-use deps
+# so `cargo::unused_dependencies` stays quiet).
+bookkeepy-primary-data.workspace = true
+bookkeepy-core.workspace = true
+# The ONE UI dependency (ADR-0007).
+gpui-kit.workspace = true

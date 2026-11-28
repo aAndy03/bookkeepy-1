@@ -135,3 +135,19 @@ kind = "crate"
 status = "active"
 summary = "M3 backend composition root: App::open = session::open_session_with (injected boot checks: ledger.chains, schedules) + schedules::materialize_due boot driver + background job worker (claim → kind dispatch → complete/fail with backoff; unknown kinds fail fast); api/ is the only surface the ui crate may use; tests/app_flow.rs guards the flow"
 adr = ["ADR-0025"]
+
+[[item]]
+id = "ui"
+path = "crates/ui"
+kind = "crate"
+status = "active"
+summary = "The ONE component set (M3, ADR-0017): theme bridge data/theme→gpui-kit ThemeConfig (dark native + light mirror), capability-trait registry (ui/src/capabilities.rs: algebra, signed, selectable, timeline, compare, menu), widget layers widgets/{atoms,molecules,organisms} (seed: amount atom + signed variant + zero edge case + meta.toml v1). Public surface = api/ (RULE-SSOT-001, RULE-UI-004)."
+adr = ["ADR-0017", "ADR-0007"]
+
+[[item]]
+id = "gallery"
+path = "gallery"
+kind = "crate"
+status = "active"
+summary = "Component gallery binary (M3, RULE-UI-006/008): ALL published gpui-kit styled components demoed across 16 atomic-arranged sections (+ ours: Bookkeepy widgets + version history from ui crate meta.toml); EN/RO locales + dark/light theme from the same tokens; shortcuts bound from data/shortcuts.toml; gallery-first workflow — a harness over bookkeepy-ui, never a second copy."
+adr = ["ADR-0017", "ADR-0007"]

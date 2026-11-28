@@ -1,0 +1,25 @@
+# Bookkeepy 1 — primary data: iconography tokens (RULE-UI-005/007, RULE-DATA-001/003).
+#
+# 1:1 with TOKENS · Bookkeepy v1 §08 Iconography: the Phosphor set (regular at rest,
+# duotone on hover/pressed/selected/attention — see references/phosphor, MIT), the size
+# ladder, and the minimum hit target. `crates/ui/src/assets.rs` serves the duotone glyphs
+# at gpui-kit's lucide paths; sizes are referenced by name here — never a raw px in code.
+
+[source]
+kind = "bookkeepy-design-language"
+note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
+
+[icons]
+set = "phosphor"        # glyph set (references/phosphor)
+rest = "regular"        # weight at rest
+active = "duotone"      # hover / pressed / selected / attention
+# Minimum hit target, px (TOKENS §08: slot = icon size, hit target ≥ hit-min).
+hit-min-px = 24
+
+# Size ladder, px (TOKENS §08 sizes).
+[icons.size]
+xs = 12 # switcher caret, chip close
+sm = 14 # nav items, buttons, table rows
+md = 16 # toolbar, inputs, HUD
+lg = 20 # empty states, card headers
+xl = 24 # window buttons, board places

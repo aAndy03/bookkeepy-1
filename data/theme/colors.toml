@@ -1,172 +1,339 @@
 # Bookkeepy 1 — primary data: color design tokens (RULE-UI-005/007, RULE-DATA-001/003).
 #
-# SSOT for every color in the interface. gpui-kit styled components and gallery variants
-# reference these tokens — never raw hex values in code. Raw values live only in
-# `[palette]`; everything components use is semantic (`bg`, `surface`, `fg`, `border`,
-# `accent`, `danger`, `success`, `warning`, `info`, …), so a theme is swapped by replacing
-# one `[theme.<name>]` block and no code changes.
+# 1:1 with the design language's TOKENS · Bookkeepy v1 sheet (Penpot 'draft' page;
+# references/designlanguage/). Structure mirrors the sheet:
+#   [palette.*]  raw primitives — neutral ramp, alpha layers, hues (300 text / 500 base / 900 well)
+#   [theme.*]    semantic roles, referencing primitives as "$neutral-925" style aliases
+# The loader resolves "$alias" against [palette.*]; raw hex only appears in [palette] and for
+# the few roles drawn as literal values (hud, board-note).
 #
-# The dark theme is the design language's native theme (Bookkeepy v1, Penpot 'draft' page);
-# the light theme mirrors the same neutral ramp (255 − channel) with identical functional
-# hues, per the theme panels of the design system sheets.
+# Dark is the designed native theme; light mirrors the neutral ramp (255 − channel) with
+# identical functional hues and dark wells, per the sheet's theme panels.
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
 
-# Raw neutral ramp exactly as drawn in the design language (18 steps, dark side).
+# ── 01 · Color primitives ────────────────────────────────────────────────────
+
 [palette.neutral]
-black = "#0a0a0a"
-well = "#0d0d0d"
-root = "#111111"
-raised = "#171717"
-sheet = "#1c1c1c"
-edge = "#222222"
-chrome = "#262626"
-row = "#2a2a2a"
-steel = "#333333"
-heavy = "#3d3d3d"
-dim = "#4a4a4a"
-faint = "#555555"
-ghost = "#6b6b6b"
-hover_fg = "#898989"
-muted = "#a8a8a8"
-body = "#d1d1d1"
-bright = "#ededed"
-white = "#ffffff"
+neutral-1000 = "#0A0A0A"
+neutral-950  = "#0D0D0D"
+neutral-925  = "#111111"
+neutral-900  = "#171717"
+neutral-875  = "#1C1C1C"
+neutral-850  = "#222222"
+neutral-825  = "#262626"
+neutral-800  = "#2A2A2A"
+neutral-750  = "#333333"
+neutral-700  = "#3D3D3D"
+neutral-650  = "#4A4A4A"
+neutral-600  = "#555555"
+neutral-500  = "#6B6B6B"
+neutral-400  = "#898989"
+neutral-300  = "#A8A8A8"
+neutral-200  = "#D1D1D1"
+neutral-100  = "#EDEDED"
+neutral-0    = "#FFFFFF"
 
-# Raw functional hues + their tints (hover/selected states) and dark "wells"
-# (tinted container backgrounds) exactly as drawn.
-[palette.accent]
-base = "#f5823a"
-tint = "#f5a76a"
-dim = "#c9a77a"
+[palette.alpha]
+white-a4  = "#FFFFFF0A"
+white-a8  = "#FFFFFF14"
+white-a12 = "#FFFFFF1F"
+white-a16 = "#FFFFFF29"
+white-a24 = "#FFFFFF3D"
+white-a40 = "#FFFFFF66"
+black-a40 = "#00000066"
+black-a60 = "#00000099"
+black-a80 = "#000000CC"
+black-a90 = "#000000E6"
 
-[palette.success]
-base = "#68d740"
-tint = "#9be57f"
-well = "#173a0b"
+# Hues · 900 deep (well) / 500 base / 300 text-on-dark. sand & steel ship 500/900 only.
+[palette.hue.orange]
+300 = "#F5A76A"
+500 = "#F5823A"
+900 = "#3A1D0B"
 
-[palette.warning]
-base = "#e8b339"
-tint = "#f1cf80"
-well = "#3a1d0b"
+[palette.hue.lime]
+300 = "#E3FA94"
+500 = "#D1F558"
+900 = "#4B6006"
 
-[palette.danger]
-base = "#d74040"
-tint = "#e98080"
-well = "#3d1010"
+[palette.hue.cyan]
+300 = "#92DCF8"
+500 = "#58CBF5"
+900 = "#064860"
 
-[palette.info]
-base = "#58cbf5"
-tint = "#92dcf8"
-well = "#121a20"
+[palette.hue.pink]
+300 = "#FFBEDD"
+500 = "#FF93C7"
+900 = "#660031"
 
-# Group/tag palette (charts, tags, category markers) with their dark wells.
-[palette.group]
-orange = "#f5a76a"
-sand = "#c9a77a"
-blue = "#8fb3c9"
-purple = "#6944f0"
-pink = "#ff93c7"
-lime = "#d1f558"
-orange_well = "#3a1d0b"
-sand_well = "#3b2c08"
-blue_well = "#064860"
-purple_well = "#1a075f"
-pink_well = "#660031"
-lime_well = "#4b6006"
+[palette.hue.violet]
+300 = "#A48EF6"
+500 = "#6944F0"
+900 = "#1A075F"
 
-# Semantic tokens — dark (the native designed theme).
-[theme.dark]
-bg = "#111111" # base background everywhere
-bg_canvas = "#0d0d0d" # inset wells: input fields, code, sunken areas
-bg_raised = "#171717" # hover tint on lists/rows; subtle raised surfaces
-bg_sheet = "#1c1c1c" # cards, dialogs, panels
-bg_chrome = "#262626" # title bar, buttons, selected rows, controls
-bg_hover = "#1c1c1c" # pointer-hover on a base surface
-bg_selected = "#262626" # selected row/list item
-overlay = "#00000099" # modal scrim (black, 60% — matches the design's shadows)
-fg = "#d1d1d1" # default body text
-fg_primary = "#ffffff" # emphasized text
-fg_muted = "#a8a8a8" # secondary text
-fg_subtle = "#898989" # tertiary text
-fg_placeholder = "#6b6b6b" # input placeholders (every input has one, RULE-UI-005)
-fg_disabled = "#555555" # disabled labels
-accent = "#f5823a" # brand orange — primary actions, focus, links
-accent_hover = "#f5a76a" # hovered accent surface
-accent_subtle = "#c9a77a" # quiet accent — selected indicators
-on_accent = "#0d0d0d" # text/icons on an accent surface
-selection = "#f5a76a" # text-selection highlight
-success = "#68d740"
-success_tint = "#9be57f"
-success_well = "#173a0b"
-warning = "#e8b339"
-warning_tint = "#f1cf80"
-warning_well = "#3a1d0b"
-danger = "#d74040"
-danger_tint = "#e98080"
-danger_well = "#3d1010"
-info = "#58cbf5"
-info_tint = "#92dcf8"
-info_well = "#121a20"
-border = "#262626" # default border
-border_subtle = "#222222" # separators inside a surface
-border_strong = "#333333" # emphasized control border
-border_heavy = "#3d3d3d" # highest-contrast border (hovered/active edges)
-focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
-chart_positive = "#68d740"
-chart_negative = "#d74040"
-chart_neutral = "#8fb3c9"
-chart_series_1 = "#f5823a"
-chart_series_2 = "#6944f0"
-chart_series_3 = "#58cbf5"
-chart_series_4 = "#d1f558"
-chart_series_5 = "#ff93c7"
+[palette.hue.green]
+300 = "#9BE57F"
+500 = "#68D740"
+900 = "#173A0B"
 
-# Semantic tokens — light (same ramp inverted: 255 − channel; identical functional hues).
-[theme.light]
-bg = "#ededed" # base background everywhere
-bg_canvas = "#e3e3e3" # inset wells: input fields, code, sunken areas
-bg_raised = "#f5f5f5" # subtle raised surfaces; striped rows
-bg_sheet = "#ffffff" # cards, dialogs, panels
-bg_chrome = "#d9d9d9" # title bar, buttons, selected rows, controls
-bg_hover = "#e3e3e3" # pointer-hover on a base surface
-bg_selected = "#d9d9d9" # selected row/list item
-overlay = "#00000099" # modal scrim (black, 60%)
-fg = "#2e2e2e" # default body text
-fg_primary = "#0a0a0a" # emphasized text
-fg_muted = "#575757" # secondary text
-fg_subtle = "#767676" # tertiary text
-fg_placeholder = "#949494" # input placeholders (every input has one, RULE-UI-005)
-fg_disabled = "#aaaaaa" # disabled labels
-accent = "#f5823a" # brand orange — primary actions, focus, links
-accent_hover = "#f5a76a" # hovered accent surface
-accent_subtle = "#c9a77a" # quiet accent — selected indicators
-on_accent = "#0d0d0d" # text/icons on an accent surface
-selection = "#f5a76a" # text-selection highlight
-success = "#68d740"
-success_tint = "#9be57f"
-success_well = "#173a0b"
-warning = "#e8b339"
-warning_tint = "#f1cf80"
-warning_well = "#3a1d0b"
-danger = "#d74040"
-danger_tint = "#e98080"
-danger_well = "#3d1010"
-info = "#58cbf5"
-info_tint = "#92dcf8"
-info_well = "#121a20"
-border = "#dddddd" # default border
-border_subtle = "#e8e8e8" # separators inside a surface
-border_strong = "#cccccc" # emphasized control border
-border_heavy = "#b5b5b5" # highest-contrast border (hovered/active edges)
-focus_ring = "#f5823a" # keyboard focus ring (RULE-INPUT-001)
-chart_positive = "#68d740"
-chart_negative = "#d74040"
-chart_neutral = "#767676"
-chart_series_1 = "#f5823a"
-chart_series_2 = "#6944f0"
-chart_series_3 = "#58cbf5"
-chart_series_4 = "#d1f558"
-chart_series_5 = "#ff93c7"
+[palette.hue.red]
+300 = "#E98080"
+500 = "#D74040"
+900 = "#3D1010"
+
+[palette.hue.amber]
+300 = "#F1CF80"
+500 = "#E8B339"
+900 = "#3B2C08"
+
+[palette.hue.sand]
+500 = "#C9A77A"
+900 = "#1F1A12"
+
+[palette.hue.steel]
+500 = "#8FB3C9"
+900 = "#121A20"
+
+# ── 02 · Color semantic roles — dark (the designed native theme) ─────────────
+
+[theme.dark.surfaces]
+background       = "$neutral-925"  # base background everywhere
+surface          = "$neutral-900"  # cards, dialogs, panels; main view regions
+surface-raised   = "$neutral-875"  # raised cards on the board; demo/spec panels
+surface-sunken   = "$neutral-950"  # inset wells: input fields, code, sunken areas
+surface-overlay  = "$neutral-850"  # floating panel fill
+popover          = "$neutral-850"  # dropdown/menu/calendar panels
+tooltip          = "$neutral-100"  # light tooltip plate on the dark theme
+# drawn as a literal in the sheet (sunken @ 90%)
+hud              = "#0D0D0DE6"     # HUD chips: zoom, location
+scrim            = "$black-a60"    # modal scrim
+sidebar          = "$neutral-925"  # sidebar rides the base background
+
+[theme.dark.text]
+foreground            = "$neutral-0"    # emphasized text
+secondary-foreground  = "$neutral-300"
+muted-foreground      = "$neutral-400"
+subtle-foreground     = "$neutral-500"
+disabled-foreground   = "$neutral-600"
+placeholder           = "$neutral-500"  # every input has one (RULE-UI-005)
+sidebar-label         = "$neutral-400"
+tooltip-foreground    = "$neutral-925"  # ink on the light tooltip plate
+primary-foreground    = "$neutral-925"  # ink on the inverted primary fill
+link                  = "$neutral-0"    # links are white; accent is never a link color
+on-solid              = "$neutral-0"    # ink on solid functional fills, both modes
+
+[theme.dark.structure]
+border         = "$neutral-800"
+border-subtle  = "$neutral-825"
+border-strong  = "$neutral-700"
+divider        = "$white-a8"        # hairline separators (the design uses them sparingly)
+input          = "$neutral-750"     # input border at rest
+input-hover    = "$neutral-650"
+input-focus    = "$neutral-300"
+ring           = "$neutral-200"     # default focus ring
+ring-accent    = "$orange-500"      # attention/focus ring — ATOMS · 03: ring 2, offset 2
+selection      = "$white-a12"       # text-selection highlight
+# rz-handle family (ORGANISMS · 02 O17): resizable divider states
+rz-handle       = "$neutral-825"
+rz-handle-hover = "$neutral-700"
+rz-handle-drag  = "$neutral-200"
+
+[theme.dark.interaction]
+control           = "$neutral-875"  # flat control fill — neutral/default buttons
+control-hover     = "$neutral-850"
+control-active    = "$neutral-800"
+control-selected  = "$white-a12"
+ghost-hover       = "$white-a4"
+ghost-active      = "$white-a8"
+sidebar-hover     = "$white-a4"
+sidebar-selected  = "$white-a8"     # active sidebar nav plate
+primary           = "$neutral-100"  # the inverted primary control — light fill, dark ink
+primary-hover     = "$neutral-0"    # hover: highest state is the brightest
+primary-active    = "$neutral-200"  # pressed/selected: steps back down (#D1D1D1)
+
+[theme.dark.icons]
+icon           = "$neutral-200"     # default body/label ink in controls
+icon-muted     = "$neutral-400"
+icon-hover     = "$neutral-0"
+icon-selected  = "$neutral-0"
+icon-disabled  = "$neutral-600"
+icon-attention = "$orange-500"
+
+[theme.dark.accent-status]
+accent             = "$orange-500"  # brand — focus ring, indicators; never the primary button
+accent-foreground  = "$orange-300"
+accent-subtle      = "$orange-900"  # accent well (drop targets, selection strips)
+success            = "$green-500"
+success-foreground = "$green-300"
+success-subtle     = "$green-900"
+danger             = "$red-500"
+danger-foreground  = "$red-300"
+danger-subtle      = "$red-900"
+warning            = "$amber-500"
+warning-foreground = "$amber-300"
+warning-subtle     = "$amber-900"
+info               = "$cyan-500"
+info-foreground    = "$cyan-300"
+info-subtle        = "$cyan-900"
+
+[theme.dark.money]
+money-in         = "$green-500"
+money-out        = "$neutral-0"
+money-negative   = "$red-500"
+money-transfer   = "$neutral-400"
+money-pending    = "$amber-500"
+money-forecast   = "$steel-500"
+
+[theme.dark.time]
+time-now            = "$orange-500"
+time-past           = "$sand-500"
+time-past-surface   = "$sand-900"
+time-future         = "$steel-500"
+time-future-surface = "$steel-900"
+
+[theme.dark.board-loading]
+board-bg            = "$neutral-900"
+board-dot           = "$neutral-750"
+board-region        = "$white-a8"
+board-card          = "$neutral-875"
+board-connector     = "$orange-500"
+board-note          = "#D9C66B"     # drawn literal in the sheet
+skeleton            = "$neutral-850"
+skeleton-highlight  = "$neutral-800"
+progress-track      = "$white-a8"
+progress-fill       = "$neutral-100" # neutral progress fill = inverted neutral
+spinner             = "$neutral-300"
+
+[theme.dark.data]
+data-1 = "$cyan-500"
+data-2 = "$lime-500"
+data-3 = "$pink-500"
+data-4 = "$violet-500"
+data-5 = "$orange-500"
+data-6 = "$green-500"
+data-7 = "$amber-500"
+data-8 = "$sand-500"
+
+# ── 02 · Color semantic roles — light (mirrored ramp, same hues & wells) ──────
+
+[theme.light.surfaces]
+background       = "#EDEDED"
+surface          = "#FFFFFF"
+surface-raised   = "#F5F5F5"
+surface-sunken   = "#E3E3E3"
+surface-overlay  = "#FFFFFF"
+popover          = "#FFFFFF"
+tooltip          = "#171717"   # mirrored light plate
+# mirrored literal (raised @ 90%)
+hud              = "#FFFFFFE6"
+scrim            = "$black-a60"
+sidebar          = "#EDEDED"
+
+[theme.light.text]
+foreground            = "#0A0A0A"
+secondary-foreground  = "#575757"
+muted-foreground      = "#767676"
+subtle-foreground     = "#949494"
+disabled-foreground   = "#AAAAAA"
+placeholder           = "#949494"
+sidebar-label         = "#767676"
+tooltip-foreground    = "#EDEDED"
+primary-foreground    = "#EDEDED"  # ink on the inverted (dark) primary fill
+link                  = "#0A0A0A"
+on-solid              = "#FFFFFF"
+
+[theme.light.structure]
+border         = "#D9D9D9"
+border-subtle  = "#E8E8E8"
+border-strong  = "#B5B5B5"
+divider        = "#0000001F"
+input          = "#CCCCCC"
+input-hover    = "#B5B5B5"
+input-focus    = "#575757"
+ring           = "#2E2E2E"
+ring-accent    = "$orange-500"
+selection      = "#0000001F"
+rz-handle       = "#E8E8E8"
+rz-handle-hover = "#B5B5B5"
+rz-handle-drag  = "#2E2E2E"
+
+[theme.light.interaction]
+control           = "#FFFFFF"
+control-hover     = "#E3E3E3"
+control-active    = "#D9D9D9"
+control-selected  = "#0000001F"
+ghost-hover       = "#0000000A"
+ghost-active      = "#00000014"
+sidebar-hover     = "#0000000A"
+sidebar-selected  = "#00000014"
+primary           = "#111111"   # inverted primary on light: dark fill
+primary-hover     = "#0A0A0A"
+primary-active    = "#2E2E2E"   # pressed/selected mirror of neutral-200
+
+[theme.light.icons]
+icon           = "#2E2E2E"
+icon-muted     = "#767676"
+icon-hover     = "#0A0A0A"
+icon-selected  = "#0A0A0A"
+icon-disabled  = "#AAAAAA"
+icon-attention = "$orange-500"
+
+# Functional hues + wells are identical in both modes (the sheet's dark wells stay).
+[theme.light.accent-status]
+accent             = "$orange-500"
+accent-foreground  = "$orange-300"
+accent-subtle      = "$orange-900"
+success            = "$green-500"
+success-foreground = "$green-300"
+success-subtle     = "$green-900"
+danger             = "$red-500"
+danger-foreground  = "$red-300"
+danger-subtle      = "$red-900"
+warning            = "$amber-500"
+warning-foreground = "$amber-300"
+warning-subtle     = "$amber-900"
+info               = "$cyan-500"
+info-foreground    = "$cyan-300"
+info-subtle        = "$cyan-900"
+
+[theme.light.money]
+money-in         = "$green-500"
+money-out        = "#0A0A0A"
+money-negative   = "$red-500"
+money-transfer   = "#767676"
+money-pending    = "$amber-500"
+money-forecast   = "$steel-500"
+
+[theme.light.time]
+time-now            = "$orange-500"
+time-past           = "$sand-500"
+time-past-surface   = "$sand-900"
+time-future         = "$steel-500"
+time-future-surface = "$steel-900"
+
+[theme.light.board-loading]
+board-bg            = "#FFFFFF"
+board-dot           = "#CCCCCC"
+board-region        = "#00000014"
+board-card          = "#F5F5F5"
+board-connector     = "$orange-500"
+board-note          = "#D9C66B"
+skeleton            = "#E8E8E8"
+skeleton-highlight  = "#D9D9D9"
+progress-track      = "#00000014"
+progress-fill       = "#111111"
+spinner             = "#575757"
+
+# Light data series darkened for contrast on white.
+[theme.light.data]
+data-1 = "#0891B2"
+data-2 = "#65A30D"
+data-3 = "#DB2777"
+data-4 = "#6D28D9"
+data-5 = "#EA580C"
+data-6 = "#15803D"
+data-7 = "#B45309"
+data-8 = "#A16207"

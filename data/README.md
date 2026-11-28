@@ -15,11 +15,14 @@ Primary data also includes **data-as-dependencies** (IANA tz database via `jiff`
 | `perf-budgets.toml` | Performance budgets asserted in CI by criterion benches + `xtask govern perf` | Project-maintained |
 | `shortcuts.toml` | Default keyboard-shortcut map: flat entries — `id`, `keys`, `action` (dotted engine action id), `label_i18n_key`, `scope`, `when` guard (RULE-INPUT-001; SSOT, remappable — no hardcoded keys anywhere else) | Project-maintained; every `label_i18n_key` exists in every locale |
 | `theme/index.toml` | Theme scope SSOT entry listing the scope's files (RULE-DATA-003) | Bookkeepy v1 design language (Penpot 'draft' page; exported under `references/designlanguage/`) |
-| `theme/colors.toml` | Color tokens: raw `[palette]` ramp + semantic tokens (`bg`, `fg`, `accent`, `danger`, `success`, `warning`, `border`, …) for the light and dark themes (dark is the designed native theme) | Bookkeepy v1 design language (Penpot 'draft' page; exported under `references/designlanguage/`) |
-| `theme/spacing.toml` | Spacing tokens — multiples of the 4px base grid | Bookkeepy v1 design language (same source) |
-| `theme/radii.toml` | Corner-radius tokens (micro → circle/pill) | Bookkeepy v1 design language (same source) |
-| `theme/typography.toml` | Font families + named text styles (size/weight/line-height/letter-spacing; amounts tabular) | Bookkeepy v1 design language (same source) |
-| `theme/elevation.toml` | Elevation: shadow tokens (black @ 60%, blur/offset scale) + z-index stacking layers | Bookkeepy v1 design language (same source) |
+| `theme/colors.toml` | Color tokens, 1:1 with TOKENS §01/02: raw `[palette]` (neutral ramp, alpha layers, hues 300/500/900) + semantic roles per theme (`background`, `control`, `primary`, `ring-accent`, `data-1..8`, …) referencing primitives as `$alias`; dark is the designed native theme, light mirrors the ramp | Bookkeepy v1 design language (Penpot 'draft' page; exported under `references/designlanguage/`) |
+| `theme/spacing.toml` | Spacing tokens, 1:1 with TOKENS §04: 2px-grid scale ladder (`space-0.5`…`space-20`), gap roles by relationship (`gap-hair`…`gap-page`), container insets (`inset-chip`…`inset-card`) | Bookkeepy v1 design language (same source) |
+| `theme/radii.toml` | Radius tokens, 1:1 with TOKENS §05: tiers (`xs`…`viewport`, `full`) + roles (`control`/`card`/`popover`/`dialog`…) | Bookkeepy v1 design language (same source) |
+| `theme/typography.toml` | Typography, 1:1 with TOKENS §03: Inter-first UI stack + mono, named styles (size/weight/line-height px/tracking; amounts tabular), measure + paragraph gaps | Bookkeepy v1 design language (same source) |
+| `theme/elevation.toml` | Elevation, 1:1 with TOKENS §06: the design is flat — only popover/dialog shadows (black @ 60%) + z-index layers (flat 0 … tooltip 60) + focus ring spec (2px, offset 2, `$orange-500`) | Bookkeepy v1 design language (same source) |
+| `theme/motion.toml` | Motion, 1:1 with TOKENS §10: durations (80…700 ms + snap), cubic-bezier easings, delays (spinner/loading/tooltip), skeleton cycle | Bookkeepy v1 design language (same source) |
+| `theme/icons.toml` | Iconography, 1:1 with TOKENS §08: Phosphor set (regular at rest → duotone on interaction), size ladder (xs 12 … xl 24), hit-min 24 | Bookkeepy v1 design language + `references/phosphor` (MIT) |
+| `theme/layout.toml` | Fixed shell geometry: sidebar expanded/collapsed widths (ORGANISMS · 01 / TEMPLATES) | Bookkeepy v1 design language (same source) |
 | `locales/en.toml`, `locales/ro.toml` | Locale catalogs (flat quoted dotted keys; `[meta].locale` must match the file stem). EN is the reference/fallback locale | Project-maintained; `xtask govern errors` enforces key parity + that every `errors.toml` i18n_key exists in every locale |
 
 Theme tokens are the single source of truth gpui-kit styled components and gallery

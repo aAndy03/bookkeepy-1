@@ -73,10 +73,7 @@ pub fn run(sub: Option<&str>) -> ExitCode {
                     false
                 }
             }
-            "ui" => {
-                println!("govern ui: PASS (no UI crates yet; activates from M3)");
-                true
-            }
+            "ui" => ui(),
             "meta" => meta(),
             "seams" => seams(),
             "regressions" => regressions(),
@@ -763,6 +760,29 @@ fn deps() -> bool {
             "bookkeepy-profile",
         ],
     );
+    // The UI layer (RULE-UI-004): app-services' api (presenters), contracts, and the
+    // data layers. The M3 scaffold uses core + primary-data (+ gpui-kit, external).
+    allowed.insert(
+        "bookkeepy-ui",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-contracts",
+            "bookkeepy-primary-data",
+            "bookkeepy-i18n",
+            "bookkeepy-app-services",
+        ],
+    );
+    // The gallery harness: the ui crate (the one component set) + the data layers
+    // for locale/theme/shortcut source material — never app-services (demo-only UI).
+    allowed.insert(
+        "bookkeepy-gallery",
+        vec![
+            "bookkeepy-core",
+            "bookkeepy-ui",
+            "bookkeepy-primary-data",
+            "bookkeepy-i18n",
+        ],
+    );
     allowed.insert(
         "xtask",
         vec![
@@ -1072,4 +1092,567 @@ fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {
             }
         }
     }
+}
+
+/// `govern ui` — the gallery + ui crate gate (RULE-UI-005/006/007/008, ADR-0017):
+/// 1. inventory ↔ gallery registry: every `covered` gpui-kit component points at a
+///    registered gallery section; every `exception` carries a note; ids are unique.
+/// 2. RULE-UI-005: every owned text-input construction carries a `.placeholder(...)`
+///    (OtpState is exempt: the OTP segmented input has no placeholder API).
+/// 3. i18n: en/ro locale key parity + every key used by gallery/ui code exists in
+///    both locales (the inline half of the locale contract; `govern data` validates
+///    the files themselves).
+/// 4. widget metadata (RULE-UI-008): every `crates/ui/src/widgets/**/meta.toml` is
+///    schema-valid, declares only REGISTERED capability traits, references sibling
+///    `source.rs` + `variant_*.rs`/`edge_case_*.rs` files that exist, and its
+///    changelog covers the current widget version.
+fn ui() -> bool {
+    let inventory = ui_inventory_sections();
+    let placeholders = ui_input_placeholders();
+    let i18n = ui_i18n_keys();
+    let meta = ui_widget_meta();
+    if inventory.0 && placeholders.0 && i18n.0 && meta.0 {
+        println!(
+            "govern ui: PASS ({} gpui-kit components: {} covered, {} exceptions; {} widget meta(s); {} inline i18n key use(s); text inputs carry placeholders)",
+            inventory.1, inventory.2, inventory.3, meta.1, i18n.1
+        );
+        true
+    } else {
+        eprintln!("govern ui: FAIL");
+        false
+    }
+}
+
+/// Check 1 — inventory ↔ gallery sections. Returns (ok, total, covered, exceptions).
+fn ui_inventory_sections() -> (bool, usize, usize, usize) {
+    let path = root().join("docs/registry/gpui-kit-components.toml");
+    let raw = match std::fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("govern ui: FAIL: cannot read {}: {e}", path.display());
+            return (false, 0, 0, 0);
+        }
+    };
+    let table = match raw.parse::<toml::Table>() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("govern ui: FAIL: {path:?} does not parse: {e}");
+            return (false, 0, 0, 0);
+        }
+    };
+    // The gallery's SECTIONS registry ids (gallery/src/sections/mod.rs `section!(...)`).
+    let sections_path = root().join("gallery/src/sections/mod.rs");
+    let sections_src = match std::fs::read_to_string(&sections_path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!(
+                "govern ui: FAIL: cannot read {}: {e}",
+                sections_path.display()
+            );
+            return (false, 0, 0, 0);
+        }
+    };
+    let mut section_ids: Vec<&str> = Vec::new();
+    for line in sections_src.lines() {
+        if line.contains("section!(")
+            && let Some(q1) = line.find('"')
+            && let Some(q2) = line[q1 + 1..].find('"')
+        {
+            section_ids.push(&line[q1 + 1..q1 + 1 + q2]);
+        }
+    }
+    let entries = table
+        .get("component")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let (mut covered, mut exceptions, mut ok) = (0usize, 0usize, true);
+    let mut seen: Vec<String> = Vec::new();
+    for entry in &entries {
+        let id = entry.get("id").and_then(|v| v.as_str()).unwrap_or_default();
+        let title = entry
+            .get("title")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let status = entry
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        if id.is_empty() || title.is_empty() {
+            eprintln!("govern ui: FAIL: inventory entry missing id/title: {entry}");
+            ok = false;
+            continue;
+        }
+        if seen.iter().any(|s| s == id) {
+            eprintln!("govern ui: FAIL: duplicate inventory id: {id}");
+            ok = false;
+        }
+        seen.push(id.to_string());
+        let section = entry.get("section").and_then(|v| v.as_str());
+        match status {
+            "covered" => {
+                covered += 1;
+                let Some(section) = section else {
+                    eprintln!("govern ui: FAIL: covered component {id} has no gallery section");
+                    ok = false;
+                    continue;
+                };
+                if !section_ids.contains(&section) {
+                    eprintln!("govern ui: FAIL: {id} points at unknown gallery section {section}");
+                    ok = false;
+                }
+            }
+            "exception" => {
+                exceptions += 1;
+                let note = entry
+                    .get("note")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+                if note.trim().is_empty() {
+                    eprintln!("govern ui: FAIL: exception {id} must carry a note explaining it");
+                    ok = false;
+                }
+            }
+            other => {
+                eprintln!("govern ui: FAIL: {id} has invalid status {other:?} (covered|exception)");
+                ok = false;
+            }
+        }
+    }
+    if entries.is_empty() {
+        eprintln!("govern ui: FAIL: component inventory is empty");
+        ok = false;
+    }
+    (ok, entries.len(), covered, exceptions)
+}
+
+/// Recursively collect every `.rs` source file under `dir`.
+fn ui_rust_sources(dir: &Path, out: &mut Vec<PathBuf>) {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for e in entries.filter_map(|e| e.ok()) {
+            let p = e.path();
+            if p.is_dir() {
+                ui_rust_sources(&p, out);
+            } else if p.extension().is_some_and(|ext| ext == "rs") {
+                out.push(p);
+            }
+        }
+    }
+}
+
+/// Check 2 — RULE-UI-005: owned text-input constructions carry placeholders.
+/// Returns (ok, count of construction sites checked).
+fn ui_input_placeholders() -> (bool, usize) {
+    // Constructors whose owning statement must localize a placeholder. OtpState is
+    // deliberately absent: the OTP input is segmented and has no placeholder API
+    // (documented in gallery/src/sections/atoms_input.rs).
+    const CONSTRUCTORS: &[&str] = &[
+        "InputState::new(",
+        "TextareaState::new(",
+        "EditorState::new(",
+    ];
+    const WINDOW: usize = 10;
+    let mut sources = Vec::new();
+    ui_rust_sources(&root().join("gallery/src"), &mut sources);
+    ui_rust_sources(&root().join("crates/ui/src"), &mut sources);
+    let (mut ok, mut checked) = (true, 0usize);
+    for path in &sources {
+        let src = match std::fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("govern ui: FAIL: cannot read {}: {e}", path.display());
+                ok = false;
+                continue;
+            }
+        };
+        let lines: Vec<&str> = src.lines().collect();
+        for (idx, line) in lines.iter().enumerate() {
+            for ctor in CONSTRUCTORS {
+                if !line.contains(ctor) || line.trim_start().starts_with("//") {
+                    continue;
+                }
+                checked += 1;
+                let window: String = lines[idx..(idx + WINDOW).min(lines.len())].join("\n");
+                if !window.contains(".placeholder(") {
+                    eprintln!(
+                        "govern ui: FAIL: RULE-UI-005: {}:{} constructs {ctor} without a localized .placeholder(...)",
+                        path.display(),
+                        idx + 1
+                    );
+                    ok = false;
+                }
+            }
+        }
+    }
+    (ok, checked)
+}
+
+/// Collect every key of a parsed TOML document table as dotted flat paths.
+fn ui_toml_keys(table: &toml::Table, prefix: &str, out: &mut Vec<String>) {
+    for (k, v) in table {
+        let path = if prefix.is_empty() {
+            k.clone()
+        } else {
+            format!("{prefix}.{k}")
+        };
+        match v {
+            toml::Value::Table(t) => ui_toml_keys(t, &path, out),
+            _ => out.push(path),
+        }
+    }
+}
+
+/// The substring inside the balanced parentheses starting at `open` (points at the
+/// first inner byte); string literals are skipped so parens inside them don't count.
+fn paren_region(line: &str, open: usize) -> Option<String> {
+    let bytes = line.as_bytes();
+    let mut depth = 1usize;
+    let mut i = open;
+    let mut in_string = false;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if in_string {
+            if b == b'\\' {
+                i += 1;
+            } else if b == b'"' {
+                in_string = false;
+            }
+        } else if b == b'"' {
+            in_string = true;
+        } else if b == b'(' {
+            depth += 1;
+        } else if b == b')' {
+            depth -= 1;
+            if depth == 0 {
+                return Some(line[open..i].to_string());
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Every double-quoted literal in `s`.
+fn quoted_literals(s: &str) -> Vec<String> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'"' {
+            let mut literal = String::new();
+            i += 1;
+            while i < bytes.len() {
+                if bytes[i] == b'\\' && i + 1 < bytes.len() {
+                    literal.push(bytes[i] as char);
+                    i += 1;
+                } else if bytes[i] == b'"' {
+                    break;
+                }
+                literal.push(bytes[i] as char);
+                i += 1;
+            }
+            out.push(literal);
+        }
+        i += 1;
+    }
+    out
+}
+
+/// Check 3 — inline i18n contract: en/ro parity + used keys exist. Returns (ok, used).
+fn ui_i18n_keys() -> (bool, usize) {
+    let en = match std::fs::read_to_string(root().join("data/locales/en.toml")) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("govern ui: FAIL: cannot read data/locales/en.toml: {e}");
+            return (false, 0);
+        }
+    };
+    let ro = match std::fs::read_to_string(root().join("data/locales/ro.toml")) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("govern ui: FAIL: cannot read data/locales/ro.toml: {e}");
+            return (false, 0);
+        }
+    };
+    let mut ok = true;
+    // The catalogs are `[messages]` tables — collect only leaf paths inside them
+    // (`meta` never holds messages).
+    let collect = |raw: &str| -> Option<Vec<String>> {
+        raw.parse::<toml::Table>().ok().and_then(|t| {
+            t.get("messages")
+                .and_then(|v| v.as_table())
+                .map(|messages| {
+                    let mut keys = Vec::new();
+                    ui_toml_keys(messages, "", &mut keys);
+                    keys
+                })
+        })
+    };
+    let (mut en_keys, mut ro_keys) = (Vec::new(), Vec::new());
+    if let Some(v) = collect(&en) {
+        en_keys = v;
+    } else {
+        eprintln!("govern ui: FAIL: data/locales/en.toml does not parse (or has no [messages])");
+        ok = false;
+    }
+    if let Some(v) = collect(&ro) {
+        ro_keys = v;
+    } else {
+        eprintln!("govern ui: FAIL: data/locales/ro.toml does not parse (or has no [messages])");
+        ok = false;
+    }
+    en_keys.sort_unstable();
+    ro_keys.sort_unstable();
+    if en_keys != ro_keys {
+        eprintln!("govern ui: FAIL: locale key parity broken (en vs ro differs)");
+        for k in en_keys.iter().filter(|k| !ro_keys.contains(k)).take(10) {
+            eprintln!("govern ui:   only in en: {k}");
+        }
+        for k in ro_keys.iter().filter(|k| !en_keys.contains(k)).take(10) {
+            eprintln!("govern ui:   only in ro: {k}");
+        }
+        ok = false;
+    }
+    // Inline uses: every "gallery.*" literal, and every quoted tr(...) argument.
+    let mut sources = Vec::new();
+    ui_rust_sources(&root().join("gallery/src"), &mut sources);
+    ui_rust_sources(&root().join("crates/ui/src"), &mut sources);
+    let (mut used_count, mut missing) = (0usize, Vec::<String>::new());
+    for path in &sources {
+        let src = match std::fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
+        for (idx, line) in src.lines().enumerate() {
+            // Every quoted literal on the line (needed for the `gallery.*` rule).
+            let mut quotes: Vec<String> = Vec::new();
+            let bytes = line.as_bytes();
+            let mut i = 0;
+            while i < bytes.len() {
+                if bytes[i] == b'"' {
+                    let mut literal = String::new();
+                    i += 1;
+                    while i < bytes.len() {
+                        if bytes[i] == b'\\' && i + 1 < bytes.len() {
+                            literal.push(bytes[i] as char);
+                            i += 1;
+                        } else if bytes[i] == b'"' {
+                            break;
+                        }
+                        literal.push(bytes[i] as char);
+                        i += 1;
+                    }
+                    quotes.push(literal);
+                }
+                i += 1;
+            }
+            // Quoted literals passed to a `tr(...)` call: only the ones INSIDE its
+            // parens count (element ids like "doc" on the same line are not keys).
+            let mut tr_args: Vec<String> = Vec::new();
+            for (pos, _) in line.match_indices("tr(") {
+                if pos != 0 && line.as_bytes()[pos - 1].is_ascii_alphanumeric() {
+                    continue;
+                }
+                let Some(region) = paren_region(line, pos + 2) else {
+                    continue;
+                };
+                tr_args.extend(quoted_literals(&region));
+            }
+            let check = |key: &str, used: &mut usize, missing: &mut Vec<String>| {
+                // Fragments used in concat!/format! key builders end with '.' — not keys.
+                if key.is_empty() || key.contains(' ') || key.ends_with('.') {
+                    return;
+                }
+                *used += 1;
+                if !en_keys.contains(&key.to_string()) || !ro_keys.contains(&key.to_string()) {
+                    missing.push(format!("{}:{}: {key}", path.display(), idx + 1));
+                }
+            };
+            for q in quotes {
+                if q.starts_with("gallery.") {
+                    check(&q, &mut used_count, &mut missing);
+                }
+            }
+            for q in tr_args {
+                check(&q, &mut used_count, &mut missing);
+            }
+        }
+    }
+    if !missing.is_empty() {
+        missing.sort_unstable();
+        missing.dedup();
+        eprintln!("govern ui: FAIL: i18n keys used in code but missing from locales:");
+        for m in missing.iter().take(20) {
+            eprintln!("govern ui:   {m}");
+        }
+        if missing.len() > 20 {
+            eprintln!("govern ui:   ... and {} more", missing.len() - 20);
+        }
+        ok = false;
+    }
+    (ok, used_count)
+}
+
+/// Check 4 — widget `meta.toml` (RULE-UI-008). Returns (ok, widget count).
+fn ui_widget_meta() -> (bool, usize) {
+    // Registered capability-trait ids, from crates/ui/src/capabilities.rs (`id: "..."`).
+    let caps_path = root().join("crates/ui/src/capabilities.rs");
+    let caps_src = match std::fs::read_to_string(&caps_path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("govern ui: FAIL: cannot read {}: {e}", caps_path.display());
+            return (false, 0);
+        }
+    };
+    let mut registered: Vec<String> = Vec::new();
+    for line in caps_src.lines() {
+        if line.contains("id: \"")
+            && let Some(q1) = line.find('"')
+            && let Some(q2) = line[q1 + 1..].find('"')
+        {
+            registered.push(line[q1 + 1..q1 + 1 + q2].to_string());
+        }
+    }
+    // Every meta.toml under the widget layers.
+    let mut metas: Vec<(&str, PathBuf, PathBuf, PathBuf)> = Vec::new();
+    for layer in ["atoms", "molecules", "organisms"] {
+        let dir = root().join("crates/ui/src/widgets").join(layer);
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for e in entries.filter_map(|e| e.ok()) {
+                let meta = e.path().join("meta.toml");
+                let source = e.path().join("source.rs");
+                if meta.is_file() {
+                    metas.push((layer, e.path(), meta, source));
+                }
+            }
+        }
+    }
+    let count = metas.len();
+    let mut ok = true;
+    for (layer, widget_dir, meta_path, source_path) in &metas {
+        let raw = match std::fs::read_to_string(meta_path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("govern ui: FAIL: cannot read {}: {e}", meta_path.display());
+                ok = false;
+                continue;
+            }
+        };
+        let table = match raw.parse::<toml::Table>() {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!(
+                    "govern ui: FAIL: {} does not parse: {e}",
+                    meta_path.display()
+                );
+                ok = false;
+                continue;
+            }
+        };
+        let where_ = meta_path.display();
+        let Some(widget) = table.get("widget").and_then(|v| v.as_table()) else {
+            eprintln!("govern ui: FAIL: {where_}: missing [widget]");
+            ok = false;
+            continue;
+        };
+        let id = widget
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let version = widget
+            .get("version")
+            .and_then(|v| v.as_integer())
+            .unwrap_or(-1);
+        let widget_layer = widget
+            .get("layer")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let traits = widget
+            .get("traits")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+        if id.is_empty() || version < 1 {
+            eprintln!("govern ui: FAIL: {where_}: [widget] needs id + version >= 1");
+            ok = false;
+        }
+        if widget_layer != *layer {
+            eprintln!(
+                "govern ui: FAIL: {where_}: layer {widget_layer:?} does not match its folder {layer:?}"
+            );
+            ok = false;
+        }
+        if id
+            != widget_dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default()
+        {
+            eprintln!("govern ui: FAIL: {where_}: [widget] id must equal the folder name");
+            ok = false;
+        }
+        for t in &traits {
+            let tid = t.as_str().unwrap_or_default();
+            if !registered.iter().any(|r| r == tid) {
+                eprintln!(
+                    "govern ui: FAIL: {where_}: trait {tid:?} is not in capabilities::REGISTERED"
+                );
+                ok = false;
+            }
+        }
+        if !source_path.is_file() {
+            eprintln!("govern ui: FAIL: {where_}: missing source.rs (the SSOT)");
+            ok = false;
+        }
+        // Variants + edge cases: files exist and follow the naming contract.
+        if let Some(variants) = table.get("variant").and_then(|v| v.as_array()) {
+            for v in variants {
+                let file = v.get("file").and_then(|f| f.as_str()).unwrap_or_default();
+                let trait_id = v.get("trait").and_then(|t| t.as_str()).unwrap_or_default();
+                if !file.starts_with("variant_") || !widget_dir.join(file).is_file() {
+                    eprintln!("govern ui: FAIL: {where_}: bad variant file {file:?}");
+                    ok = false;
+                }
+                if !registered.iter().any(|r| r == trait_id) {
+                    eprintln!(
+                        "govern ui: FAIL: {where_}: variant trait {trait_id:?} is not registered"
+                    );
+                    ok = false;
+                }
+            }
+        }
+        if let Some(edges) = table.get("edge_case").and_then(|v| v.as_array()) {
+            for e in edges {
+                let file = e.get("file").and_then(|f| f.as_str()).unwrap_or_default();
+                if !file.starts_with("edge_case_") || !widget_dir.join(file).is_file() {
+                    eprintln!("govern ui: FAIL: {where_}: bad edge-case file {file:?}");
+                    ok = false;
+                }
+            }
+        }
+        // Changelog: non-empty and covering exactly up to widget.version.
+        let changelog = table
+            .get("changelog")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+        if changelog.is_empty() {
+            eprintln!("govern ui: FAIL: {where_}: [[changelog]] must not be empty (RULE-UI-008)");
+            ok = false;
+            continue;
+        }
+        let mut versions: Vec<i64> = changelog
+            .iter()
+            .filter_map(|c| c.get("version").and_then(|v| v.as_integer()))
+            .collect();
+        versions.sort_unstable();
+        let current = versions.last().cloned().unwrap_or(-1);
+        if current != version || versions.len() != changelog.len() {
+            eprintln!(
+                "govern ui: FAIL: {where_}: changelog must cover exactly up to widget.version {version}"
+            );
+            ok = false;
+        }
+    }
+    (ok, count)
 }

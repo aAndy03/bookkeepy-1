@@ -1,0 +1,658 @@
+# Bookkeepy 1 — gpui-kit component inventory (RULE-UI-006, ADR-0007/0017): the SINGLE
+# SOURCE OF TRUTH for "which gpui-kit styled component is demoed where in the gallery".
+# `cargo xtask govern ui` cross-checks this file against the gallery's SECTIONS registry
+# and the ui crate's widget metadata, so a gpui-kit upgrade updates this inventory +
+# gallery sections together or the gate fails.
+#
+# status: covered  — demoed in a gallery section (see `section`, the registry id from
+#                    gallery/src/sections/mod.rs)
+#         exception — NOT demoed as a section card, with the mandatory `note` saying why
+#                    (feature flags, app-level constructs) and how it is exercised.
+#
+# Scope: every component page published on https://gpui-kit.com/component/ (fetched
+# docs live in the gpui-kit skill references). Source modules WITHOUT a published
+# component page (link, separator, highlighter, inspector, history, and the search
+# internals behind Select/ComboBox — SearchableListState etc.) are intentionally not
+# tracked here: they surface only through the tracked components that compose them.
+
+[source]
+kind = "gpui-kit-component-inventory"
+version = "gpui-kit 0.11.0 (ADR-0007, ADR-0017)"
+note = "One [[component]] per published gpui-kit component; kept in lockstep with gallery sections by `cargo xtask govern ui`."
+
+[[component]]
+id = "accordion"
+title = "Accordion"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/accordion/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "alert"
+title = "Alert"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/alert/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "alert-dialog"
+title = "Alert Dialog"
+section = "organisms-overlay"
+docs = "https://gpui-kit.com/component/alert-dialog/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "attachment"
+title = "Attachment"
+section = "molecules-calendar"
+docs = "https://gpui-kit.com/component/attachment/"
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
+
+[[component]]
+id = "avatar"
+title = "Avatar"
+section = "atoms-badge-avatar"
+docs = "https://gpui-kit.com/component/avatar/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "badge"
+title = "Badge"
+section = "atoms-badge-avatar"
+docs = "https://gpui-kit.com/component/badge/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "bubble"
+title = "Bubble"
+section = "molecules-nav"
+docs = "https://gpui-kit.com/component/bubble/"
+status = "covered"
+note = "Demoed live via Message in gallery section molecules-nav (ORGANISMS · 02, O25)."
+
+[[component]]
+id = "button"
+title = "Button"
+section = "atoms-button"
+docs = "https://gpui-kit.com/component/button/"
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
+
+[[component]]
+id = "calendar"
+title = "Calendar"
+section = "molecules-calendar"
+docs = "https://gpui-kit.com/component/calendar/"
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
+
+[[component]]
+id = "carousel"
+title = "Carousel"
+section = "molecules-nav"
+docs = "https://gpui-kit.com/component/carousel/"
+status = "covered"
+note = "Demoed live in gallery section molecules-nav (ORGANISMS · 02, O24)."
+
+[[component]]
+id = "chart"
+title = "Chart"
+section = "viz"
+docs = "https://gpui-kit.com/component/chart/"
+status = "covered"
+note = "Demoed live (AreaChart/BarChart geometry/PieChart/CandlestickChart/sparkline LineChart) in gallery section viz (CHARTS sheet, P1–P6)."
+
+[[component]]
+id = "checkbox"
+title = "Checkbox"
+section = "atoms-choice"
+docs = "https://gpui-kit.com/component/checkbox/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "clipboard"
+title = "Clipboard"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/clipboard/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "collapsible"
+title = "Collapsible"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/collapsible/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "color-picker"
+title = "ColorPicker"
+section = "molecules-calendar"
+docs = "https://gpui-kit.com/component/color-picker/"
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
+
+[[component]]
+id = "combobox"
+title = "Combobox"
+section = "molecules-pickers"
+docs = "https://gpui-kit.com/component/combobox/"
+status = "covered"
+note = "Demoed live in gallery section molecules-pickers (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "command"
+title = "Command"
+section = "organisms-overlay"
+docs = "https://gpui-kit.com/component/command/"
+status = "covered"
+note = "Demoed live (window.open_dialog + Command) + painted palette in gallery section organisms-overlay (ORGANISMS · 02, O15)."
+
+[[component]]
+id = "data-table"
+title = "DataTable"
+section = "organisms-table"
+docs = "https://gpui-kit.com/component/data-table/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "date-picker"
+title = "DatePicker"
+section = "molecules-pickers"
+docs = "https://gpui-kit.com/component/date-picker/"
+status = "covered"
+note = "Demoed live in gallery section molecules-pickers (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "description-list"
+title = "DescriptionList"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/description-list/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "dialog"
+title = "Dialog"
+section = "organisms-overlay"
+docs = "https://gpui-kit.com/component/dialog/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "diff"
+title = "Diff"
+section = "viz"
+docs = "https://gpui-kit.com/component/diff/"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+
+[[component]]
+id = "dock"
+title = "Dock Area"
+section = "organisms-workspaces"
+docs = "https://gpui-kit.com/component/dock/"
+status = "covered"
+note = "Painted dock area demo in gallery section organisms-workspaces (ORGANISMS · 02, O19); live dock deferred."
+
+[[component]]
+id = "editor"
+title = "Editor"
+section = "atoms-input"
+docs = "https://gpui-kit.com/component/editor/"
+status = "covered"
+note = "Demoed live in gallery section atoms-input (ATOMS · 03 sheet)."
+
+[[component]]
+id = "empty"
+title = "Empty"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/empty/"
+status = "covered"
+note = "Demoed live in gallery section molecules-structure (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "focus-trap"
+title = "FocusTrap"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/focus-trap/"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+
+[[component]]
+id = "form"
+title = "Form"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/form/"
+status = "covered"
+note = "Demoed live (v_form + fields) in gallery section molecules-structure (ORGANISMS · 02, O13)."
+
+[[component]]
+id = "grid-layout"
+title = "Grid Layout"
+section = "organisms-workspaces"
+docs = "https://gpui-kit.com/component/grid-layout/"
+status = "covered"
+note = "Covered by gallery section organisms-workspaces (ORGANISMS · 02, O19–O20 workspace demos)."
+
+[[component]]
+id = "group-box"
+title = "GroupBox"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/group-box/"
+status = "covered"
+note = "Demoed live (fill/outline variants) in gallery section molecules-structure (ORGANISMS · 02, O14)."
+
+[[component]]
+id = "hover-card"
+title = "HoverCard"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/hover-card/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "icon"
+title = "Icon"
+section = "atoms-button"
+docs = "https://gpui-kit.com/component/icon/"
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
+
+[[component]]
+id = "image"
+title = "Image"
+section = "atoms-media"
+docs = "https://gpui-kit.com/component/image/"
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
+
+[[component]]
+id = "input"
+title = "Input"
+section = "atoms-input"
+docs = "https://gpui-kit.com/component/input/"
+status = "covered"
+note = "Demoed live in gallery section atoms-input (ATOMS · 03 sheet)."
+
+[[component]]
+id = "input-group"
+title = "Input Group"
+section = "atoms-input"
+docs = "https://gpui-kit.com/component/input-group/"
+status = "covered"
+note = "Demoed live in gallery section atoms-input (ATOMS · 03 sheet)."
+
+[[component]]
+id = "kbd"
+title = "Kbd"
+section = "atoms-button"
+docs = "https://gpui-kit.com/component/kbd/"
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
+
+[[component]]
+id = "label"
+title = "Label"
+section = "atoms-button"
+docs = "https://gpui-kit.com/component/label/"
+status = "covered"
+note = "Demoed live in gallery section atoms-button (ATOMS · 01 sheet)."
+
+[[component]]
+id = "list"
+title = "List"
+section = "organisms-table"
+docs = "https://gpui-kit.com/component/list/"
+status = "covered"
+note = "Demoed live + painted states in gallery section organisms-table (ORGANISMS · 01)."
+
+[[component]]
+id = "marker"
+title = "Marker"
+section = "atoms-media"
+docs = "https://gpui-kit.com/component/marker/"
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
+
+[[component]]
+id = "menu"
+title = "Menu"
+section = "molecules-popups"
+docs = "https://gpui-kit.com/component/menu/"
+status = "covered"
+note = "Demoed live in gallery section molecules-popups (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "message"
+title = "Message"
+section = "molecules-nav"
+docs = "https://gpui-kit.com/component/message/"
+status = "covered"
+note = "Demoed live (incoming/outgoing) in gallery section molecules-nav (ORGANISMS · 02, O25)."
+
+[[component]]
+id = "message-scroller"
+title = "MessageScroller"
+section = "molecules-nav"
+docs = "https://gpui-kit.com/component/message-scroller/"
+status = "covered"
+note = "Painted scroller demo in gallery section molecules-nav (ORGANISMS · 02, O25); live scroller deferred."
+
+[[component]]
+id = "native-menu"
+title = "NativeMenu"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/native-menu/"
+status = "exception"
+note = "Section scrapped in the M3 gallery rebuild; re-demo pending in the new sheet-based gallery."
+
+[[component]]
+id = "notification"
+title = "Notification"
+section = "organisms-overlay"
+docs = "https://gpui-kit.com/component/notification/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "number-input"
+title = "Number Input"
+section = "atoms-input"
+docs = "https://gpui-kit.com/component/number-input/"
+status = "covered"
+note = "Demoed live in gallery section atoms-input (ATOMS · 03 sheet)."
+
+[[component]]
+id = "otp-input"
+title = "OTP Input"
+section = "atoms-media"
+docs = "https://gpui-kit.com/component/otp-input/"
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
+
+[[component]]
+id = "pagination"
+title = "Pagination"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/pagination/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "plot"
+title = "Plot"
+section = "viz"
+docs = "https://gpui-kit.com/component/plot/"
+status = "covered"
+note = "Demoed via chart plots + painted state demos in gallery section viz (CHARTS sheet, P1–P6)."
+
+[[component]]
+id = "popover"
+title = "Popover"
+section = "molecules-popups"
+docs = "https://gpui-kit.com/component/popover/"
+status = "covered"
+note = "Demoed live in gallery section molecules-popups (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "progress"
+title = "Progress"
+section = "atoms-feedback"
+docs = "https://gpui-kit.com/component/progress/"
+status = "covered"
+note = "Demoed live in gallery section atoms-feedback (ATOMS · 03 sheet)."
+
+[[component]]
+id = "questionnaire"
+title = "Questionnaire"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/questionnaire/"
+status = "covered"
+note = "Painted panel in gallery section molecules-structure (ORGANISMS · 02, O26)."
+
+[[component]]
+id = "radio"
+title = "Radio"
+section = "atoms-choice"
+docs = "https://gpui-kit.com/component/radio/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "rating"
+title = "Rating"
+section = "atoms-media"
+docs = "https://gpui-kit.com/component/rating/"
+status = "covered"
+note = "Demoed live in gallery section atoms-media (ATOMS · 04 sheet)."
+
+[[component]]
+id = "resizable"
+title = "Resizable"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/resizable/"
+status = "covered"
+note = "Demoed live (h_resizable) + painted handles in gallery section organisms-shell (ORGANISMS · 02, O17)."
+
+[[component]]
+id = "root"
+title = "Root"
+docs = "https://gpui-kit.com/component/root/"
+status = "exception"
+note = "The app bootstrap container — cannot nest inside a gallery section; exercised by gallery/src/main.rs itself."
+
+[[component]]
+id = "scrollable"
+title = "Scrollable"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/scrollable/"
+status = "covered"
+note = "Demoed live scroll viewport + painted scrollbar in gallery section organisms-shell (ORGANISMS · 02, O18)."
+
+[[component]]
+id = "select"
+title = "Select"
+section = "molecules-pickers"
+docs = "https://gpui-kit.com/component/select/"
+status = "covered"
+note = "Demoed live in gallery section molecules-pickers (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "settings"
+title = "Settings"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/settings/"
+status = "covered"
+note = "Demoed live (truncated) in gallery section organisms-shell (ORGANISMS · 02, O16)."
+
+[[component]]
+id = "sheet"
+title = "Sheet"
+section = "organisms-overlay"
+docs = "https://gpui-kit.com/component/sheet/"
+status = "covered"
+note = "Demoed live (window.open_sheet) + painted panel in gallery section organisms-overlay (ORGANISMS · 02, O11)."
+
+[[component]]
+id = "shimmer"
+title = "Shimmer"
+section = "atoms-feedback"
+docs = "https://gpui-kit.com/component/shimmer/"
+status = "covered"
+note = "Demoed live in gallery section atoms-feedback (ATOMS · 03 sheet)."
+
+[[component]]
+id = "sidebar"
+title = "Sidebar"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/sidebar/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "skeleton"
+title = "Skeleton"
+section = "atoms-feedback"
+docs = "https://gpui-kit.com/component/skeleton/"
+status = "covered"
+note = "Demoed live in gallery section atoms-feedback (ATOMS · 03 sheet)."
+
+[[component]]
+id = "slider"
+title = "Slider"
+section = "atoms-choice"
+docs = "https://gpui-kit.com/component/slider/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "speech"
+title = "Speech"
+docs = "https://gpui-kit.com/component/speech/"
+status = "exception"
+note = "Feature-gated (`speech` crate feature, not enabled per ADR-0007): voice input is parked per RULE-INPUT-001/doc 10; un-parking requires an on-device recognizer + superseding ADR."
+
+[[component]]
+id = "spinner"
+title = "Spinner"
+section = "atoms-feedback"
+docs = "https://gpui-kit.com/component/spinner/"
+status = "covered"
+note = "Demoed live in gallery section atoms-feedback (ATOMS · 03 sheet)."
+
+[[component]]
+id = "status-bar"
+title = "StatusBar"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/status-bar/"
+status = "covered"
+note = "Demoed live + painted sync states in gallery section organisms-shell (ORGANISMS · 02, O10)."
+
+[[component]]
+id = "stepper"
+title = "Stepper"
+section = "molecules-groups"
+docs = "https://gpui-kit.com/component/stepper/"
+status = "covered"
+note = "Demoed live in gallery section molecules-groups (MOLECULES · 02 sheet)."
+
+[[component]]
+id = "switch"
+title = "Switch"
+section = "atoms-choice"
+docs = "https://gpui-kit.com/component/switch/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "table"
+title = "Table"
+section = "organisms-table"
+docs = "https://gpui-kit.com/component/table/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "tabs"
+title = "Tabs"
+section = "molecules-structure"
+docs = "https://gpui-kit.com/component/tabs/"
+status = "covered"
+note = "Demoed live in gallery section molecules-structure (MOLECULES · 01 sheet)."
+
+[[component]]
+id = "tag"
+title = "Tag"
+section = "atoms-badge-avatar"
+docs = "https://gpui-kit.com/component/tag/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "text-view"
+title = "TextView"
+section = "molecules-nav"
+docs = "https://gpui-kit.com/component/text-view/"
+status = "covered"
+note = "Demoed live (TextView::markdown) in gallery section molecules-nav (ORGANISMS · 02, O21)."
+
+[[component]]
+id = "textarea"
+title = "Textarea"
+section = "atoms-input"
+docs = "https://gpui-kit.com/component/textarea/"
+status = "covered"
+note = "Demoed live in gallery section atoms-input (ATOMS · 03 sheet)."
+
+[[component]]
+id = "theme"
+title = "Theme"
+docs = "https://gpui-kit.com/component/theme/"
+status = "exception"
+note = "Not a section card: exercised by crates/ui/src/theme.rs (data/theme tokens → gpui-kit ThemeConfig bridge) + the gallery title-bar dark/light switcher."
+
+[[component]]
+id = "time-field"
+title = "TimeField"
+section = "molecules-calendar"
+docs = "https://gpui-kit.com/component/time-field/"
+status = "covered"
+note = "Demoed live + painted states in gallery section molecules-calendar (MOLECULES · 03 sheet)."
+
+[[component]]
+id = "title-bar"
+title = "TitleBar"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/title-bar/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."
+
+[[component]]
+id = "toggle"
+title = "Toggle"
+section = "atoms-choice"
+docs = "https://gpui-kit.com/component/toggle/"
+status = "covered"
+note = "Demoed live in gallery section atoms-badge-avatar / atoms-choice (ATOMS · 02 sheet)."
+
+[[component]]
+id = "toolbar"
+title = "Toolbar"
+section = "organisms-shell"
+docs = "https://gpui-kit.com/component/toolbar/"
+status = "covered"
+note = "Demoed live + painted selection/disabled states in gallery section organisms-shell (ORGANISMS · 02, O9)."
+
+[[component]]
+id = "tooltip"
+title = "Tooltip"
+section = "atoms-feedback"
+docs = "https://gpui-kit.com/component/tooltip/"
+status = "covered"
+note = "Demoed live in gallery section atoms-feedback (ATOMS · 03 sheet)."
+
+[[component]]
+id = "tree"
+title = "Tree"
+section = "organisms-table"
+docs = "https://gpui-kit.com/component/tree/"
+status = "covered"
+note = "Demoed live + painted state ladder in gallery section organisms-table (ORGANISMS · 02, O12)."
+
+[[component]]
+id = "virtual-list"
+title = "VirtualList"
+section = "organisms-table"
+docs = "https://gpui-kit.com/component/virtual-list/"
+status = "covered"
+note = "Demoed live + painted states in gallery section ORGANISMS · 01."

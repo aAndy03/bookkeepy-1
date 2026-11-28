@@ -1,22 +1,33 @@
-# Bookkeepy 1 — primary data: corner-radius design tokens (RULE-UI-005/007, RULE-DATA-001/003).
+# Bookkeepy 1 — primary data: corner-radius tokens (RULE-UI-005/007, RULE-DATA-001/003).
 #
-# SSOT for every corner radius in the interface, exactly the radii drawn in the design
-# language sheets (radius = half side for fully-round surfaces). Referenced by name by
-# gpui-kit styled components and gallery variants — never a raw px value in code.
+# 1:1 with TOKENS · Bookkeepy v1 §05 Radius: named tiers plus the role assignments the
+# sheet draws (radius-control/row/chip/tooltip/hud/popover/card/dialog). Concentric
+# nesting: viewport 40 → padding 24 → card 16 → control 6. Referenced by name — never a
+# raw px in code.
 
 [source]
 kind = "bookkeepy-design-language"
 note = "Bookkeepy v1 design language (Penpot 'draft' page, exported under references/designlanguage/). Maintained by the project; schema changes require an ADR."
 
-[radii]
-micro = 1 # fine detail edges (divider nubs, progress notches)
-chip = 2 # tags, small badges
-mini = 4 # checkboxes, kbd keys, small badges/markers
-item = 6 # list rows, dropdown/menu items
-control = 8 # buttons, inputs, selects, cards-in-lists, window frame
-card = 12 # cards, menus, popovers, date pickers
-overlay = 16 # dialogs, sheets, alert dialogs
-banner = 20 # large side panels
-board = 24 # floating boards/windows
-circle = 40 # circular surfaces (avatars, rating stars' container): radius = half of an 80px side
-full = 9999 # pill shapes computed as height/2 (switches, sliders' rails): renderers clamp to half of the shorter side
+[radii.tiers]
+xs       = 2
+sm       = 4
+md       = 6
+lg       = 8
+xl       = 12
+"2xl"    = 16
+"3xl"    = 20
+"4xl"    = 24
+viewport = 40
+full     = 999 # pills — renderers clamp to half the shorter side
+
+# Roles — each points at a tier above (TOKENS §05 "roles").
+[radii.roles]
+control  = "md"     # radius-control — buttons, inputs, selects
+row      = "md"     # radius-row — list rows, menu items
+chip     = "full"   # radius-chip — tags, badges
+tooltip  = "md"     # radius-tooltip
+hud      = "lg"     # radius-hud — zoom, location chip
+popover  = "xl"     # radius-popover — menus, selects, hover cards
+card     = "2xl"    # radius-card — cards
+dialog   = "3xl"    # radius-dialog — dialogs, sheets, alert dialogs

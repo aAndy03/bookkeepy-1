@@ -160,6 +160,47 @@ retry loop; after `max_attempts` it lands in `failed` for manual retry.
   of components only** — the gallery is a harness/viewer over the same `ui` widgets crate,
   never a second copy. The gallery showcases **all** gpui-kit styled components by default,
   arranged by atomic layers, with our variants/edge cases alongside.
+- **Design-language application (RULE-UI-005/007):** the visual language is applied to the
+  **stock gpui-kit component APIs, never to forked copies** — in two layers. (1) The theme
+  bridge (`crates/ui/src/theme.rs`) maps every `ThemeConfig` seat to its design token
+  (surfaces, popover panels, input canvas wells, flat controls — `shadow = false`, and the
+  ATOMS · 01 button set: **primary inverts** — light fill/dark ink, brightest on press;
+  secondary = a step lighter than its surface, no border; ghost/links = quiet muted text
+  that rises on interaction, never the brand accent; warning/success/info are status hues,
+  not buttons; danger is calm at rest); the components' defaults *are* the design
+  language, so no call site styles basics. The brand accent is reserved for focus,
+  selection highlights and indicators. (2) `crates/ui/src/language.rs` carries what the
+  config cannot reach: the control-size scale (20/24/32/40, radii `mini`/`item`/`control`/
+  `control_lg`) applied through `Sizable`/`rounded`, and the danger pressed fill (solid
+  red, white glyph) via the public `Styled` instance refinements. New properties land in
+  the bridge first and the language builders only where the bridge cannot reach.
+  The **toolkit** (`crates/ui/src/language.rs`) is organized as preset modules per family —
+  `shell::sidebar` (284px from `data/theme/layout.toml`), `surface::card` (spec-panel
+  fill/border/overlay-radius), `controls::{ControlSize, button_size, color_picker_size}`
+  (the 20/24/32/40 scale), `actions::solid_danger` (the pressed-danger fill) — so any NEW
+  component gets the exact design look by composing themed defaults + one preset call,
+  never by restating values. **Icons**: `crates/ui/src/assets.rs` (`BookkeepyAssets`)
+  serves the design's Phosphor-duotone glyphs (references/phosphor, MIT) at gpui-kit's
+  lucide icon paths and falls back to the lucide set for unmapped names — one
+  `.with_assets(BookkeepyAssets)` at the app entry, no per-icon call-site changes.
+- **Shipped at M3 — the gallery + `ui` crate scaffold:** `crates/ui` (`bookkeepy-ui`:
+  the theme bridge from `data/theme` into gpui-kit, the capability registry
+  `src/capabilities.rs`, the widget layers `src/widgets/{atoms,molecules,organisms}/`)
+  and the `gallery/` workspace binary; the gallery's own section registry lives in
+  `gallery/src/sections/mod.rs` (`govern ui` reads it), and the gpui-kit component
+  inventory lives at `docs/registry/gpui-kit-components.toml` — every published
+  gpui-kit component is either demoed in a named section or a documented exception.
+  `cargo xtask govern ui` enforces: inventory↔sections, placeholders on every owned
+  text-input construction, inline i18n key existence + en/ro parity for gallery/ui
+  code, and widget `meta.toml` schema (id/version/traits registered/variants and
+  edge files present/changelog covering the current version).
+- **Widget `meta.toml` schema (RULE-UI-008):** `[widget]` (id = folder name, version,
+  layer = its folder, source.rs, traits ⊆ the capability registry), `[[variant]]`
+  (id, trait, `variant_*.rs` extending the source — never a copy), `[[edge_case]]`
+  (id, `edge_case_*.rs`), `[[changelog]]` (version + `summary_en`/`summary_ro`),
+  covering exactly up to `[widget].version`. Seed widget: the `amount` atom
+  (`crates/ui/src/widgets/atoms/amount/` — Money display per the `amount`
+  typography token, `signed` variant pairing debits/credits, muted zero edge case).
 - **Gallery versioning (RULE-UI-008):** every widget folder carries a `meta.toml`
   (component id, **version**, capability traits, variants, edge cases, changelog). The
   gallery renders the version history; any change to a component/variant/trait bumps its

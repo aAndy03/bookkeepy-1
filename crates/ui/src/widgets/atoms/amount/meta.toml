@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Widget metadata — RULE-UI-008 (version history) + the contract `cargo xtask govern ui`
+# enforces: `traits` ⊆ capabilities::REGISTERED; every [[variant]] must extend the
+# [widget] source (a sibling variant_*.rs) and toggle a registered trait; every
+# [[edge_case]] references its edge_case_*.rs; every released version has a
+# [[changelog]] entry (the gallery's `ours` section renders this file's history).
+
+[widget]
+id = "amount"
+version = 1
+layer = "atoms"
+source = "source.rs"
+traits = ["signed"]
+
+[[variant]]
+id = "signed"
+trait = "signed"
+file = "variant_signed.rs"
+
+[[edge_case]]
+id = "zero"
+file = "edge_case_zero.rs"
+
+[[changelog]]
+version = 1
+summary_en = "Seed widget (M3): money display driven by the data/theme \"amount\" typography tokens (tabular figures), semantic colors (danger for negatives, muted zero) and ADR-0004 integer-minor-units formatting; signed variant registered."
+summary_ro = "Widget inițial (M3): afișarea sumelor conform stilurilor tipografice „amount” din data/theme (cifre tabelare), culori semantice (nuanța de pericol pentru sume negative, gri atenuat pentru zero) și formatarea în unități minore întregi (ADR-0004); varianta cu semn înregistrată."
